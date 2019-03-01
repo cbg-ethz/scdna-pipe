@@ -1,0 +1,8 @@
+{
+  "sample_name":"patient_1",
+  "sequencing_prefix": "seq_prefix_v1",
+  "analysis_prefix": "analysis_prefix_v1.1",
+  "ref_genome_version": "GRCh37",
+  "fastqs_path": "~/path/to/fastqs",
+  "analysis_path": "~/path/to/analysis"
+}
