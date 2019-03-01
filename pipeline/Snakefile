@@ -1,0 +1,29 @@
+import glob
+
+fastqs_path = config['fastqs_path']
+raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
+
+rule all:
+    input:
+        "foo.txt"
+    output:
+    shell:
+        "echo rule all"
+
+rule merge_files:
+    input:
+        fastqs_path = config['fastqs_path']
+    output:
+
+    shell:
+        "echo merge files rule"
+
+
+rule foo:
+    input:
+        raw_fastqs = expand('{sample}', sample=raw_fastqs)
+    output:
+        "foo.txt"
+    shell:
+        "touch foo.txt; \
+        echo {input.raw_fastqs}"
