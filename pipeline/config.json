@@ -3,6 +3,8 @@
   "sequencing_prefix": "seq_prefix_v1",
   "analysis_prefix": "analysis_prefix_v1.1",
   "ref_genome_version": "GRCh37",
-  "fastqs_path": "~/path/to/fastqs",
-  "analysis_path": "~/path/to/analysis"
+  "fastqs_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MIDOBOL-T/singlecell_dna/openbis/",
+  "analysis_path": "~/path/to/analysis",
+  "scripts_dir": "/cluster/home/mtuncel/git_repos/scdna-workflow/scripts/",
+  "10x_artifacts": "/cluster/home/mtuncel/git_repos/scdna-workflow/required_files/10x_artifacts"
 }

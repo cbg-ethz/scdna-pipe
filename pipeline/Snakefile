@@ -1,29 +1,32 @@
 import glob
 
 fastqs_path = config['fastqs_path']
+scripts_dir = config['scripts_dir']
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
+
+rule merge_files:
+    params:
+        fastqs_path = fastqs_path,
+	scripts_dir = scripts_dir
+    input:
+        raw_fastqs = expand('{sample}', sample=raw_fastqs)
+    output:
+        merge_files_done = "merge_files_done.txt"
+    shell:
+        "sh {params.scripts_dir}/merge_10x_gzip_files.sh {params.fastqs_path}; \
+	if [ -d {params.fastqs_path}/merged ] ; \
+	then \
+	    echo merged directory exists;\
+	else \
+	    mkdir {params.fastqs_path}/merged;\
+	fi ; \
+        mv {params.fastqs_path}/MERGED_BSSE* {params.fastqs_path}/merged;\
+	touch merge_files_done.txt"
 
 rule all:
     input:
-        "foo.txt"
+        merged_fastqs = rules.merge_files.output.merge_files_done
     output:
     shell:
         "echo rule all"
 
-rule merge_files:
-    input:
-        fastqs_path = config['fastqs_path']
-    output:
-
-    shell:
-        "echo merge files rule"
-
-
-rule foo:
-    input:
-        raw_fastqs = expand('{sample}', sample=raw_fastqs)
-    output:
-        "foo.txt"
-    shell:
-        "touch foo.txt; \
-        echo {input.raw_fastqs}"
