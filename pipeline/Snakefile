@@ -1,8 +1,29 @@
 import glob
+import os
+from pathlib import Path
 
 fastqs_path = config['fastqs_path']
 scripts_dir = config['scripts_dir']
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
+
+def rename_fastq(s_name):
+    '''
+        renames the merged fastqs according to the bcl2fastq naming convention
+        Sample input name: MERGED_BSSE_QGF_123456_ZXVN2SHG5_1_QWEERTY_T_scD_250c_r1v1_0_SI-GA-H5_S1_L003_I1_001.fastq.gz
+    '''
+    split_name = s_name.split('_')
+    new_name = '_'.join(split_name[6:7]+split_name[-4:])
+    return new_name
+
+
+rule all:
+    input:
+        merged_fastqs = "merge_files_done.txt",
+        rename_fastqs = "rename_fastqs_done.txt"
+    output:
+    run:
+        print("echo rule all")
+
 
 rule merge_files:
     params:
@@ -11,7 +32,7 @@ rule merge_files:
     input:
         raw_fastqs = expand('{sample}', sample=raw_fastqs)
     output:
-        merge_files_done = "merge_files_done.txt"
+        done = "merge_files_done.txt"
     shell:
         "sh {params.scripts_dir}/merge_10x_gzip_files.sh {params.fastqs_path}; \
 	if [ -d {params.fastqs_path}/merged ] ; \
@@ -21,12 +42,22 @@ rule merge_files:
 	    mkdir {params.fastqs_path}/merged;\
 	fi ; \
         mv {params.fastqs_path}/MERGED_BSSE* {params.fastqs_path}/merged;\
+        chmod 755 {params.fastqs_path}/merged/*;\
 	touch merge_files_done.txt"
 
-rule all:
+rule rename_fastqs:
     input:
-        merged_fastqs = rules.merge_files.output.merge_files_done
+        rules.merge_files.output.done
     output:
-    shell:
-        "echo rule all"
+        "rename_fastqs_done.txt"
+    run:
+        merged_fastqs_path = fastqs_path + "/merged/"
+	print(merged_fastqs_path)
+	fastqs_dir = merged_fastqs_path
+	for filename in os.listdir(fastqs_dir):
+    	    if filename.startswith("MERGED_BSSE") and filename.endswith('.gz'):
+    	        print("old name: " + filename)
+                print("new name: " + rename_fastq(filename))
+                os.rename(fastqs_dir+filename, fastqs_dir+rename_fastq(filename))
+        Path('rename_fastqs_done.txt').touch()
 
