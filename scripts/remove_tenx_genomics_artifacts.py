@@ -87,6 +87,10 @@ print("writing output...")
 
 np.savetxt(args.output_path + '/' + args.sample_name +"_filtered_counts.tsv", mat, delimiter='\t')
 
+with open(args.output_path + '/' + args.sample_name +"_filtered_counts_shape.tsv", mode='w') as mat_shape_file:
+    mat_shape_file.write(str(mat.shape[0]) + '\t' + str(mat.shape[1]))
+
+
 bin_df.to_csv(args.output_path + '/' + args.sample_name + "_bins_genome.tsv",sep='\t',index=False)
 
 df_chr_stops.to_csv(args.output_path + '/' + args.sample_name + "_chr_stops.tsv",sep='\t')
