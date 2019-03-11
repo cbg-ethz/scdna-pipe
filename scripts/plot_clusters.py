@@ -20,8 +20,8 @@ cluster_means.index = cluster_means["cluster_ids"].values
 cluster_means = cluster_means.drop(columns="cluster_ids")
 
 # the max val to be used in the plot
-max_val = cluster_means.values.max()
-max_val
+#max_val = np.nanmax(cluster_means.values)
+max_val = 12 # max CN value
 
 dist = np.loadtxt(args.dist,delimiter=',')
 
@@ -62,10 +62,3 @@ for i, cluster_idx in enumerate(cluster_means.index):
     for index, row in chr_stops_df.iterrows():
         plt.text(row['idx'],-0.5,"chr " + row['pos'],rotation=90)
 plt.savefig(args.output_path + '/' + args.sample_name + "_cluster_profile_overlapping.png")
-
-
-
-
-
-
-
