@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-p", "--cluster_profile",required=True, help="mean of the cell counts inside the same cluster")
+parser.add_argument("-p", "--cluster_profile", required=True, help="mean of the cell counts inside the same cluster")
 parser.add_argument("-d","--dist", required=True, help="the distance matrix used by phenograph")
-parser.add_argument("-c","--communities",required=True,help="the cluster assignments")
+parser.add_argument("-c","--communities",required=True, help="the cluster assignments")
 parser.add_argument("-o","--output_path",required=False, default="./", help="path to the output")
 parser.add_argument("-s", "--sample_name",required=False, default="", help="name of the sample")
 parser.add_argument("-g", "--genomic_coordinates", required=True, help="chromosome stop positions")
@@ -35,7 +35,7 @@ df_tsne['cluster'] = communities
 df_tsne['color'] = (df_tsne['cluster']+1)/len(cluster_means.index) # +1 because outliers are -1
 ax = df_tsne.plot(kind='scatter', x=0, y=1, c=cmap(df_tsne['color']), figsize=(10,8), colorbar=False, grid=True, title='Phenograph Clusters on CNV Data')
 fig = ax.get_figure()
-fig.savefig(args.output_path + '/' + args.sample_name +  "_tsne_output.png")
+fig.savefig(args.output_path + '/' + args.sample_name + "_tsne_output.png")
 
 chr_stops_df = pd.read_csv(args.genomic_coordinates, sep='\t')
 chr_stops_df.columns = ["idx", "pos"]
