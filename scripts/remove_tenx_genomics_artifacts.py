@@ -50,8 +50,8 @@ n_bins = normalized_counts.shape[1]
 bin_ids = [x for x in range(0,n_bins)]
 bin_df = pd.DataFrame(bin_ids, columns=["bin_ids"])
 
-bin_df["stop"] = bin_df["bin_ids"] * bin_size
-bin_df["end"] = bin_df["stop"] + bin_size
+bin_df["start"] = bin_df["bin_ids"] * bin_size
+bin_df["end"] = bin_df["start"] + bin_size
 print(bin_df.head())
 
 # exclude 10x artifact bins
@@ -93,6 +93,9 @@ cnvs
 Denote the NaN values with None
 Make the imputed values non-negative
 '''
+
+# cnvs==-127 means imputed to 0
+cnvs[cnvs == -127] = 0
 cnvs[cnvs == -128] = 129
 cnvs = np.abs(cnvs)
 cnvs = cnvs.astype('float')
