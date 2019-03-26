@@ -22,7 +22,8 @@ rule all:
     input:
         merged_fastqs = "merge_files_done.txt",
         rename_fastqs = "rename_fastqs_done.txt",
-        tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes)
+        tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
+        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt"
     output:
         
     run:
@@ -87,5 +88,12 @@ rule trick_fastqs:
         fi ;\
         python {params.scripts_dir}/cellranger_dna_trick.py -r1 {params.r1}  -r2 {params.r2} -o {params.fastqs_path}/merged/tricked/"
 
-
-
+rule move_fastqs:
+    params:
+        fastqs_path = fastqs_path
+    input:
+        tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes)
+    output:
+        "move_fastqs_to_tricked_done.txt"
+    shell:
+        "mv {params.fastqs_path}/merged/*_R2_* {params.fastqs_path}/merged/tricked/; mv {params.fastqs_path}/merged/*_I1_* {params.fastqs_path}/merged/tricked/; chmod 755 {params.fastqs_path}/merged/tricked/*; touch move_fastqs_to_tricked_done.txt"
