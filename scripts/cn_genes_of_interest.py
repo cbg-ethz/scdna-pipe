@@ -55,4 +55,6 @@ for index, row in melanoma_genes.iterrows():
     #print(mean_copy_numbers)
     gene_cn_df[gene_name] = mean_copy_numbers
 
-    gene_cn_df.T.to_csv(args.output_path + '/' + args.sample_name + '__cn_gene_cluster.tsv', sep='\t')
+gene_cn_df.T.to_csv(args.output_path + '/' + args.sample_name + '__cn_gene_cluster.tsv', sep='\t')
+heatmap = sns.heatmap(gene_cn_df.T, annot=True, cmap='RdBu',vmin=0,vmax=4).get_figure()
+heatmap.savefig(args.output_path + '/' + args.sample_name + "__cn_genes_clusters_heatmap.png")
