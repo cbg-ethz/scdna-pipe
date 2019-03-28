@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 import h5py
-
+import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-c","--cell_assignment",required=True, help="the cluster assignments of cells")
 parser.add_argument("-o","--output_path",required=False, default="./", help="path to the output")
 parser.add_argument("-s", "--sample_name",required=False, default="", help="name of the sample")
-parser.add_argument("-g", "--genes", required=True, help="genes of interest")
+parser.add_argument("-g", "--genes", required=True, help="genes of interest and their positions")
 parser.add_argument("-h5", "--cnv_hdf5", required=True, help="cnv_data.h5 file")
 
 
