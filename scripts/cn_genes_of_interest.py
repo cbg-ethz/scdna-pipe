@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import h5py
 import argparse
+import seaborn as sns
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-c","--cell_assignment",required=True, help="the cluster assignments of cells")
