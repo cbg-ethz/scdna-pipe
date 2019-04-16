@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 
 cell_assignment = pd.read_csv(args.cell_assignment,sep='\t')
-melanoma_genes = pd.read_csv(args.genes,sep='\t')
+genes = pd.read_csv(args.genes,sep='\t')
 cnv_data = h5py.File(args.cnv_hdf5)
 
 n_cells = cell_assignment.shape[0]
@@ -30,7 +30,7 @@ print("cluster_ids: ", cluster_ids)
 
 gene_cn_df = pd.DataFrame(index=cluster_ids)
 # for each gene
-for index, row in melanoma_genes.iterrows():
+for index, row in genes.iterrows():
     start_bin = int(row['Gene start (bp)']/bin_size)
     stop_bin = int(row['Gene end (bp)']/bin_size)
     chromosome = str(row['Chromosome/scaffold name'])
@@ -56,6 +56,6 @@ for index, row in melanoma_genes.iterrows():
     #print(mean_copy_numbers)
     gene_cn_df[chromosome + '/' + gene_name] = mean_copy_numbers
 
-gene_cn_df.T.to_csv(args.output_path + '/' + args.sample_name + '__cn_gene_cluster.tsv', sep='\t')                                                                                       
+gene_cn_df.T.to_csv(args.output_path + '/' + args.sample_name + '__cn_gene_cluster.tsv', sep='\t')
 heatmap = sns.heatmap(gene_cn_df.values, annot=True, cmap='bwr', vmin=0, vmax=4, xticklabels=True, yticklabels=True,cbar_kws={"ticks":[0,1,2,3,4]}).get_figure()
 heatmap.savefig(args.output_path + '/' + args.sample_name + "__cn_genes_clusters_heatmap.png")
