@@ -4,6 +4,8 @@ import h5py
 import argparse
 import seaborn as sns
 
+sns.set(rc={'figure.figsize':(19.7,22.27)})
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-c","--cell_assignment",required=True, help="the cluster assignments of cells")
 parser.add_argument("-o","--output_path",required=False, default="./", help="path to the output")
@@ -57,5 +59,5 @@ for index, row in genes.iterrows():
     gene_cn_df[chromosome + '/' + gene_name] = mean_copy_numbers
 
 gene_cn_df.T.to_csv(args.output_path + '/' + args.sample_name + '__cn_gene_cluster.tsv', sep='\t')
-heatmap = sns.heatmap(gene_cn_df.values, annot=True, cmap='bwr', vmin=0, vmax=4, xticklabels=True, yticklabels=True,cbar_kws={"ticks":[0,1,2,3,4]}).get_figure()
+heatmap = sns.heatmap(gene_cn_df, annot=True, cmap='bwr', vmin=0, vmax=4, xticklabels=True, yticklabels=True,cbar_kws={"ticks":[0,1,2,3,4]}).get_figure()
 heatmap.savefig(args.output_path + '/' + args.sample_name + "__cn_genes_clusters_heatmap.png")
