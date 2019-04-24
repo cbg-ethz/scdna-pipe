@@ -1,18 +1,29 @@
 from secondary_analysis import SecondaryAnalysis
 import argparse
+import json
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-s", "--sample_name", required=True)
-parser.add_argument("-o","--output_path", required=True)
-parser.add_argument("-h5","--h5_path", required=True, help="path to the input h5")
-parser.add_argument("-g","--genes_path", required=True, help="path to the genes of interest and their coordinates")
-parser.add_argument("-b","--bins_to_remove", required=True, help="10x genomics technology artifact bins")
-
-
+parser.add_argument("-c", "--configfile", required=True)
 args = parser.parse_args()
 
-sa = SecondaryAnalysis(sample_name=args.sample_name, output_path=args.output_path, h5_path=args.h5_path, genes_path=args.genes_path)
-sa.remove_tenx_genomics_artifacts(bins=args.bins_to_remove)
+with open(args.configfile) as json_config_file:
+    config = json.load(json_config_file)
+
+print(config)
+
+
+try:
+    sample_name = config['sample_name']
+    output_path = config['output_path']
+    h5_path = config['h5_path']
+    genes_path = config['genes_path']
+    bins = config['bins_to_remove']
+except Exception as e:
+    print("Error while parsing the config")
+    print(e)
+
+sa = SecondaryAnalysis(sample_name=sample_name, output_path=output_path, h5_path=h5_path, genes_path=genes_path)
+sa.remove_tenx_genomics_artifacts(bins=bins)
 sa.apply_phenograph()
 
