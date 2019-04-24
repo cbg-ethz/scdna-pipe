@@ -25,10 +25,10 @@ class SecondaryAnalysis:
         self.h5_path = h5_path
         self.genes_path = genes_path
 
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-            os.makedirs(output_path+'/filtering/')
-            os.makedirs(output_path+'/clustering/')
+        paths = [output_path, output_path+'/filtering/', output_path + '/clustering/']
+        for path in paths:
+            if not os.path.exists(path):
+                os.makedirs(path)
 
     def remove_tenx_genomics_artifacts(self, bins):
 
