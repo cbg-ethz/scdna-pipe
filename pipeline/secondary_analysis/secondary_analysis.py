@@ -185,8 +185,15 @@ class SecondaryAnalysis:
 
         community_ids = sorted(list(community_dict))
 
+        # normalise to get the cluster frequencies
+        factor = 1.0 / sum(community_dict.values())
+        normalised_d = {k: v * factor for k, v in community_dict.items()}
+
         with open(output_path + '/' + self.sample_name + "__cluster_sizes.txt", 'w') as community_dict_file:
             community_dict_file.write(str(community_dict))
+
+        with open(output_path + '/' + self.sample_name + "__cluster_frequencies.txt", 'w') as community_dict_file:
+            community_dict_file.write(str(normalised_d))
 
         for cluster in community_ids:
             cells_by_cluster.append(filtered_counts[communities == cluster])
