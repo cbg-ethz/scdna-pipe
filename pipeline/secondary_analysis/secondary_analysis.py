@@ -103,11 +103,12 @@ class SecondaryAnalysis:
         '''
 
         # cnvs==-127 means imputed to 0
-        cnvs[cnvs == -127] = 0
-        cnvs[cnvs == -128] = 129
-        cnvs = np.abs(cnvs)
+        # cnvs[cnvs == -127] = 0
+        # cnvs[cnvs == -128] = 129
+        # cnvs = np.abs(cnvs)
         cnvs = cnvs.astype('float')
-        cnvs[cnvs == 129] = None
+        cnvs[cnvs < 0] = None
+        #cnvs[cnvs == 129] = None
 
         self.filtered_cnvs = cnvs
         self.chr_stops = df_chr_stops
