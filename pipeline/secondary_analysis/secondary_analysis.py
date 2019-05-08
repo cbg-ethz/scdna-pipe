@@ -210,16 +210,17 @@ class SecondaryAnalysis:
         cnvs_per_cluster = []
         for cluster in community_ids:
             cnvs_per_cluster.append(cnvs[communities == cluster])
-        cn_avg_clusters = [np.nanmean(c, axis=0) for c in cnvs_per_cluster]
+        cn_median_clusters = [np.nanmedian(c, axis=0) for c in cnvs_per_cluster]
 
-        cn_avg_clusters_df = pd.DataFrame(cn_avg_clusters)
-        cn_avg_clusters_df['cluster_ids'] = community_ids
+        cn_median_clusters_df = pd.DataFrame(cn_median_clusters)
+        cn_median_clusters_df['cluster_ids'] = community_ids
 
-        cn_avg_clusters_df.to_csv(output_path + '/' + self.sample_name + "__clusters_phenograph_cn_profiles.tsv",
+        cn_median_clusters_df.to_csv(output_path + '/' + self.sample_name + "__clusters_phenograph_cn_profiles.tsv",
                                   sep='\t', index=False, header=True)
 
-        self.plot_clusters(cluster_means=cn_avg_clusters_df, dist=dist, communities=communities)
+        self.plot_clusters(cluster_means=cn_median_clusters_df, dist=dist, communities=communities)
         self.plot_heatmap(communities_df)
+
     def plot_clusters(self, cluster_means, dist, communities):
 
         # the max val to be used in the plot
@@ -295,15 +296,17 @@ class SecondaryAnalysis:
                 cn_states = cnv_data['cnvs'][chromosome][:n_cells][cells, start_bin:stop_bin + 1]
 
                 # -127 means imputed to 0
-                cn_states[cn_states == -127] = 0
-                cn_states[cn_states == -128] = 129
-                cn_states = np.abs(cn_states)
+                # cn_states[cn_states == -127] = 0
+                # cn_states[cn_states == -128] = 129
+                # cn_states = np.abs(cn_states)
+                # cn_states = cn_states.astype('float')
+                # cn_states[cn_states == 129] = np.nan
                 cn_states = cn_states.astype('float')
-                cn_states[cn_states == 129] = np.nan
+                cn_states[cn_states < 0] = np.nan
 
-                min_cn_cell_bin = np.nanmin(cn_states, axis=1)
-                avg_cn_cell = np.nanmean(min_cn_cell_bin)
-                mean_copy_numbers.append(avg_cn_cell)
+                min_cn_cell_bin = np.nanmin(cn_states, axis=1) # all the bins within the gene, min due to biology
+                median_cn_cell = np.nanmedian(min_cn_cell_bin) # median value across all cells
+                mean_copy_numbers.append(median_cn_cell)
 
             # print(mean_copy_numbers)
             gene_cn_df[chromosome + '/' + gene_name] = mean_copy_numbers
@@ -320,4 +323,3 @@ class SecondaryAnalysis:
 
         cnv_data.close()
 
-            
