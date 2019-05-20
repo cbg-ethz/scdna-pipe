@@ -3,14 +3,14 @@ import argparse
 import pandas as pd
 import numpy as np
 
-def merge_chromosomes(h5):
+def merge_chromosomes(h5, key='normalized_counts'):
 
     n_cells = h5['cell_barcodes'][:].shape[0]
-    all_chromosomes = list(h5['normalized_counts'].keys())
+    all_chromosomes = list(h5[key].keys())
     # list of all cnv arrays
     cnv_matrices = []
     for chr in all_chromosomes:
-        cnv_matrices.append(h5['normalized_counts'][chr][:][0:n_cells,:]) # select only the cells, not cell groups
+        cnv_matrices.append(h5[key][chr][:][0:n_cells,:]) # select only the cells, not cell groups
 
     cell_all_chrs = np.concatenate(cnv_matrices, axis=1)
     return cell_all_chrs
@@ -42,32 +42,37 @@ chr_stop_positions = [None for x in range(0,chr_ends[-1])]
 for idx, pos in enumerate(chr_ends):
     chr_stop_positions[pos-1] = ordered_chromosomes[idx] # -1 because it is a size info
 
-
-mat = merge_chromosomes(h5f)
+cnvs = merge_chromosomes(h5f,key='cnvs')
+normalized_counts = merge_chromosomes(h5f)
 
 bin_size = h5f["constants"]["bin_size"][()]
-n_bins = mat.shape[1]
+n_bins = normalized_counts.shape[1]
 bin_ids = [x for x in range(0,n_bins)]
 bin_df = pd.DataFrame(bin_ids, columns=["bin_ids"])
 
-bin_df["stop"] = bin_df["bin_ids"] * bin_size
-bin_df["end"] = bin_df["stop"] + bin_size
+bin_df["start"] = bin_df["bin_ids"] * bin_size
+bin_df["end"] = bin_df["start"] + bin_size
 print(bin_df.head())
 
 # exclude 10x artifact bins
 artifact_bins = np.loadtxt(args.bins, delimiter='\t').astype(bool)
 
-assert(artifact_bins.shape[0] == mat.shape[1])
+assert(artifact_bins.shape[0] == normalized_counts.shape[1])
 
 print("artifact bins mask len")
 print(len(artifact_bins))
 print("artifact bins mask sum")
 print(sum(artifact_bins))
 
-print("matrix shape before & after filtering")
-print(mat.shape)
-mat = mat[:,~artifact_bins]
-print(mat.shape)
+print("normalized_counts matrix shape before & after filtering")
+print(normalized_counts.shape)
+normalized_counts = normalized_counts[:,~artifact_bins]
+print(normalized_counts.shape)
+
+print("cnvs matrix shape before & after filtering")
+print(cnvs.shape)
+cnvs = cnvs[:,~artifact_bins]
+print(cnvs.shape)
 
 print("bin_df shape before & after filtering")
 print(bin_df.shape)
@@ -83,9 +88,25 @@ for idx,val in enumerate(filtered_chr_stops):
         #print((idx,val))
         df_chr_stops.loc[idx] = val
 
+'''
+cnvs
+Denote the NaN values with None
+Make the imputed values non-negative
+'''
+
+# cnvs==-127 means imputed to 0
+cnvs[cnvs == -127] = 0
+cnvs[cnvs == -128] = 129
+cnvs = np.abs(cnvs)
+cnvs = cnvs.astype('float')
+cnvs[cnvs == 129] = None
+
+
 print("writing output...")
 
-np.savetxt(args.output_path + '/' + args.sample_name +"_filtered_counts.tsv", mat, delimiter='\t')
+np.savetxt(args.output_path + '/' + args.sample_name +"_filtered_counts.tsv", normalized_counts, delimiter='\t')
+
+np.savetxt(args.output_path + '/' + args.sample_name +"_filtered_cnvs.tsv", cnvs, delimiter='\t')
 
 with open(args.output_path + '/' + args.sample_name +"_filtered_counts_shape.tsv", mode='w') as mat_shape_file:
     mat_shape_file.write(str(mat.shape[0]) + '\t' + str(mat.shape[1]))
