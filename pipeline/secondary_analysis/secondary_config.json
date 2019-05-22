@@ -1,7 +1,7 @@
 {
-  "sample_name": "MATIWAQ-T_scD_Ar1v1.3",
-  "output_path": "MATIWAQ",
-  "h5_path": "..//test_dir/cnv_data.h5",
+  "sample_name": "tiny_test_scD_Ar1v1.6",
+  "output_path": "tiny_test",
+  "h5_path": "../../datasets/tiny_cnv_data.h5",
   "genes_path": "../../required_files/genes_of_interest/melanoma_gene_coordinates.tsv",
-  "bins_to_remove": "/Users/mtuncel/git_repos/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv"
+  "bins_to_remove": "../../required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv"
 }
