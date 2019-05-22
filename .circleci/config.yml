@@ -1,0 +1,58 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  build:
+    branches:
+      only:
+        - master
+        - dev
+    machine: true
+      # specify the version you desire here
+      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
+      # - image: circleci/python:3.6.1
+
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/postgres:9.4
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+      - run:
+          name: install miniconda
+          command: |
+            # download miniconda and install the dependencies
+
+            echo $PWD
+            cd /home/circleci
+            echo 'export MINICONDA=$HOME/miniconda' >> ~/.bashrc
+            echo 'export PATH="$MINICONDA/bin:$PATH"' >> ~/.bashrc
+            source ~/.bashrc
+            hash -r
+            wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+            bash miniconda.sh -b -f -p $MINICONDA
+            conda config --set always_yes yes
+            conda update conda
+            conda info -a
+            conda create -n testenv python=3.6.0
+            echo 'source activate testenv' >> ~/.bashrc
+            source ~/.bashrc
+            echo $PWD
+      - run:
+          name: install python  requirements
+          command: |
+            which python
+            source ~/.bashrc
+            which python
+            echo $PWD
+            cd /home/circleci/repo
+            # a requirement has install-time dependency on numpy
+            pip install numpy
+            pip install -r requirements.txt
+            pip install pytest-ordering
+            echo $PWD
