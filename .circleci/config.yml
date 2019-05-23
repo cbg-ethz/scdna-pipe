@@ -65,3 +65,12 @@ jobs:
             cd /home/circleci/repo/test
             pytest ./
             echo $PWD
+
+      - run:
+          name: run pipeline
+          command: |
+            echo $PWD
+            source ~/.bashrc
+            cd /home/circleci/repo/
+            python pipeline/secondary_analysis/run_secondary_analysis.py -c pipeline/secondary_analysis/secondary_config.json
+            echo $PWD
