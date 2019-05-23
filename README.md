@@ -1,6 +1,6 @@
-# DNA-Pipe
+# DNA-Pipe [![CircleCI](https://circleci.com/gh/anilbey/dna-pipeline.svg?style=svg&circle-token=7d59442470c38d05f7d1661a97da237d482684ef)](https://circleci.com/gh/anilbey/dna-pipeline)
 
-[![CircleCI](https://circleci.com/gh/anilbey/dna-pipeline.svg?style=svg)](https://circleci.com/gh/anilbey/dna-pipeline)
+
 
 
 Single cell dna data analysis workflow
