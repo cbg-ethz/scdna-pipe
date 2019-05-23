@@ -56,3 +56,12 @@ jobs:
             pip install -r requirements.txt
             pip install pytest-ordering
             echo $PWD
+
+      - run:
+          name: run tests
+          command: |
+            echo $PWD
+            source ~/.bashrc
+            cd /home/circleci/repo
+            pytest ./test
+            echo $PWD
