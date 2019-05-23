@@ -71,6 +71,6 @@ jobs:
           command: |
             echo $PWD
             source ~/.bashrc
-            cd /home/circleci/repo/
-            python pipeline/secondary_analysis/run_secondary_analysis.py -c pipeline/secondary_analysis/secondary_config.json
+            cd /home/circleci/repo/pipeline/secondary_analysis/
+            python ./run_secondary_analysis.py -c ./secondary_config.json
             echo $PWD
