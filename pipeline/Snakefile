@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 fastqs_path = config['fastqs_path']
+analysis_path = config['analysis_path']
 scripts_dir = config['scripts_dir']
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
 fastq_lanes = ["L001","L002","L003","L004"]
@@ -23,7 +24,8 @@ rule all:
         merged_fastqs = "merge_files_done.txt",
         rename_fastqs = "rename_fastqs_done.txt",
         tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
-        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt"
+        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
+        cellranger = "cellranger_done.txt"
     output:
         
     run:
@@ -97,3 +99,24 @@ rule move_fastqs:
         "move_fastqs_to_tricked_done.txt"
     shell:
         "mv {params.fastqs_path}/merged/*_R2_* {params.fastqs_path}/merged/tricked/; mv {params.fastqs_path}/merged/*_I1_* {params.fastqs_path}/merged/tricked/; chmod 755 {params.fastqs_path}/merged/tricked/*; touch move_fastqs_to_tricked_done.txt"
+
+rule run_cellranger:
+    params:
+        sample_name = sample_name,
+        cellranger_path = analysis_path + "/cellranger/",
+        local_cores = config['cellranger_dna']['local_cores'],
+        local_mem = config['cellranger_dna']['local_mem'],
+        mem_per_core = config['cellranger_dna']['mem_per_core'],
+        mem = config['cellranger_dna']['mem'],
+        time = config['cellranger_dna']['time']
+    input:
+        moved_tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
+        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
+        reference_path = config['reference_path']
+    output:
+        cnv_data = params.cellranger_path + sample_name + "/outs/cnv_data.h5"
+    shell:
+        "(cd {params.cellranger_path}; cellranger-dna cnv --reference {input.reference_path} \
+         --fastqs {input.moved_tricked_fastqs} --local_mem {params.local_mem} --local_cores {params.local_cores} \
+          --mem_per_core {params.mem_per_core} --id {params.sample_name} --sample {params.sample_name}}); \
+          touch cellranger_done.txt"
