@@ -4,6 +4,7 @@ from pathlib import Path
 
 fastqs_path = config['fastqs_path']
 analysis_path = config['analysis_path']
+cellranger_path = analysis_path + "/cellranger/"
 scripts_dir = config['scripts_dir']
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
 fastq_lanes = ["L001","L002","L003","L004"]
@@ -103,7 +104,7 @@ rule move_fastqs:
 rule run_cellranger:
     params:
         sample_name = sample_name,
-        cellranger_path = analysis_path + "/cellranger/",
+        cellranger_path = cellranger_path,
         local_cores = config['cellranger_dna']['local_cores'],
         local_mem = config['cellranger_dna']['local_mem'],
         mem_per_core = config['cellranger_dna']['mem_per_core'],
@@ -112,9 +113,9 @@ rule run_cellranger:
     input:
         moved_tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
         move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
-        reference_path = config['reference_path']
+        reference_path = config['ref_genome_path']
     output:
-        cnv_data = params.cellranger_path + sample_name + "/outs/cnv_data.h5"
+        cnv_data = cellranger_path + sample_name + "/outs/cnv_data.h5"
     shell:
         "(cd {params.cellranger_path}; cellranger-dna cnv --reference {input.reference_path} \
          --fastqs {input.moved_tricked_fastqs} --local_mem {params.local_mem} --local_cores {params.local_cores} \
