@@ -13,7 +13,7 @@ sys.path.append(scripts_path)
 from secondary_analysis import SecondaryAnalysis
 
 
-def test_remove_tenx_genomics_artifacts():
+def test_pipeline():
     """
     Tests the artifact removal
     :return:
@@ -29,13 +29,16 @@ def test_remove_tenx_genomics_artifacts():
         sample_name = config['sample_name']
         output_path = config['output_path']
         h5_path = config['h5_path']
+        all_genes_path = config['all_genes_path']
         genes_path = config['genes_path']
         bins = config['bins_to_remove']
     except Exception as e:
         print("Error while parsing the config")
         print(e)
 
-    sa = SecondaryAnalysis(sample_name=sample_name, output_path=output_path, h5_path=h5_path, genes_path=genes_path)
+    sa = SecondaryAnalysis(sample_name=sample_name, output_path=output_path, h5_path=h5_path, genes_path=genes_path, all_genes_path=all_genes_path)
     sa.remove_tenx_genomics_artifacts(bins=bins)
     assert(sa.filtered_normalized_counts.shape == sa.filtered_cnvs.shape)
+    sa.apply_phenograph()
+
 
