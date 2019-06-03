@@ -296,12 +296,6 @@ class SecondaryAnalysis:
                 cells = cell_assignment[cell_assignment.cluster == c_id]['cell_barcode'].values.tolist()
                 cn_states = cnv_data['cnvs'][chromosome][:n_cells][cells, start_bin:stop_bin + 1]
 
-                # -127 means imputed to 0
-                # cn_states[cn_states == -127] = 0
-                # cn_states[cn_states == -128] = 129
-                # cn_states = np.abs(cn_states)
-                # cn_states = cn_states.astype('float')
-                # cn_states[cn_states == 129] = np.nan
                 cn_states = cn_states.astype('float')
                 cn_states[cn_states < 0] = np.nan
 
