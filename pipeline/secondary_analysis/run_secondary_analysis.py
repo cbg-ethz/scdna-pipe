@@ -24,7 +24,7 @@ except Exception as e:
     print("Error while parsing the config")
     print(e)
 
-sa = SecondaryAnalysis(sample_name=sample_name, output_path=output_path, h5_path=h5_path, genes_path=genes_pathc)
+sa = SecondaryAnalysis(sample_name=sample_name, output_path=output_path, h5_path=h5_path, genes_path=genes_path, all_genes_path=all_genes_path)
 sa.remove_tenx_genomics_artifacts(bins=bins)
 sa.apply_phenograph()
 
