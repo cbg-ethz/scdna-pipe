@@ -3,5 +3,6 @@
   "output_path": "tiny_test",
   "h5_path": "../../datasets/tiny_cnv_data.h5",
   "genes_path": "../../required_files/genes_of_interest/melanoma_gene_coordinates.tsv",
+  "all_genes_path": "../../required_files/genes_of_interest/emsembl_hg19_genes_simplified.tsv",
   "bins_to_remove": "../../required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv"
 }

@@ -14,7 +14,7 @@ import seaborn as sns
 
 class SecondaryAnalysis:
 
-    def __init__(self, h5_path, genes_path, sample_name, output_path):
+    def __init__(self, h5_path, genes_path, all_genes_path, sample_name, output_path):
         self.filtered_normalized_counts = None
         self.filtered_cnvs = None
         self.chr_stops = None
@@ -24,6 +24,7 @@ class SecondaryAnalysis:
         self.output_path = output_path
         self.h5_path = h5_path
         self.genes_path = genes_path
+        self.all_genes_path = all_genes_path
 
         paths = [output_path, output_path+'/filtering/', output_path + '/clustering/']
         for path in paths:
@@ -219,6 +220,7 @@ class SecondaryAnalysis:
         cn_median_clusters_df.to_csv(output_path + '/' + self.sample_name + "__clusters_phenograph_cn_profiles.tsv",
                                   sep='\t', index=False, header=True)
 
+        self.create_cn_cluster_h5(cell_assignment=communities_df)
         self.plot_clusters(cluster_means=cn_median_clusters_df, dist=dist, communities=communities)
         self.plot_heatmap(communities_df)
 
@@ -268,9 +270,14 @@ class SecondaryAnalysis:
                 plt.text(index, -0.5, "chr " + row['pos'], rotation=90)
         plt.savefig(output_path + '/' + self.sample_name + "__cluster_profile_overlapping.png")
 
-    def plot_heatmap(self, cell_assignment):
+    def get_gene_cluster_cn(self, genes, cell_assignment, with_chr_names=True):
+        """
+        Creates and returns the dataframe of copy numbers, genes by cluster ids
+        :param genes: The input list of genes to be specified
+        :param cell_assignment: Dataframe containing cell_barcode and cell cluster id
+        :return: CN dataframe of genes by clusters
+        """
 
-        genes = pd.read_csv(self.genes_path, sep='\t')
         cnv_data = h5py.File(self.h5_path)
 
         n_cells = cell_assignment.shape[0]
@@ -299,12 +306,47 @@ class SecondaryAnalysis:
                 cn_states = cn_states.astype('float')
                 cn_states[cn_states < 0] = np.nan
 
-                min_cn_cell_bin = np.nanmin(cn_states, axis=1) # all the bins within the gene, min due to biology
-                median_cn_cell = np.nanmedian(min_cn_cell_bin) # median value across all cells
+                min_cn_cell_bin = np.nanmin(cn_states, axis=1)  # all the bins within the gene, min due to biology
+                median_cn_cell = np.nanmedian(min_cn_cell_bin)  # median value across all cells
                 median_copy_numbers.append(median_cn_cell)
 
             # print(mean_copy_numbers)
-            gene_cn_df[chromosome + '/' + gene_name] = median_copy_numbers
+            if with_chr_names:
+                gene_cn_df[chromosome + '/' + gene_name] = median_copy_numbers
+            else:
+                gene_cn_df[gene_name] = median_copy_numbers
+
+        return gene_cn_df
+
+    def create_cn_cluster_h5(self, cell_assignment):
+        """
+        Creates the HDF5 for copy number values per cluster
+        :param cell_assignment: Dataframe containing cell_barcode and cell cluster id
+        :return:
+        """
+        all_genes = pd.read_csv(self.all_genes_path, sep='\t')
+        cnv_data = h5py.File(self.h5_path)
+
+        all_gene_cn_df = self.get_gene_cluster_cn(all_genes, cell_assignment, with_chr_names=False)
+        output_path = self.output_path + '/clustering/'
+
+        cn_cluster_h5 = h5py.File(output_path + '/' + self.sample_name + '__cn_cluster.h5', 'w')
+        gene_attributes = cn_cluster_h5.create_group('gene_attrs')
+
+        column_values = np.array(all_gene_cn_df.columns.values, dtype='S16')
+
+        gene_attributes.create_dataset('gene_names', data=column_values)
+        cn_cluster_h5.create_dataset('matrix', data=all_gene_cn_df.values)
+
+        cnv_data.close()
+        cn_cluster_h5.close()
+
+    def plot_heatmap(self, cell_assignment):
+
+        genes = pd.read_csv(self.genes_path, sep='\t')
+        cnv_data = h5py.File(self.h5_path)
+
+        gene_cn_df = self.get_gene_cluster_cn(genes, cell_assignment)
 
         output_path = self.output_path + '/clustering/'
 
