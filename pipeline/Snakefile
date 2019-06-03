@@ -9,6 +9,7 @@ scripts_dir = config['scripts_dir']
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
 fastq_lanes = ["L001","L002","L003","L004"]
 sample_name = config['sample_name']
+cr_sample_name = sample_name[:-3]
 
 def rename_fastq(s_name):
     '''
@@ -103,7 +104,8 @@ rule move_fastqs:
 
 rule run_cellranger:
     params:
-        sample_name = sample_name,
+        fastqs_path = fastqs_path+'/merged/tricked',
+        cr_sample_name = cr_sample_name,
         cellranger_path = cellranger_path,
         local_cores = config['cellranger_dna']['local_cores'],
         local_mem = config['cellranger_dna']['local_mem'],
@@ -115,9 +117,17 @@ rule run_cellranger:
         move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
         reference_path = config['ref_genome_path']
     output:
-        cnv_data = cellranger_path + sample_name + "/outs/cnv_data.h5"
+        cnv_data = cellranger_path + cr_sample_name + "/outs/cnv_data.h5",
+        cellranger_done = "cellranger_done.txt"
     shell:
-        "(cd {params.cellranger_path}; cellranger-dna cnv --reference {input.reference_path} \
-         --fastqs {input.moved_tricked_fastqs} --local_mem {params.local_mem} --local_cores {params.local_cores} \
-          --mem_per_core {params.mem_per_core} --id {params.sample_name} --sample {params.sample_name}}); \
-          touch cellranger_done.txt"
+        'if [ -d {params.cellranger_path}/run ] ; \
+        then \
+        echo cellranger directory exists;\
+        else \
+        mkdir {params.cellranger_path}/run;\
+        fi ;\
+         pushd {params.cellranger_path}/run; cellranger-dna cnv --reference={input.reference_path} --fastqs={params.fastqs_path}\
+         --localmem={params.local_mem} --localcores={params.local_cores} --mempercore={params.mem_per_core}\
+         --id={params.cr_sample_name} --sample={params.cr_sample_name}; ln -s "{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5"\
+         "{params.cellranger_path} + {params.cr_sample_name} + /outs/cnv_data.h5"; popd; touch cellranger_done.txt'
+
