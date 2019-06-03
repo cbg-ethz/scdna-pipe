@@ -290,7 +290,7 @@ class SecondaryAnalysis:
             chromosome = str(row['Chromosome/scaffold name'])
             gene_name = row['Gene name']
             # print(start_bin, stop_bin)
-            mean_copy_numbers = []
+            median_copy_numbers = []
             for c_id in cluster_ids:
                 # get all the cells that belong to that cluster
                 cells = cell_assignment[cell_assignment.cluster == c_id]['cell_barcode'].values.tolist()
@@ -307,10 +307,10 @@ class SecondaryAnalysis:
 
                 min_cn_cell_bin = np.nanmin(cn_states, axis=1) # all the bins within the gene, min due to biology
                 median_cn_cell = np.nanmedian(min_cn_cell_bin) # median value across all cells
-                mean_copy_numbers.append(median_cn_cell)
+                median_copy_numbers.append(median_cn_cell)
 
             # print(mean_copy_numbers)
-            gene_cn_df[chromosome + '/' + gene_name] = mean_copy_numbers
+            gene_cn_df[chromosome + '/' + gene_name] = median_copy_numbers
 
         output_path = self.output_path + '/clustering/'
 
