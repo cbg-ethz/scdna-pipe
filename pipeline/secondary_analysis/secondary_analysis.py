@@ -10,6 +10,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import seaborn as sns
+from tqdm import tqdm
 
 
 class SecondaryAnalysis:
@@ -291,7 +292,7 @@ class SecondaryAnalysis:
 
         gene_cn_df = pd.DataFrame(index=cluster_ids)
         # for each gene
-        for index, row in genes.iterrows():
+        for index, row in tqdm(genes.iterrows()):
             start_bin = int(row['Gene start (bp)'] / bin_size)
             stop_bin = int(row['Gene end (bp)'] / bin_size)
             chromosome = str(row['Chromosome/scaffold name'])
