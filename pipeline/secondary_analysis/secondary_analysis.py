@@ -193,10 +193,16 @@ class SecondaryAnalysis:
         normalised_d = {k: v * factor for k, v in community_dict.items()}
 
         with open(output_path + '/' + self.sample_name + "__cluster_sizes.txt", 'w') as community_dict_file:
-            community_dict_file.write(str(community_dict))
+            for idx, (key, value) in enumerate(sorted(community_dict.items(), key=lambda x: x[0])):
+                community_dict_file.write("{} : {} ".format(key, value))
+                if idx != len(community_dict)-1:
+                    community_dict_file.write(',')
 
         with open(output_path + '/' + self.sample_name + "__cluster_frequencies.txt", 'w') as community_dict_file:
-            community_dict_file.write(str(normalised_d))
+            for idx, (key, value) in enumerate(sorted(normalised_d.items(), key=lambda x: x[0])):
+                community_dict_file.write("{} : {} ".format(key, value))
+                if idx != len(community_dict)-1:
+                    community_dict_file.write(',')
 
         for cluster in community_ids:
             cells_by_cluster.append(filtered_counts[communities == cluster])
