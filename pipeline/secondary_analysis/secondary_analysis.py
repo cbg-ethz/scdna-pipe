@@ -147,7 +147,11 @@ class SecondaryAnalysis:
         h5f.close()
 
     def apply_phenograph(self, n_jobs=16):
-
+        """
+        Runs the phenograph clustering algorithm on the object and alters its fields
+        :param n_jobs: The number of threads for clustering
+        :return:
+        """
         # points in the knn neighbourhood are weighted by the distance
         weight = 'distance'
 
@@ -241,17 +245,17 @@ class SecondaryAnalysis:
         cn_median_clusters_df.to_csv(output_path + '/' + self.sample_name + "__clusters_phenograph_cn_profiles.tsv",
                                   sep='\t', index=False, header=True)
 
-        self.create_cn_cluster_h5(cell_assignment=communities_df)
         self.plot_clusters(cluster_means=cn_median_clusters_df, dist=dist, communities=communities)
         self.plot_heatmap(communities_df)
+        self.create_cn_cluster_h5(cell_assignment=communities_df)
 
     def plot_clusters(self, cluster_means, dist, communities):
         """
         Creates the following clustering figures: T-SNE plot on Louvain embedding and copy number values
         for each cluster across the chromosome
-        :param cluster_means: 
-        :param dist:
-        :param communities:
+        :param cluster_means: Dataframe containing the median CN values for each cluster(rows) for each bin (columns).
+        :param dist: The phenograph distance embedding
+        :param communities: One dimensional ndarray specifying cluster ids for each cell.
         :return:
         """
         # the max val to be used in the plot
