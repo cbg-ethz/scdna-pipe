@@ -14,8 +14,18 @@ from tqdm import tqdm
 
 
 class SecondaryAnalysis:
-
+    """
+    Class to perform the SecondaryAnalysis for a single-cell DNA sample.
+    """
     def __init__(self, h5_path, genes_path, all_genes_path, sample_name, output_path):
+        """
+
+        :param h5_path: Path to the HDF5 file created by cellranger-dna (10x Genomics)
+        :param genes_path: Path to the genes of interest
+        :param all_genes_path: Path to all of the genes listed in the human genome reference
+        :param sample_name: Name of the sample, to be added to the output names
+        :param output_path: Desired path for the output files
+        """
         self.filtered_normalized_counts = None
         self.filtered_cnvs = None
         self.chr_stops = None
@@ -33,7 +43,11 @@ class SecondaryAnalysis:
                 os.makedirs(path)
 
     def remove_tenx_genomics_artifacts(self, bins):
-
+        """
+        Filters out the technical noise produced by 10x genomics sequencing artifacts.
+        :param bins: The list of bins corresponding to technical noise
+        :return:
+        """
         h5f = h5py.File(self.h5_path, 'r')
 
         n_cells = h5f['cell_barcodes'].value.shape[0]
@@ -232,7 +246,14 @@ class SecondaryAnalysis:
         self.plot_heatmap(communities_df)
 
     def plot_clusters(self, cluster_means, dist, communities):
-
+        """
+        Creates the following clustering figures: T-SNE plot on Louvain embedding and copy number values
+        for each cluster across the chromosome
+        :param cluster_means: 
+        :param dist:
+        :param communities:
+        :return:
+        """
         # the max val to be used in the plot
         # max_val = np.nanmax(cluster_means.values)
         max_val = 12  # max CN value
@@ -349,7 +370,11 @@ class SecondaryAnalysis:
         cn_cluster_h5.close()
 
     def plot_heatmap(self, cell_assignment):
-
+        """
+        Creates the heapmap of CN values per gene per cluster
+        :param cell_assignment: Dataframe containing cell_barcode and cell cluster id
+        :return:
+        """
         genes = pd.read_csv(self.genes_path, sep='\t')
         cnv_data = h5py.File(self.h5_path)
 
