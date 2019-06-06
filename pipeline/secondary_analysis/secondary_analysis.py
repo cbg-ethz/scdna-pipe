@@ -234,15 +234,15 @@ class SecondaryAnalysis:
         cn_median_clusters_df.to_csv(output_path + '/' + self.sample_name + "__clusters_phenograph_cn_profiles.tsv",
                                   sep='\t', index=False, header=True)
 
-        self.plot_clusters(cluster_means=cn_median_clusters_df, dist=dist, communities=communities)
+        self.plot_clusters(cluster_medians=cn_median_clusters_df, dist=dist, communities=communities)
         self.plot_heatmap(communities_df)
         self.create_cn_cluster_h5(cell_assignment=communities_df)
 
-    def plot_clusters(self, cluster_means, dist, communities):
+    def plot_clusters(self, cluster_medians, dist, communities):
         """
         Creates the following clustering figures: T-SNE plot on Louvain embedding and copy number values
         for each cluster across the chromosome
-        :param cluster_means: Dataframe containing the median CN values for each cluster(rows) for each bin (columns).
+        :param cluster_medians: Dataframe containing the median CN values for each cluster(rows) for each bin (columns).
         :param dist: The phenograph distance embedding
         :param communities: One dimensional ndarray specifying cluster ids for each cell.
         :return:
@@ -257,7 +257,7 @@ class SecondaryAnalysis:
         tsne = TSNE(n_components=2, perplexity=30, metric='precomputed').fit_transform(dist)
         df_tsne = pd.DataFrame(tsne)
         df_tsne['cluster'] = communities
-        df_tsne['color'] = (df_tsne['cluster'] + 1) / len(cluster_means.index)  # +1 because outliers are -1
+        df_tsne['color'] = (df_tsne['cluster'] + 1) / len(cluster_medians.index)  # +1 because outliers are -1
         ax = df_tsne.plot(kind='scatter', x=0, y=1, c=cmap(df_tsne['color']), figsize=(10, 8), colorbar=False,
                           grid=True, title='Phenograph Clusters on CNV Data')
         fig = ax.get_figure()
@@ -269,10 +269,10 @@ class SecondaryAnalysis:
 
         # use the formula below to get the distinct colors
         # color = cmap(float(i)/N)
-        for i, cluster_idx in enumerate(cluster_means.index):
+        for i, cluster_idx in enumerate(cluster_medians.index):
             plt.figure(figsize=(20, 6))
-            ax = plt.plot(cluster_means.iloc[i].values, label="cluster id: " + str(cluster_idx),
-                          color=cmap(float(cluster_idx + 1) / len(cluster_means.index)))
+            ax = plt.plot(cluster_medians.iloc[i].values, label="cluster id: " + str(cluster_idx),
+                          color=cmap(float(cluster_idx + 1) / len(cluster_medians.index)))
             plt.axis([None, None, 0, max_val])  # to make the axises same
             plt.legend(loc='upper left')
             plt.xticks([], [])
@@ -281,9 +281,9 @@ class SecondaryAnalysis:
             plt.savefig(output_path + '/' + self.sample_name + "__cluster_profile_" + str(cluster_idx) + ".png")
 
         plt.figure(figsize=(20, 6))
-        for i, cluster_idx in enumerate(cluster_means.index):
-            ax = plt.plot(cluster_means.iloc[i].values, label="cluster id: " + str(cluster_idx),
-                          color=cmap(float(cluster_idx + 1) / len(cluster_means.index)), alpha=0.6)
+        for i, cluster_idx in enumerate(cluster_medians.index):
+            ax = plt.plot(cluster_medians.iloc[i].values, label="cluster id: " + str(cluster_idx),
+                          color=cmap(float(cluster_idx + 1) / len(cluster_medians.index)), alpha=0.6)
             plt.axis([None, None, 0, max_val])  # to make the axises same
             plt.legend(loc='upper left')
             plt.xticks([], [])
