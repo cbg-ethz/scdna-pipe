@@ -26,7 +26,7 @@ def test_pipeline():
     print(config)
 
     try:
-        sample_name = config['sample_name']
+        sample_name = config['analysis_prefix']
         output_path = config['secondary_analysis']['output_path']
         h5_path = config['secondary_analysis']['h5_path']
         genes_path = config['secondary_analysis']['genes_path']
