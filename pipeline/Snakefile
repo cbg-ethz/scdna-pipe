@@ -1,6 +1,7 @@
 import glob
 import os
 from pathlib import Path
+from secondary_analysis import SecondaryAnalysis
 
 fastqs_path = config['fastqs_path']
 analysis_path = config['analysis_path']
@@ -130,4 +131,40 @@ rule run_cellranger:
          --localmem={params.local_mem} --localcores={params.local_cores} --mempercore={params.mem_per_core}\
          --id={params.cr_sample_name} --sample={params.cr_sample_name}; ln -s "{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5"\
          "{params.cellranger_path}/{params.cr_sample_name}/outs/cnv_data.h5"; popd; touch cellranger_done.txt'
+
+rule secondary_analysis:
+    params:
+        sample_name = config['analysis_prefix'],
+        output_path = config['secondary_analysis']['output_path'],
+        h5_path = config['secondary_analysis']['h5_path'],
+        genes_path = config['secondary_analysis']['genes_path'],
+        all_genes_path = config['secondary_analysis']['all_genes_path'],
+        bins = config['secondary_analysis']['bins_to_remove']
+    input:
+        rules.run_cellranger.output.cnv_data
+    output:
+        bins_genome = output_path + "/filtering/" + sample_name + "__bins_genome.tsv",
+        chr_stops = output_path + "/filtering/" + sample_name + "__chr_stops.tsv",
+        filtered_cnvs = output_path + "/filtering/" + sample_name + "__filtered_cnvs.tsv",
+        filtered_counts = output_path + "/filtering/" + sample_name + "__filtered_counts.tsv",
+
+        cluster_frequencies = output_path + "/clustering/" + sample_name + "__cluster_frequencies.txt",
+        clustering_score = output_path + "/clustering/" + sample_name + "__clustering_score.txt",
+        cluster_profile_overlapping = output_path + "/clustering/" + sample_name + "__cluster_profile_overlapping.png",
+        cluster_sizes = output_path + "/clustering/" + sample_name + "__cluster_sizes.txt",
+        clusters_phenograph_assignment = output_path + "/clustering/" + sample_name + "__clusters_phenograph_assignment.tsv",
+        clusters_phenograph_cn_profiles = output_path + "/clustering/" + sample_name + "__clusters_phenograph_cn_profiles.tsv",
+        clusters_phenograph_count_profiles = output_path + "/clustering/" + sample_name + "__clusters_phenograph_count_profiles.tsv",
+        cn_cluster = output_path + "/clustering/" + sample_name + "__cn_cluster.h5",
+        cn_gene_cluster = output_path + "/clustering/" + sample_name + "__cn_gene_cluster.tsv",
+        cn_genes_clusters_heatmap = output_path + "/clustering/" + sample_name + "__cn_genes_clusters_heatmap.png",
+        tsne_output = output_path + "/clustering/" + sample_name + "__tsne_output.png"
+    run:
+        sa = SecondaryAnalysis(sample_name=input.sample_name, output_path=input.output_path, h5_path=input.h5_path,\
+                               genes_path=input.genes_path, all_genes_path=input.all_genes_path)
+        sa.remove_tenx_genomics_artifacts(bins=input.bins)
+        sa.apply_phenograph()
+        sa.plot_clusters()
+        sa.plot_heatmap()
+        sa.create_cn_cluster_h5()
 
