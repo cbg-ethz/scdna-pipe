@@ -40,5 +40,8 @@ def test_pipeline():
     sa.remove_tenx_genomics_artifacts(bins=bins)
     assert(sa.filtered_normalized_counts.shape == sa.filtered_cnvs.shape)
     sa.apply_phenograph()
+    sa.plot_clusters()
+    sa.plot_heatmap()
+    sa.create_cn_cluster_h5()
 
 
