@@ -129,5 +129,5 @@ rule run_cellranger:
          pushd {params.cellranger_path}/run; cellranger-dna cnv --reference={input.reference_path} --fastqs={params.fastqs_path}\
          --localmem={params.local_mem} --localcores={params.local_cores} --mempercore={params.mem_per_core}\
          --id={params.cr_sample_name} --sample={params.cr_sample_name}; ln -s "{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5"\
-         "{params.cellranger_path} + {params.cr_sample_name} + /outs/cnv_data.h5"; popd; touch cellranger_done.txt'
+         "{params.cellranger_path}/{params.cr_sample_name}/outs/cnv_data.h5"; popd; touch cellranger_done.txt'
 
