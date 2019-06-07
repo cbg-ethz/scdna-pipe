@@ -2,6 +2,7 @@ import h5py
 import numpy as np
 import pandas as pd
 from utils import merge_chromosomes
+from exceptions import UnboundAttributeError
 import phenograph
 from collections import Counter
 from sklearn.preprocessing import normalize
@@ -31,6 +32,8 @@ class SecondaryAnalysis:
         self.chr_stops = None
         self.bin_positions = None
         self.clustering_distance = None
+        self.cn_median_clusters_df = None
+        self.communities_df = None
         self.sample_name = sample_name
         self.output_path = output_path
         self.h5_path = h5_path
@@ -141,8 +144,12 @@ class SecondaryAnalysis:
         :param n_jobs: The number of threads for clustering
         :return:
         """
-        # points in the knn neighbourhood are weighted by the distance
-        weight = 'distance'
+
+        if self.filtered_cnvs is None:
+            raise UnboundAttributeError("The object attribute, namely filtered_cnvs is not set")
+
+        if self.filtered_normalized_counts is None:
+            raise UnboundAttributeError("The object attribute, namely filtered_normalized_counts is not set")
 
         filtered_counts = self.filtered_normalized_counts
         normalized_filtered_counts = normalize(filtered_counts, axis=1, norm='l1')
@@ -234,19 +241,26 @@ class SecondaryAnalysis:
         cn_median_clusters_df.to_csv(output_path + '/' + self.sample_name + "__clusters_phenograph_cn_profiles.tsv",
                                   sep='\t', index=False, header=True)
 
-        self.plot_clusters(cluster_medians=cn_median_clusters_df, dist=dist, communities=communities)
-        self.plot_heatmap(communities_df)
-        self.create_cn_cluster_h5(cell_assignment=communities_df)
+        self.cn_median_clusters_df = cn_median_clusters_df
+        self.communities_df = communities_df
 
-    def plot_clusters(self, cluster_medians, dist, communities):
+
+    def plot_clusters(self):
         """
         Creates the following clustering figures: T-SNE plot on Louvain embedding and copy number values
         for each cluster across the chromosome
-        :param cluster_medians: Dataframe containing the median CN values for each cluster(rows) for each bin (columns).
-        :param dist: The phenograph distance embedding
-        :param communities: One dimensional ndarray specifying cluster ids for each cell.
         :return:
         """
+
+        if self.clustering_distance is None:
+            raise UnboundAttributeError("The object attribute, namely clustering_distance is not set")
+        if self.chr_stops is None:
+            raise UnboundAttributeError("The object attribute, namely chr_stops is not set")
+        if self.cn_median_clusters_df is None:
+            raise UnboundAttributeError("The object attribute, namely cn_median_clusters is not set")
+        if self.communities_df is None:
+            raise UnboundAttributeError("The object attribute, namely communities_df is not set")
+
         # the max val to be used in the plot
         # max_val = np.nanmax(cluster_means.values)
         max_val = 12  # max CN value
@@ -254,10 +268,10 @@ class SecondaryAnalysis:
         output_path = self.output_path + '/clustering/'
 
         cmap = matplotlib.cm.get_cmap('Dark2')
-        tsne = TSNE(n_components=2, perplexity=30, metric='precomputed').fit_transform(dist)
+        tsne = TSNE(n_components=2, perplexity=30, metric='precomputed').fit_transform(self.clustering_distance)
         df_tsne = pd.DataFrame(tsne)
-        df_tsne['cluster'] = communities
-        df_tsne['color'] = (df_tsne['cluster'] + 1) / len(cluster_medians.index)  # +1 because outliers are -1
+        df_tsne['cluster'] = self.communities_df['cluster'].values
+        df_tsne['color'] = (df_tsne['cluster'] + 1) / len(self.cn_median_clusters_df.index)  # +1 because outliers are -1
         ax = df_tsne.plot(kind='scatter', x=0, y=1, c=cmap(df_tsne['color']), figsize=(10, 8), colorbar=False,
                           grid=True, title='Phenograph Clusters on CNV Data')
         fig = ax.get_figure()
@@ -269,10 +283,10 @@ class SecondaryAnalysis:
 
         # use the formula below to get the distinct colors
         # color = cmap(float(i)/N)
-        for i, cluster_idx in enumerate(cluster_medians.index):
+        for i, cluster_idx in enumerate(self.cn_median_clusters_df.index):
             plt.figure(figsize=(20, 6))
-            ax = plt.plot(cluster_medians.iloc[i].values, label="cluster id: " + str(cluster_idx),
-                          color=cmap(float(cluster_idx + 1) / len(cluster_medians.index)))
+            ax = plt.plot(self.cn_median_clusters_df.iloc[i].values, label="cluster id: " + str(cluster_idx),
+                          color=cmap(float(cluster_idx + 1) / len(self.cn_median_clusters_df.index)))
             plt.axis([None, None, 0, max_val])  # to make the axises same
             plt.legend(loc='upper left')
             plt.xticks([], [])
@@ -281,9 +295,9 @@ class SecondaryAnalysis:
             plt.savefig(output_path + '/' + self.sample_name + "__cluster_profile_" + str(cluster_idx) + ".png")
 
         plt.figure(figsize=(20, 6))
-        for i, cluster_idx in enumerate(cluster_medians.index):
-            ax = plt.plot(cluster_medians.iloc[i].values, label="cluster id: " + str(cluster_idx),
-                          color=cmap(float(cluster_idx + 1) / len(cluster_medians.index)), alpha=0.6)
+        for i, cluster_idx in enumerate(self.cn_median_clusters_df.index):
+            ax = plt.plot(self.cn_median_clusters_df.iloc[i].values, label="cluster id: " + str(cluster_idx),
+                          color=cmap(float(cluster_idx + 1) / len(self.cn_median_clusters_df.index)), alpha=0.6)
             plt.axis([None, None, 0, max_val])  # to make the axises same
             plt.legend(loc='upper left')
             plt.xticks([], [])
@@ -296,6 +310,7 @@ class SecondaryAnalysis:
         Creates and returns the dataframe of copy numbers, genes by cluster ids
         :param genes: The input list of genes to be specified
         :param cell_assignment: Dataframe containing cell_barcode and cell cluster id
+        :param with_chr_names: Boolean variable to denote whether to print the chromosome names or not
         :return: CN dataframe of genes by clusters
         """
 
@@ -339,16 +354,19 @@ class SecondaryAnalysis:
 
         return gene_cn_df
 
-    def create_cn_cluster_h5(self, cell_assignment):
+    def create_cn_cluster_h5(self):
         """
         Creates the HDF5 for copy number values per cluster
-        :param cell_assignment: Dataframe containing cell_barcode and cell cluster id
         :return:
         """
+
+        if self.communities_df is None:
+            raise UnboundAttributeError("The object attribute, namely communities_df is not set")
+
         all_genes = pd.read_csv(self.all_genes_path, sep='\t')
         cnv_data = h5py.File(self.h5_path)
 
-        all_gene_cn_df = self.get_gene_cluster_cn(all_genes, cell_assignment, with_chr_names=False)
+        all_gene_cn_df = self.get_gene_cluster_cn(all_genes, self.communities_df, with_chr_names=False)
         output_path = self.output_path + '/clustering/'
 
         cn_cluster_h5 = h5py.File(output_path + '/' + self.sample_name + '__cn_cluster.h5', 'w')
@@ -362,16 +380,19 @@ class SecondaryAnalysis:
         cnv_data.close()
         cn_cluster_h5.close()
 
-    def plot_heatmap(self, cell_assignment):
+    def plot_heatmap(self):
         """
         Creates the heapmap of CN values per gene per cluster
-        :param cell_assignment: Dataframe containing cell_barcode and cell cluster id
         :return:
         """
+
+        if self.communities_df is None:
+            raise UnboundAttributeError("The object attribute, namely communities_df is not set")
+
         genes = pd.read_csv(self.genes_path, sep='\t')
         cnv_data = h5py.File(self.h5_path)
 
-        gene_cn_df = self.get_gene_cluster_cn(genes, cell_assignment)
+        gene_cn_df = self.get_gene_cluster_cn(genes, self.communities_df)
 
         output_path = self.output_path + '/clustering/'
 
