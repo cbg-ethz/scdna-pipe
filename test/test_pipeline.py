@@ -27,14 +27,15 @@ def test_pipeline():
 
     try:
         sample_name = config['sample_name']
-        output_path = config['output_path']
-        h5_path = config['h5_path']
-        all_genes_path = config['all_genes_path']
-        genes_path = config['genes_path']
-        bins = config['bins_to_remove']
+        output_path = config['secondary_analysis']['output_path']
+        h5_path = config['secondary_analysis']['h5_path']
+        genes_path = config['secondary_analysis']['genes_path']
+        all_genes_path = config['secondary_analysis']['all_genes_path']
+        bins = config['secondary_analysis']['bins_to_remove']
     except Exception as e:
         print("Error while parsing the config")
         print(e)
+        sys.exit(1)
 
     sa = SecondaryAnalysis(sample_name=sample_name, output_path=output_path, h5_path=h5_path, genes_path=genes_path, all_genes_path=all_genes_path)
     sa.remove_tenx_genomics_artifacts(bins=bins)

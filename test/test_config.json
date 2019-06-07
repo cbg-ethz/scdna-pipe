@@ -1,8 +1,34 @@
 {
-  "sample_name": "tiny_test_scDNAv1.6",
-  "output_path": "tiny_test",
-  "h5_path": "../datasets/tiny_cnv_data.h5",
-  "genes_path": "../required_files/genes_of_interest/melanoma_gene_coordinates.tsv",
-  "all_genes_path": "../required_files/genes_of_interest/emsembl_hg19_genes_simplified.tsv",
-  "bins_to_remove": "../required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv"
+  "sample_name":"tiny_test_scDNAv1.6",
+  "sequencing_prefix": "seq_prefix_v1",
+  "analysis_prefix": "MELAVELAVELVELA_scD_Ar1v1.6",
+  "ref_genome_version": "GRCh37",
+  "ref_genome_path": "/path/to/reference/genome",
+  "fastqs_path": "~/path/to/fastqs",
+  "analysis_path": "~/path/to/analysis",
+  "scripts_dir": "/cluster/home/mtuncel/git_repos/scdna-workflow/scripts/",
+  "10x_artifacts": "/cluster/home/mtuncel/git_repos/scdna-workflow/required_files/10x_artifacts",
+  "cellranger_dna":
+  {
+    "local_cores": 24,
+    "local_mem": 384,
+    "mem_per_core": 16,
+    "mem":"16384",
+    "time":"1438"
+  },
+  "tricking_fastqs":
+  {
+    "mem": "1000",
+    "time": "1438"
+  },
+  "secondary_analysis":
+  {
+    "output_path": "tiny_test",
+    "h5_path": "../datasets/tiny_cnv_data.h5",
+    "genes_path": "../required_files/genes_of_interest/melanoma_gene_coordinates.tsv",
+    "all_genes_path": "../required_files/genes_of_interest/emsembl_hg19_genes_simplified.tsv",
+    "bins_to_remove": "../required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv"
+  }
 }
+
+
