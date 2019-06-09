@@ -1,8 +1,8 @@
 import h5py
 import numpy as np
 import pandas as pd
-from utils import merge_chromosomes
-from exceptions import UnboundAttributeError
+from .utils import merge_chromosomes
+from .exceptions import UnboundAttributeError
 import phenograph
 from collections import Counter
 from sklearn.preprocessing import normalize
