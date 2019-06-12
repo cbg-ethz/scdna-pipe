@@ -1,4 +1,5 @@
 {
+  "self":"this/config/file",
   "sample_name":"MELAVELAVELVELA_S2",
   "sequencing_prefix": "seq_prefix_v1",
   "analysis_prefix": "MELAVELAVELVELA_scD_Ar1v1.6",
