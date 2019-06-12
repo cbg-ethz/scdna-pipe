@@ -43,6 +43,6 @@ def test_pipeline():
     sa.apply_phenograph()
     sa.plot_clusters()
     sa.plot_heatmap()
-    sa.create_cn_cluster_h5()
+    # sa.create_cn_cluster_h5()
 
 
