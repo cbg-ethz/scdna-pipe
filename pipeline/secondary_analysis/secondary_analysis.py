@@ -408,6 +408,7 @@ class SecondaryAnalysis:
         gene_cn_df.T.to_csv(output_path + '/' + self.sample_name + '__cn_gene_cluster.tsv', sep='\t')
         heatmap = sns.heatmap(gene_cn_df.T, annot=True, cmap='bwr', vmin=0, vmax=4, xticklabels=True, yticklabels=True,
                               cbar_kws={"ticks": [0, 1, 2, 3, 4]})
+        heatmap.set_facecolor('#CBCBCB')
         heatmap.get_legend().remove()
         heatmap = heatmap.get_figure()
         heatmap.set_size_inches(19.7, 20.27)
