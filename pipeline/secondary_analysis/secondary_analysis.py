@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from .utils import merge_chromosomes
 from .exceptions import UnboundAttributeError
-import warnings
 import phenograph
 from collections import Counter
 from sklearn.preprocessing import normalize
@@ -235,15 +234,7 @@ class SecondaryAnalysis:
         for cluster in community_ids:
             cnvs_per_cluster.append(cnvs[communities == cluster])
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings('error')
-            try:
-                cn_median_clusters = [np.nanmedian(c, axis=0) for c in cnvs_per_cluster]
-            except Exception as w:
-                print("Warning found!")
-                print(w)
-                print("Continuing the program execution.")
-
+        cn_median_clusters = [np.nanmedian(c, axis=0) for c in cnvs_per_cluster]
         cn_median_clusters_df = pd.DataFrame(cn_median_clusters)
         cn_median_clusters_df['cluster_ids'] = community_ids
 
@@ -260,7 +251,7 @@ class SecondaryAnalysis:
         for each cluster across the chromosome
         :return:
         """
-
+        print("plotting clusters...")
         if self.clustering_distance is None:
             raise UnboundAttributeError("The object attribute, namely clustering_distance is not set")
         if self.chr_stops is None:
@@ -285,6 +276,7 @@ class SecondaryAnalysis:
                           grid=True, title='Phenograph Clusters on CNV Data')
         fig = ax.get_figure()
 
+        print("Saving tsne figure.")
         fig.savefig(output_path + '/' + self.sample_name + "__tsne_output.png")
 
         chr_stops_df = self.chr_stops
@@ -292,6 +284,7 @@ class SecondaryAnalysis:
 
         # use the formula below to get the distinct colors
         # color = cmap(float(i)/N)
+        print("saving copy number figures by cluster.")
         for i, cluster_idx in enumerate(self.cn_median_clusters_df.index):
             plt.figure(figsize=(20, 6))
             ax = plt.plot(self.cn_median_clusters_df.iloc[i].values, label="cluster id: " + str(cluster_idx),
@@ -303,6 +296,7 @@ class SecondaryAnalysis:
                 plt.text(index, -0.5, "chr " + row['pos'], rotation=90)
             plt.savefig(output_path + '/' + self.sample_name + "__cluster_profile_" + str(cluster_idx) + ".png")
 
+        print("Saving overlapping copy number profile figures by cluster.")
         plt.figure(figsize=(20, 6))
         for i, cluster_idx in enumerate(self.cn_median_clusters_df.index):
             ax = plt.plot(self.cn_median_clusters_df.iloc[i].values, label="cluster id: " + str(cluster_idx),
