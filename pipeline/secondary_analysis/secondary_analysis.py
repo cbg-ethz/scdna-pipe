@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from .utils import merge_chromosomes
 from .exceptions import UnboundAttributeError
+import warnings
 import phenograph
 from collections import Counter
 from sklearn.preprocessing import normalize
@@ -233,7 +234,15 @@ class SecondaryAnalysis:
         cnvs_per_cluster = []
         for cluster in community_ids:
             cnvs_per_cluster.append(cnvs[communities == cluster])
-        cn_median_clusters = [np.nanmedian(c, axis=0) for c in cnvs_per_cluster]
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            try:
+                cn_median_clusters = [np.nanmedian(c, axis=0) for c in cnvs_per_cluster]
+            except Exception as w:
+                print("Warning found!")
+                print(w)
+                print("Continuing the program execution.")
 
         cn_median_clusters_df = pd.DataFrame(cn_median_clusters)
         cn_median_clusters_df['cluster_ids'] = community_ids
