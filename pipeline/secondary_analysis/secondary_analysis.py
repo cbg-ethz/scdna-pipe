@@ -244,7 +244,6 @@ class SecondaryAnalysis:
         self.cn_median_clusters_df = cn_median_clusters_df
         self.communities_df = communities_df
 
-
     def plot_clusters(self):
         """
         Creates the following clustering figures: T-SNE plot on Louvain embedding and copy number values
@@ -271,9 +270,12 @@ class SecondaryAnalysis:
         tsne = TSNE(n_components=2, perplexity=30, metric='precomputed').fit_transform(self.clustering_distance)
         df_tsne = pd.DataFrame(tsne)
         df_tsne['cluster'] = self.communities_df['cluster'].values
-        df_tsne['color'] = (df_tsne['cluster'] + 1) / len(self.cn_median_clusters_df.index)  # +1 because outliers are -1
+        df_tsne['color'] = (df_tsne['cluster'] + 1) / len(self.cn_median_clusters_df.index)  # +1 because outliers -1
         ax = df_tsne.plot(kind='scatter', x=0, y=1, c=cmap(df_tsne['color']), figsize=(10, 8), colorbar=False,
-                          grid=True, title='Phenograph Clusters on CNV Data')
+                          grid=False, title='Phenograph Clusters on CNV Data')
+        axes = plt.axes()
+        axes.xaxis.label.set_visible(False)
+        axes.yaxis.label.set_visible(False)
         fig = ax.get_figure()
 
         print("Saving tsne figure.")
