@@ -287,8 +287,11 @@ class SecondaryAnalysis:
         print("saving copy number figures by cluster.")
         for i, cluster_idx in enumerate(self.cn_median_clusters_df.index):
             plt.figure(figsize=(20, 6))
-            ax = plt.plot(self.cn_median_clusters_df.iloc[i].values, label="cluster id: " + str(cluster_idx),
-                          color=cmap(float(cluster_idx + 1) / len(self.cn_median_clusters_df.index)))
+            ax = plt.scatter(y=self.cn_median_clusters_df.iloc[i].values,\
+                             x=range(len(self.cn_median_clusters_df.iloc[i].values)),\
+                             label="cluster id: " + str(cluster_idx),
+                          color=cmap(float(cluster_idx + 1) / len(self.cn_median_clusters_df.index)),\
+                             s=1)
             plt.axis([None, None, 0, max_val])  # to make the axises same
             plt.legend(loc='upper left')
             plt.xticks([], [])
@@ -299,8 +302,11 @@ class SecondaryAnalysis:
         print("Saving overlapping copy number profile figures by cluster.")
         plt.figure(figsize=(20, 6))
         for i, cluster_idx in enumerate(self.cn_median_clusters_df.index):
-            ax = plt.plot(self.cn_median_clusters_df.iloc[i].values, label="cluster id: " + str(cluster_idx),
-                          color=cmap(float(cluster_idx + 1) / len(self.cn_median_clusters_df.index)), alpha=0.6)
+            ax = plt.scatter(y=self.cn_median_clusters_df.iloc[i].values + (i+1)/10,\
+                             x=range(len(self.cn_median_clusters_df.iloc[i].values)),\
+                             label="cluster id: " + str(cluster_idx),
+                          color=cmap(float(cluster_idx + 1) / len(self.cn_median_clusters_df.index)), alpha=0.8,\
+                             s=1)
             plt.axis([None, None, 0, max_val])  # to make the axises same
             plt.legend(loc='upper left')
             plt.xticks([], [])
