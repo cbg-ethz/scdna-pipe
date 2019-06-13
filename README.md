@@ -3,6 +3,19 @@
 [![CircleCI](https://circleci.com/gh/anilbey/dna-pipeline.svg?style=svg&circle-token=7d59442470c38d05f7d1661a97da237d482684ef)](https://circleci.com/gh/anilbey/dna-pipeline)
 [![License](http://img.shields.io/:license-Apache%202-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
+Installing
+----------
+1. Open your terminal in your preferred directory and clone this repository
+```bash
+$ git clone https://github.com/anilbey/dna-pipeline
+```
+2. Install and update using `pip`:
+  ```bash
+  pip install -e .
+  ```
+
+    
+
 
 
 
