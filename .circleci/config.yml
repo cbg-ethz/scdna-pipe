@@ -62,7 +62,7 @@ jobs:
           command: |
             echo $PWD
             source ~/.bashrc
-            cd /home/circleci/repo/test
+            cd /home/circleci/repo/pipeline/test
             pytest ./
             echo $PWD
 
