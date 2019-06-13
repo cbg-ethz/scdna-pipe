@@ -1,16 +1,15 @@
-import pytest
 import sys
 import os
 import logging
 import json
-logging.basicConfig(level=logging.DEBUG)
+from ..secondary_analysis import SecondaryAnalysis
 
+logging.basicConfig(level=logging.DEBUG)
 dirname = os.path.dirname(__file__)
 logging.debug('__file__ variable: ' +  __file__)
 logging.debug('dirname: ' + dirname)
-scripts_path = os.path.join(dirname, '../pipeline/secondary_analysis')
-sys.path.append(scripts_path)
-from secondary_analysis import SecondaryAnalysis
+
+
 
 
 def test_pipeline():
@@ -37,7 +36,8 @@ def test_pipeline():
         print(e)
         sys.exit(1)
 
-    sa = SecondaryAnalysis(sample_name=sample_name, output_path=output_path, h5_path=h5_path, genes_path=genes_path, all_genes_path=all_genes_path)
+    sa = SecondaryAnalysis(sample_name=sample_name, output_path=output_path, h5_path=h5_path, genes_path=genes_path,\
+                           all_genes_path=all_genes_path)
     sa.remove_tenx_genomics_artifacts(bins=bins)
     assert(sa.filtered_normalized_counts.shape == sa.filtered_cnvs.shape)
     sa.apply_phenograph()
