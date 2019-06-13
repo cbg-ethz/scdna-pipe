@@ -14,6 +14,7 @@ def load_requirements(fname):
     reqs = parse_requirements(fname, session="test")
     return [str(ir.req) for ir in reqs]
 
+
 setup(name='dna-pipeline',
       version='1.0dev',
       description='Workflow for single-cell CNV data analysis',
