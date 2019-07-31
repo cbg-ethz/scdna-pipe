@@ -43,6 +43,14 @@ jobs:
             echo 'source activate testenv' >> ~/.bashrc
             source ~/.bashrc
             echo $PWD
+
+      - run:
+          name: check code style with black
+          command:
+            pip install black
+            black --check /home/circleci/repo/pipeline
+            black --check /home/circleci/repo/scripts
+
       - run:
           name: install python  requirements
           command: |
@@ -56,7 +64,7 @@ jobs:
             pip install -r requirements.txt
             pip install pytest-ordering
             echo $PWD
-
+  
       - run:
           name: run tests
           command: |
