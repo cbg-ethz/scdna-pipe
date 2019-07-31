@@ -138,7 +138,7 @@ class SecondaryAnalysis:
 
         h5f.close()
 
-    def apply_phenograph(self, n_jobs=16):
+    def apply_phenograph(self, n_jobs=16, save_dist=False):
         """
         Runs the phenograph clustering algorithm on the object and alters its fields
         :param n_jobs: The number of threads for clustering
@@ -177,8 +177,9 @@ class SecondaryAnalysis:
         # write dist to file
         # later use dist for all of the plots
         self.clustering_distance = dist
-        # dist_fname = args.output_path + '/' + args.sample_name + "_phenograph_distance.csv"
-        # np.savetxt(fname=dist_fname, X=dist, delimiter=',')
+        if save_dist:
+            dist_fname = args.output_path + '/' + args.sample_name + "_phenograph_distance.csv"
+            np.savetxt(fname=dist_fname, X=dist, delimiter=',')
 
         print(communities)  # one of the outputs
 
