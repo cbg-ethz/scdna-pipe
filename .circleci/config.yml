@@ -39,7 +39,7 @@ jobs:
             conda config --set always_yes yes
             conda update conda
             conda info -a
-            conda create -n testenv python=3.6.0
+            conda create -n testenv python=3
             echo 'source activate testenv' >> ~/.bashrc
             source ~/.bashrc
             echo $PWD
