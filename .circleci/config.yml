@@ -47,6 +47,7 @@ jobs:
       - run:
           name: check code style with black
           command: |
+            source ~/.bashrc
             pip install black
             black --check /home/circleci/repo/pipeline
             black --check /home/circleci/repo/scripts
