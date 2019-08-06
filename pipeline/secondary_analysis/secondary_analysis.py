@@ -156,7 +156,7 @@ class SecondaryAnalysis:
 
         h5f.close()
 
-    def apply_phenograph(self, n_jobs=16, save_dist=False):
+    def apply_phenograph(self, n_jobs=1, save_dist=False):
         """
         Runs the phenograph clustering algorithm on the object and alters its fields
         :param n_jobs: The number of threads for clustering
@@ -514,28 +514,41 @@ class SecondaryAnalysis:
         cnv_data = h5py.File(self.h5_path)
 
         gene_cn_df = self.get_gene_cluster_cn(genes, self.communities_df)
-
+        gene_cn_df = gene_cn_df.T
         output_path = self.output_path + "/clustering/"
 
-        gene_cn_df.T.to_csv(
+        gene_cn_df.to_csv(
             output_path + "/" + self.sample_name + "__cn_gene_cluster.tsv", sep="\t"
         )
-        heatmap = sns.heatmap(
-            gene_cn_df.T,
-            annot=True,
-            cmap="bwr",
-            vmin=0,
-            vmax=4,
-            xticklabels=True,
-            yticklabels=True,
-            cbar_kws={"ticks": [0, 1, 2, 3, 4]},
-        )
-        heatmap.set_facecolor("#CBCBCB")
-        heatmap.get_legend().remove()
-        heatmap = heatmap.get_figure()
-        heatmap.set_size_inches(19.7, 20.27)
-        heatmap.savefig(
-            output_path + "/" + self.sample_name + "__cn_genes_clusters_heatmap.png"
-        )
+
+        for i in range(1, 23):
+            chr_df = gene_cn_df[gene_cn_df.index.str.startswith(f"{str(i)}/")]
+
+            if chr_df.empty:
+                continue
+
+            chr_df.index = chr_df.index.to_series().str.split("/").str[1:].str.join("/")
+            chr_df = chr_df.sort_index(axis=0)
+
+            figure_width = chr_df.shape[0] / 2 + 1.5
+            plt.figure(figsize=(8, figure_width))
+            heatmap = sns.heatmap(
+                chr_df,
+                annot=True,
+                cmap="bwr",
+                vmin=0,
+                vmax=4,
+                xticklabels=True,
+                yticklabels=True,
+                cbar_kws={"ticks": [0, 1, 2, 3, 4]},
+            )
+            heatmap.set_title(f"Chromosome {str(i)}")
+            heatmap.set_facecolor("#656565")
+            # heatmap.get_legend().remove()
+            heatmap = heatmap.get_figure()
+            # heatmap.set_size_inches(19.7, 20.27)
+            heatmap.savefig(
+                f"{output_path}/{self.sample_name}__cn_genes_clusters_chr{str(i)}_heatmap.png"
+            )
 
         cnv_data.close()
