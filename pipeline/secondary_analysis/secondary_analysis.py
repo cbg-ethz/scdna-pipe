@@ -8,6 +8,10 @@ from collections import Counter
 from sklearn.preprocessing import normalize
 import os
 import matplotlib
+
+if os.environ.get("DISPLAY", "") == "":
+    print("no display found. Using non-interactive Agg backend")
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import seaborn as sns
