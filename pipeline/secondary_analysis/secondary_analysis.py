@@ -356,6 +356,7 @@ class SecondaryAnalysis:
 
         print("Saving tsne figure.")
         fig.savefig(output_path + "/" + self.sample_name + "__tsne_output.png")
+        plt.close()
 
         chr_stops_df = self.chr_stops
         chr_stops_df.columns = ["pos"]
@@ -387,6 +388,7 @@ class SecondaryAnalysis:
                 + str(cluster_idx)
                 + ".png"
             )
+            plt.close()
 
         print("Saving overlapping copy number profile figures by cluster.")
         plt.figure(figsize=(20, 6))
@@ -409,6 +411,7 @@ class SecondaryAnalysis:
         plt.savefig(
             output_path + "/" + self.sample_name + "__cluster_profile_overlapping.png"
         )
+        plt.close()
 
     def get_gene_cluster_cn(self, genes, cell_assignment, with_chr_names=True):
         """
@@ -550,5 +553,6 @@ class SecondaryAnalysis:
             heatmap.savefig(
                 f"{output_path}/{self.sample_name}__cn_genes_clusters_chr{str(i)}_heatmap.png"
             )
+            plt.close()
 
         cnv_data.close()
