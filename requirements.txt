@@ -9,6 +9,4 @@ snakemake == 4.8.0
 scikit-learn >= 0.20.1
 biopython
 tqdm
-argparse
-gzip
 seaborn
