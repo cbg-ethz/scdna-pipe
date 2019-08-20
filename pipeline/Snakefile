@@ -47,6 +47,8 @@ rule all:
         cn_cluster = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_cluster.h5",
         cn_gene_cluster = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_gene_cluster.tsv",
         tsne_output = secondary_output_path + "/clustering/" + analysis_prefix + "__tsne_output.png",
+        secondary_analysis = "secondary_analysis_done.txt",
+        cluster_plots_list = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_profile_files.txt",
 
         raw_files_list = fastqs_path + "/merged/tricked/" + seq_prefix + "__raw_files.txt"
 
@@ -140,6 +142,17 @@ rule create_raw_files_list:
     shell:
         "cd {params.fastqs_path}/merged/tricked; ls > {params.seq_prefix}__raw_files.txt "
 
+rule create_cluster_plots_list:
+    params:
+        analysis_prefix = analysis_prefix,
+        secondary_output_path = secondary_output_path
+    input:
+        secondary_analysis_done = "secondary_analysis_done.txt"
+    output:
+        cluster_plots_list = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_profile_files.txt"
+    shell:
+        "cd {params.secondary_output_path}/clustering; ls | egrep '{params.analysis_prefix}__cluster_profile_.?\.png' > {params.analysis_prefix}__cluster_profile_files.txt"
+
 
 rule run_cellranger:
     params:
@@ -199,5 +212,5 @@ rule secondary_analysis:
         cn_gene_cluster = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_gene_cluster.tsv",
         tsne_output = secondary_output_path + "/clustering/" + analysis_prefix + "__tsne_output.png"
     shell:
-        'python {params.script_dir} -c {params.config_file}'
+        'python {params.script_dir} -c {params.config_file}; touch secondary_analysis_done.txt'
 
