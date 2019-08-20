@@ -2,7 +2,7 @@
 [![Project Status](http://www.repostatus.org/badges/latest/wip.svg)](http://www.repostatus.org/#wip)
 [![CircleCI](https://circleci.com/gh/anilbey/dna-pipeline.svg?style=svg&circle-token=7d59442470c38d05f7d1661a97da237d482684ef)](https://circleci.com/gh/anilbey/dna-pipeline)
 [![License](http://img.shields.io/:license-Apache%202-green.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
-[![Python Version](https://img.shields.io/badge/python-3.4%20|%203.7-blue.svg)](https://img.shields.io/badge/python-3.4%20|%203.7-blue.svg)
+[![Python Version](https://img.shields.io/badge/python-3-blue.svg)](https://img.shields.io/badge/python-3-blue.svg)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 Installing
