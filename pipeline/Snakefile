@@ -51,7 +51,13 @@ rule all:
         cluster_plots_list = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_profile_files.txt",
         heatmap_plots_list = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_genes_clusters_files.txt",
 
-        raw_files_list = fastqs_path + "/merged/tricked/" + seq_prefix + "__raw_files.txt"
+        raw_files_list = fastqs_path + "/merged/tricked/" + seq_prefix + "__raw_files.txt",
+
+        # copy cellranger outputs
+        cr_alarms_summary = cellranger_path + "/renamed/" + analysis_prefix + "__alarms_summary.txt", 
+        cr_cnv_data = cellranger_path + "/renamed/" + analysis_prefix + "__cnv_data.h5", 
+        cr_summary = cellranger_path + "/renamed/" + analysis_prefix + "__summary.csv", 
+        cr_web_summary = cellranger_path + "/renamed/" + analysis_prefix + "__web_summary.html"
 
     output:
         
@@ -193,6 +199,29 @@ rule run_cellranger:
          --localmem={params.local_mem} --localcores={params.local_cores} --mempercore={params.mem_per_core}\
          --id={params.cr_sample_name} --sample={params.cr_sample_name}; ln -s "{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5"\
          "{params.cellranger_path}/{params.cr_sample_name}/outs/cnv_data.h5"; popd; touch cellranger_done.txt'
+
+rule copy_cellranger_outputs:
+    params:
+        cr_sample_name = cr_sample_name,
+        cellranger_path = cellranger_path,
+        analysis_prefix = analysis_prefix
+    input:
+        cellranger_done = "cellranger_done.txt"
+    output:
+        cellranger_path + "/renamed/" + analysis_prefix + "__alarms_summary.txt", 
+        cellranger_path + "/renamed/" + analysis_prefix + "__cnv_data.h5", 
+        cellranger_path + "/renamed/" + analysis_prefix + "__summary.csv", 
+        cellranger_path + "/renamed/" + analysis_prefix + "__web_summary.html"
+    shell:
+        "cd {params.cellranger_path}; \
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5'\
+             '{params.cellranger_path}/renamed/{params.analysis_prefix}__cnv_data.h5';\
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/alarms_summary.txt'\
+             '{params.cellranger_path}/renamed/{params.analysis_prefix}__alarms_summary.txt';\
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/summary.csv'\
+             '{params.cellranger_path}/renamed/{params.analysis_prefix}__summary.csv';\
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/web_summary.html'\
+             '{params.cellranger_path}/renamed/{params.analysis_prefix}__web_summary.html';"
 
 rule secondary_analysis:
     params:
