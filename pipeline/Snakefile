@@ -29,7 +29,7 @@ rule all:
     input:
         merged_fastqs = "merge_files_done.txt",
         rename_fastqs = "rename_fastqs_done.txt",
-        tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
+        # tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
         move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
         cellranger = "cellranger_done.txt",
         bins_genome = secondary_output_path + "/filtering/" + analysis_prefix + "__bins_genome.tsv",
