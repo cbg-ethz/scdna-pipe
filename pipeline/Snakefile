@@ -250,7 +250,8 @@ rule secondary_analysis:
         clusters_phenograph_count_profiles = secondary_output_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_count_profiles.tsv",
         cn_cluster = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_cluster.h5",
         cn_gene_cluster = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_gene_cluster.tsv",
-        tsne_output = secondary_output_path + "/clustering/" + analysis_prefix + "__tsne_output.png"
+        tsne_output = secondary_output_path + "/clustering/" + analysis_prefix + "__tsne_output.png",
+        done = "secondary_analysis_done.txt"
     shell:
         'python {params.script_dir} -c {params.config_file}; touch secondary_analysis_done.txt'
 
