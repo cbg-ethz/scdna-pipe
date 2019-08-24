@@ -13,6 +13,7 @@ fastq_lanes = ["L001","L002","L003","L004"]
 sample_name = config['sample_name']
 cr_sample_name = sample_name[:-3] # e.g. MHELAVELA_S2 becomes MHELAVELA
 analysis_prefix = config['analysis_prefix']
+seq_prefix = config["sequencing_prefix"]
 
 def rename_fastq(s_name):
     '''
