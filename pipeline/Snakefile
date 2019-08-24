@@ -13,7 +13,6 @@ fastq_lanes = ["L001","L002","L003","L004"]
 sample_name = config['sample_name']
 cr_sample_name = sample_name[:-3] # e.g. MHELAVELA_S2 becomes MHELAVELA
 analysis_prefix = config['analysis_prefix']
-seq_prefix = config["sequencing_prefix"]
 
 def rename_fastq(s_name):
     '''
@@ -86,9 +85,6 @@ rule merge_files:
 	touch merge_files_done.txt"
 
 rule rename_fastqs:
-    params:
-        cr_sample_name = cr_sample_name,
-        seq_prefix = seq_prefix
     input:
         rules.merge_files.output.done
     output:
@@ -99,11 +95,9 @@ rule rename_fastqs:
 	fastqs_dir = merged_fastqs_path
 	for filename in os.listdir(fastqs_dir):
     	    if filename.startswith("MERGED_BSSE") and filename.endswith('.gz'):
-                new_name = rename_fastq(filename)
-                new_name = new_name.replace(params['cr_sample_name'], params['seq_prefix']+'_')
     	        print("old name: " + filename)
-                print("new name: " + new_name)
-                os.rename(fastqs_dir+filename, fastqs_dir+new_name)
+                print("new name: " + rename_fastq(filename))
+                os.rename(fastqs_dir+filename, fastqs_dir+rename_fastq(filename))
         Path('rename_fastqs_done.txt').touch()
 
 rule trick_fastqs:
