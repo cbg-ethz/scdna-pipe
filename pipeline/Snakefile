@@ -5,6 +5,7 @@ from secondary_analysis import SecondaryAnalysis
 
 fastqs_path = config['fastqs_path']
 analysis_path = config['analysis_path']
+symlinks_path = analysis_path + '/../'
 cellranger_path = analysis_path + "/cellranger/"
 scripts_dir = config['scripts_dir']+'/'
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
