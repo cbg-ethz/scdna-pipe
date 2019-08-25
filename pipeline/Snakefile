@@ -6,7 +6,6 @@ from secondary_analysis import SecondaryAnalysis
 fastqs_path = config['fastqs_path']
 analysis_path = config['analysis_path']
 cellranger_path = analysis_path + "/cellranger/"
-secondary_output_path = config['secondary_analysis']['output_path']
 scripts_dir = config['scripts_dir']+'/'
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
 fastq_lanes = ["L001","L002","L003","L004"]
@@ -32,24 +31,24 @@ rule all:
         # tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
         move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
         cellranger = "cellranger_done.txt",
-        bins_genome = secondary_output_path + "/filtering/" + analysis_prefix + "__bins_genome.tsv",
-        chr_stops = secondary_output_path + "/filtering/" + analysis_prefix + "__chr_stops.tsv",
-        filtered_cnvs = secondary_output_path + "/filtering/" + analysis_prefix + "__filtered_cnvs.tsv",
-        filtered_counts = secondary_output_path + "/filtering/" + analysis_prefix + "__filtered_counts.tsv",
+        bins_genome = analysis_path + "/filtering/" + analysis_prefix + "__bins_genome.tsv",
+        chr_stops = analysis_path + "/filtering/" + analysis_prefix + "__chr_stops.tsv",
+        filtered_cnvs = analysis_path + "/filtering/" + analysis_prefix + "__filtered_cnvs.tsv",
+        filtered_counts = analysis_path + "/filtering/" + analysis_prefix + "__filtered_counts.tsv",
 
-        cluster_frequencies = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_frequencies.txt",
-        clustering_score = secondary_output_path + "/clustering/" + analysis_prefix + "__clustering_score.txt",
-        cluster_profile_overlapping = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_profile_overlapping.png",
-        cluster_sizes = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_sizes.txt",
-        clusters_phenograph_assignment = secondary_output_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_assignment.tsv",
-        clusters_phenograph_cn_profiles = secondary_output_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_cn_profiles.tsv",
-        clusters_phenograph_count_profiles = secondary_output_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_count_profiles.tsv",
-        cn_cluster = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_cluster.h5",
-        cn_gene_cluster = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_gene_cluster.tsv",
-        tsne_output = secondary_output_path + "/clustering/" + analysis_prefix + "__tsne_output.png",
+        cluster_frequencies = analysis_path + "/clustering/" + analysis_prefix + "__cluster_frequencies.txt",
+        clustering_score = analysis_path + "/clustering/" + analysis_prefix + "__clustering_score.txt",
+        cluster_profile_overlapping = analysis_path + "/clustering/" + analysis_prefix + "__cluster_profile_overlapping.png",
+        cluster_sizes = analysis_path + "/clustering/" + analysis_prefix + "__cluster_sizes.txt",
+        clusters_phenograph_assignment = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_assignment.tsv",
+        clusters_phenograph_cn_profiles = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_cn_profiles.tsv",
+        clusters_phenograph_count_profiles = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_count_profiles.tsv",
+        cn_cluster = analysis_path + "/clustering/" + analysis_prefix + "__cn_cluster.h5",
+        cn_gene_cluster = analysis_path + "/clustering/" + analysis_prefix + "__cn_gene_cluster.tsv",
+        tsne_output = analysis_path + "/clustering/" + analysis_prefix + "__tsne_output.png",
         secondary_analysis = "secondary_analysis_done.txt",
-        cluster_plots_list = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_profile_files.txt",
-        heatmap_plots_list = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_genes_clusters_files.txt",
+        cluster_plots_list = analysis_path + "/clustering/" + analysis_prefix + "__cluster_profile_files.txt",
+        heatmap_plots_list = analysis_path + "/clustering/" + analysis_prefix + "__cn_genes_clusters_files.txt",
 
         raw_files_list = fastqs_path + "/merged/tricked/" + seq_prefix + "__raw_files.txt",
 
@@ -147,24 +146,24 @@ rule create_raw_files_list:
 rule create_cluster_plots_list:
     params:
         analysis_prefix = analysis_prefix,
-        secondary_output_path = secondary_output_path
+        analysis_path = analysis_path
     input:
         secondary_analysis_done = "secondary_analysis_done.txt"
     output:
-        cluster_plots_list = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_profile_files.txt"
+        cluster_plots_list = analysis_path + "/clustering/" + analysis_prefix + "__cluster_profile_files.txt"
     shell:
-        "cd {params.secondary_output_path}/clustering; ls | egrep '{params.analysis_prefix}__cluster_profile_..?\.png' > {params.analysis_prefix}__cluster_profile_files.txt"
+        "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cluster_profile_..?\.png' > {params.analysis_prefix}__cluster_profile_files.txt"
 
 rule create_heatmap_plots_list:
     params:
         analysis_prefix = analysis_prefix,
-        secondary_output_path = secondary_output_path
+        analysis_path = analysis_path
     input:
         secondary_analysis_done = "secondary_analysis_done.txt"
     output:
-        heatmap_plots_list = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_genes_clusters_files.txt"
+        heatmap_plots_list = analysis_path + "/clustering/" + analysis_prefix + "__cn_genes_clusters_files.txt"
     shell:
-        "cd {params.secondary_output_path}/clustering; ls | egrep '{params.analysis_prefix}__cn_genes_clusters_chr..?_heatmap\.png' > {params.analysis_prefix}__cn_genes_clusters_files.txt"
+        "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cn_genes_clusters_chr..?_heatmap\.png' > {params.analysis_prefix}__cn_genes_clusters_files.txt"
 
 rule run_cellranger:
     params:
@@ -221,7 +220,7 @@ rule copy_cellranger_outputs:
 rule secondary_analysis:
     params:
         analysis_prefix = analysis_prefix,
-        secondary_output_path = secondary_output_path,
+        analysis_path = analysis_path,
         h5_path = config['secondary_analysis']['h5_path'],
         genes_path = config['secondary_analysis']['genes_path'],
         all_genes_path = config['secondary_analysis']['all_genes_path'],
@@ -231,21 +230,21 @@ rule secondary_analysis:
     input:
         rules.run_cellranger.output.cnv_data
     output:
-        bins_genome = secondary_output_path + "/filtering/" + analysis_prefix + "__bins_genome.tsv",
-        chr_stops = secondary_output_path + "/filtering/" + analysis_prefix + "__chr_stops.tsv",
-        filtered_cnvs = secondary_output_path + "/filtering/" + analysis_prefix + "__filtered_cnvs.tsv",
-        filtered_counts = secondary_output_path + "/filtering/" + analysis_prefix + "__filtered_counts.tsv",
+        bins_genome = analysis_path + "/filtering/" + analysis_prefix + "__bins_genome.tsv",
+        chr_stops = analysis_path + "/filtering/" + analysis_prefix + "__chr_stops.tsv",
+        filtered_cnvs = analysis_path + "/filtering/" + analysis_prefix + "__filtered_cnvs.tsv",
+        filtered_counts = analysis_path + "/filtering/" + analysis_prefix + "__filtered_counts.tsv",
 
-        cluster_frequencies = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_frequencies.txt",
-        clustering_score = secondary_output_path + "/clustering/" + analysis_prefix + "__clustering_score.txt",
-        cluster_profile_overlapping = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_profile_overlapping.png",
-        cluster_sizes = secondary_output_path + "/clustering/" + analysis_prefix + "__cluster_sizes.txt",
-        clusters_phenograph_assignment = secondary_output_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_assignment.tsv",
-        clusters_phenograph_cn_profiles = secondary_output_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_cn_profiles.tsv",
-        clusters_phenograph_count_profiles = secondary_output_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_count_profiles.tsv",
-        cn_cluster = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_cluster.h5",
-        cn_gene_cluster = secondary_output_path + "/clustering/" + analysis_prefix + "__cn_gene_cluster.tsv",
-        tsne_output = secondary_output_path + "/clustering/" + analysis_prefix + "__tsne_output.png",
+        cluster_frequencies = analysis_path + "/clustering/" + analysis_prefix + "__cluster_frequencies.txt",
+        clustering_score = analysis_path + "/clustering/" + analysis_prefix + "__clustering_score.txt",
+        cluster_profile_overlapping = analysis_path + "/clustering/" + analysis_prefix + "__cluster_profile_overlapping.png",
+        cluster_sizes = analysis_path + "/clustering/" + analysis_prefix + "__cluster_sizes.txt",
+        clusters_phenograph_assignment = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_assignment.tsv",
+        clusters_phenograph_cn_profiles = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_cn_profiles.tsv",
+        clusters_phenograph_count_profiles = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_count_profiles.tsv",
+        cn_cluster = analysis_path + "/clustering/" + analysis_prefix + "__cn_cluster.h5",
+        cn_gene_cluster = analysis_path + "/clustering/" + analysis_prefix + "__cn_gene_cluster.tsv",
+        tsne_output = analysis_path + "/clustering/" + analysis_prefix + "__tsne_output.png",
         done = "secondary_analysis_done.txt"
     shell:
         'python {params.script_dir} -c {params.config_file}; touch secondary_analysis_done.txt'
