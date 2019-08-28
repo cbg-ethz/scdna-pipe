@@ -4,9 +4,11 @@ from pathlib import Path
 from secondary_analysis import SecondaryAnalysis
 
 fastqs_path = config['fastqs_path']
+moved_fastqs_path = os.path.join(fastqs_path, "merged", "tricked")
 analysis_path = config['analysis_path']
-symlinks_path = analysis_path + '/../'
-cellranger_path = analysis_path + "/cellranger/"
+symlinks_path = os.path.join(analysis_path, '..', 'symlinks')
+sym_raw_path = os.path.join(symlinks_path, "raw")
+cellranger_path = os.path.join(analysis_path, "cellranger")
 scripts_dir = config['scripts_dir']+'/'
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
 fastq_lanes = ["L001","L002","L003","L004"]
@@ -29,35 +31,39 @@ rule all:
     input:
         merged_fastqs = "merge_files_done.txt",
         rename_fastqs = "rename_fastqs_done.txt",
-        # tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
+        tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
         move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
         cellranger = "cellranger_done.txt",
-        bins_genome = analysis_path + "/filtering/" + analysis_prefix + "__bins_genome.tsv",
-        chr_stops = analysis_path + "/filtering/" + analysis_prefix + "__chr_stops.tsv",
-        filtered_cnvs = analysis_path + "/filtering/" + analysis_prefix + "__filtered_cnvs.tsv",
-        filtered_counts = analysis_path + "/filtering/" + analysis_prefix + "__filtered_counts.tsv",
+        bins_genome = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__bins_genome.tsv",
+        chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__chr_stops.tsv",
+        filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_cnvs.tsv",
+        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.tsv",
 
-        cluster_frequencies = analysis_path + "/clustering/" + analysis_prefix + "__cluster_frequencies.txt",
-        clustering_score = analysis_path + "/clustering/" + analysis_prefix + "__clustering_score.txt",
-        cluster_profile_overlapping = analysis_path + "/clustering/" + analysis_prefix + "__cluster_profile_overlapping.png",
-        cluster_sizes = analysis_path + "/clustering/" + analysis_prefix + "__cluster_sizes.txt",
-        clusters_phenograph_assignment = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_assignment.tsv",
-        clusters_phenograph_cn_profiles = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_cn_profiles.tsv",
-        clusters_phenograph_count_profiles = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_count_profiles.tsv",
-        cn_cluster = analysis_path + "/clustering/" + analysis_prefix + "__cn_cluster.h5",
-        cn_gene_cluster = analysis_path + "/clustering/" + analysis_prefix + "__cn_gene_cluster.tsv",
-        tsne_output = analysis_path + "/clustering/" + analysis_prefix + "__tsne_output.png",
+        cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_frequencies.txt",
+        clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clustering_score.txt",
+        cluster_profile_overlapping = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_profile_overlapping.png",
+        cluster_sizes = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_sizes.txt",
+        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clusters_phenograph_assignment.tsv",
+        clusters_phenograph_cn_profiles = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clusters_phenograph_cn_profiles.tsv",
+        clusters_phenograph_count_profiles = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clusters_phenograph_count_profiles.tsv",
+        cn_cluster = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_cluster.h5",
+        cn_gene_cluster = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_gene_cluster.tsv",
+        tsne_output = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__tsne_output.png",
         secondary_analysis = "secondary_analysis_done.txt",
-        cluster_plots_list = analysis_path + "/clustering/" + analysis_prefix + "__cluster_profile_files.txt",
-        heatmap_plots_list = analysis_path + "/clustering/" + analysis_prefix + "__cn_genes_clusters_files.txt",
+        cluster_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_profile_files.txt",
+        heatmap_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_genes_clusters_files.txt",
 
-        raw_files_list = fastqs_path + "/merged/tricked/" + seq_prefix + "__raw_files.txt",
-
-        # copy cellranger outputs
-        cr_alarms_summary = cellranger_path + "/renamed/" + analysis_prefix + "__alarms_summary.txt", 
-        cr_cnv_data = cellranger_path + "/renamed/" + analysis_prefix + "__cnv_data.h5", 
-        cr_summary = cellranger_path + "/renamed/" + analysis_prefix + "__summary.csv", 
-        cr_web_summary = cellranger_path + "/renamed/" + analysis_prefix + "__web_summary.html"
+        # symlink directories
+        raw_files_list = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt",
+        sym_r1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
+        sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
+        sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes),
+        
+        # # copy cellranger outputs
+        cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", 
+        cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", 
+        cr_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", 
+        cr_web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html"
 
     output:
         
@@ -112,7 +118,7 @@ rule trick_fastqs:
     input:
         rules.rename_fastqs.output
     output:
-        fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz"
+        r1_fastqs = os.path.join(moved_fastqs_path, sample_name) + "_" + "{lane_no}" + "_R1_001.fastq.gz"
     shell:
         "\
         if [ -d {params.fastqs_path}/merged/tricked ] ; \
@@ -125,24 +131,29 @@ rule trick_fastqs:
 
 rule move_fastqs:
     params:
-        fastqs_path = fastqs_path
+        fastqs_path = fastqs_path,
+        sample_name = sample_name
     input:
-        tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes)
+        tricked_fastqs = expand(os.path.join(moved_fastqs_path, sample_name) + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes)
     output:
-        "move_fastqs_to_tricked_done.txt"
+        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt"
     shell:
-        "mv {params.fastqs_path}/merged/*_R2_* {params.fastqs_path}/merged/tricked/; mv {params.fastqs_path}/merged/*_I1_* {params.fastqs_path}/merged/tricked/; chmod 755 {params.fastqs_path}/merged/tricked/*; touch move_fastqs_to_tricked_done.txt"
+        "mv {params.fastqs_path}/merged/*_R2_* {params.fastqs_path}/merged/tricked/;\
+             mv {params.fastqs_path}/merged/*_I1_* {params.fastqs_path}/merged/tricked/;\
+                  chmod 755 {params.fastqs_path}/merged/tricked/*;"
 
 rule create_raw_files_list:
     params:
-        fastqs_path = fastqs_path,
+        sym_raw_path = sym_raw_path,
         seq_prefix = seq_prefix
     input:
-        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt"
+        sym_r1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
+        sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
+        sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes)
     output:
-        fastqs_path + "/merged/tricked/" + seq_prefix + "__raw_files.txt"
+        os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt"  
     shell:
-        "cd {params.fastqs_path}/merged/tricked; ls > {params.seq_prefix}__raw_files.txt "
+        "cd {params.sym_raw_path}; ls > {params.seq_prefix}__raw_files.txt "
 
 rule create_cluster_plots_list:
     params:
@@ -151,7 +162,7 @@ rule create_cluster_plots_list:
     input:
         secondary_analysis_done = "secondary_analysis_done.txt"
     output:
-        cluster_plots_list = analysis_path + "/clustering/" + analysis_prefix + "__cluster_profile_files.txt"
+        cluster_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_profile_files.txt"
     shell:
         "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cluster_profile_..?\.png' > {params.analysis_prefix}__cluster_profile_files.txt"
 
@@ -162,7 +173,7 @@ rule create_heatmap_plots_list:
     input:
         secondary_analysis_done = "secondary_analysis_done.txt"
     output:
-        heatmap_plots_list = analysis_path + "/clustering/" + analysis_prefix + "__cn_genes_clusters_files.txt"
+        heatmap_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_genes_clusters_files.txt"
     shell:
         "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cn_genes_clusters_chr..?_heatmap\.png' > {params.analysis_prefix}__cn_genes_clusters_files.txt"
 
@@ -177,7 +188,6 @@ rule run_cellranger:
         mem = config['cellranger_dna']['mem'],
         time = config['cellranger_dna']['time']
     input:
-        moved_tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
         move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
         reference_path = config['ref_genome_path']
     output:
@@ -203,10 +213,10 @@ rule copy_cellranger_outputs:
     input:
         cellranger_done = "cellranger_done.txt"
     output:
-        cellranger_path + "/renamed/" + analysis_prefix + "__alarms_summary.txt", 
-        cellranger_path + "/renamed/" + analysis_prefix + "__cnv_data.h5", 
-        cellranger_path + "/renamed/" + analysis_prefix + "__summary.csv", 
-        cellranger_path + "/renamed/" + analysis_prefix + "__web_summary.html"
+        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", 
+        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", 
+        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", 
+        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html"
     shell:
         "cd {params.cellranger_path}; \
          ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5'\
@@ -231,22 +241,43 @@ rule secondary_analysis:
     input:
         rules.run_cellranger.output.cnv_data
     output:
-        bins_genome = analysis_path + "/filtering/" + analysis_prefix + "__bins_genome.tsv",
-        chr_stops = analysis_path + "/filtering/" + analysis_prefix + "__chr_stops.tsv",
-        filtered_cnvs = analysis_path + "/filtering/" + analysis_prefix + "__filtered_cnvs.tsv",
-        filtered_counts = analysis_path + "/filtering/" + analysis_prefix + "__filtered_counts.tsv",
+        bins_genome = os.path.join(analysis_path, "filtering", analysis_prefix) + "__bins_genome.tsv",
+        chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix) + "__chr_stops.tsv",
+        filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_cnvs.tsv",
+        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.tsv",
 
-        cluster_frequencies = analysis_path + "/clustering/" + analysis_prefix + "__cluster_frequencies.txt",
-        clustering_score = analysis_path + "/clustering/" + analysis_prefix + "__clustering_score.txt",
-        cluster_profile_overlapping = analysis_path + "/clustering/" + analysis_prefix + "__cluster_profile_overlapping.png",
-        cluster_sizes = analysis_path + "/clustering/" + analysis_prefix + "__cluster_sizes.txt",
-        clusters_phenograph_assignment = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_assignment.tsv",
-        clusters_phenograph_cn_profiles = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_cn_profiles.tsv",
-        clusters_phenograph_count_profiles = analysis_path + "/clustering/" + analysis_prefix + "__clusters_phenograph_count_profiles.tsv",
-        cn_cluster = analysis_path + "/clustering/" + analysis_prefix + "__cn_cluster.h5",
-        cn_gene_cluster = analysis_path + "/clustering/" + analysis_prefix + "__cn_gene_cluster.tsv",
-        tsne_output = analysis_path + "/clustering/" + analysis_prefix + "__tsne_output.png",
+        cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix) + "__cluster_frequencies.txt",
+        clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
+        cluster_profile_overlapping = os.path.join(analysis_path, "clustering", analysis_prefix) + "__cluster_profile_overlapping.png",
+        cluster_sizes = os.path.join(analysis_path, "clustering", analysis_prefix) + "__cluster_sizes.txt",
+        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
+        clusters_phenograph_cn_profiles = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_cn_profiles.tsv",
+        clusters_phenograph_count_profiles = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_count_profiles.tsv",
+        cn_cluster = os.path.join(analysis_path, "clustering", analysis_prefix) + "__cn_cluster.h5",
+        cn_gene_cluster = os.path.join(analysis_path, "clustering", analysis_prefix) + "__cn_gene_cluster.tsv",
+        tsne_output = os.path.join(analysis_path, "clustering", analysis_prefix) + "__tsne_output.png",
         done = "secondary_analysis_done.txt"
     shell:
         'python {params.script_dir} -c {params.config_file}; touch secondary_analysis_done.txt'
 
+rule create_raw_symlinks:
+    params:
+        seq_prefix = seq_prefix,
+        sym_raw_path = sym_raw_path,
+        moved_fastqs_path = moved_fastqs_path,
+        sample_name = sample_name,
+        old_file_name = os.path.join(moved_fastqs_path, sample_name ) + "_"
+    input:
+        cellranger = "cellranger_done.txt",
+        r1_fastqs = os.path.join(moved_fastqs_path, sample_name ) + "_" + "{lane_no}" + "_R1_001.fastq.gz",
+        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt"
+        # r2_fastqs = os.path.join(moved_fastqs_path, sample_name ) + "_" + "{lane_no}" + "_R2_001.fastq.gz",
+        # i1_fastqs = os.path.join(moved_fastqs_path, sample_name ) + "_" + "{lane_no}" + "_I1_001.fastq.gz"
+    output:
+        r1_fastqs = os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R1_001.fastq.gz",
+        r2_fastqs = os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz",
+        i1_fastqs = os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz"
+    shell:
+        "ln -s {input.r1_fastqs} {output.r1_fastqs};\
+            ln -s {params.old_file_name}{wildcards.lane_no}_R2_001.fastq.gz {output.r2_fastqs};\
+                ln -s {params.old_file_name}{wildcards.lane_no}_I1_001.fastq.gz {output.i1_fastqs};"
