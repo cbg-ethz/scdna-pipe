@@ -58,7 +58,8 @@ rule all:
         sym_r1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
         sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
         sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes),
-        
+        checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5",
+
         # # copy cellranger outputs
         cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", 
         cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", 
@@ -140,7 +141,8 @@ rule move_fastqs:
     shell:
         "mv {params.fastqs_path}/merged/*_R2_* {params.fastqs_path}/merged/tricked/;\
              mv {params.fastqs_path}/merged/*_I1_* {params.fastqs_path}/merged/tricked/;\
-                  chmod 755 {params.fastqs_path}/merged/tricked/*;"
+                  chmod 755 {params.fastqs_path}/merged/tricked/*;\
+                      touch move_fastqs_to_tricked_done.txt;"
 
 rule create_raw_files_list:
     params:
@@ -154,6 +156,17 @@ rule create_raw_files_list:
         os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt"  
     shell:
         "cd {params.sym_raw_path}; ls > {params.seq_prefix}__raw_files.txt "
+
+rule create_raw_checksum:
+    params:
+        sym_raw_path = sym_raw_path,
+        seq_prefix = seq_prefix
+    input:
+        os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt"
+    output:
+        checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5"
+    shell:
+        "cd {params.sym_raw_path}; find . -exec md5sum '{{}}' \; >  {output.checksum_file}"
 
 rule create_cluster_plots_list:
     params:
