@@ -204,7 +204,7 @@ rule run_cellranger:
         move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
         reference_path = config['ref_genome_path']
     output:
-        cnv_data = cellranger_path + cr_sample_name + "/outs/cnv_data.h5",
+        cnv_data = os.path.join(cellranger_path, cr_sample_name) + "/outs/cnv_data.h5",
         cellranger_done = "cellranger_done.txt"
     shell:
         'if [ -d {params.cellranger_path}/run ] ; \
