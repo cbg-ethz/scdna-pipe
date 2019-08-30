@@ -15,7 +15,7 @@ print(config)
 
 try:
     sample_name = config["analysis_prefix"]
-    output_path = config["secondary_analysis"]["output_path"]
+    output_path = config["analysis_path"]
     h5_path = config["secondary_analysis"]["h5_path"]
     genes_path = config["secondary_analysis"]["genes_path"]
     all_genes_path = config["secondary_analysis"]["all_genes_path"]
