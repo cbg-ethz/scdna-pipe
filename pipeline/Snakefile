@@ -2,6 +2,7 @@ import glob
 import os
 import subprocess
 import numpy as np
+from tqdm import tqdm
 from pathlib import Path
 from secondary_analysis import SecondaryAnalysis
 
@@ -62,7 +63,10 @@ rule all:
         filtered_counts_heatmap = os.path.join(analysis_path,\
              "breakpoint_detection", analysis_prefix) + "_filtered_counts.png",
         filtered_counts_bps_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_filtered_counts_bps.png"
+             "breakpoint_detection", analysis_prefix) + "_filtered_counts_bps.png",
+
+        segmented_counts = os.path.join(analysis_path,\
+        "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv"
 
         # cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_frequencies.txt",
         # clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clustering_score.txt",
@@ -188,6 +192,51 @@ rule plot_breakpoints:
         ax = ax.vlines(bps, *ax.get_xlim(), colors='b', linestyles='dashed')
         plt.savefig(output.filtered_counts_bps_heatmap)
         plt.close()
+
+rule segment_regions:
+    input:
+        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
+        segmented_region_sizes = os.path.join(analysis_path,\
+                "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt"
+    output:
+        segmented_counts = os.path.join(analysis_path,\
+                "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv"
+    benchmark:
+        "benchmark/segment_regions.tsv"
+    run:
+        print("loading the filtered counts...")
+        filtered_counts = np.loadtxt(input.filtered_counts, delimiter=',')
+        n_cells = filtered_counts.shape[0]
+        region_sizes = np.loadtxt(input.segmented_region_sizes)
+        n_regions = len(region_sizes)
+        sum_region_sizes = np.sum(region_sizes)
+        condensed_mat = np.zeros((n_cells, n_regions))
+
+        print("segmenting the bins...")
+        for i in tqdm(range(n_cells)):
+            region_id = 0
+            region_count = 0
+            # import ipdb; ipdb.set_trace() # debugging starts here
+            for j in range(int(sum_region_sizes)):
+                to_add = filtered_counts[i][j]
+                condensed_mat[i][region_id] += to_add
+                region_count += 1
+                if region_count == region_sizes[region_id]:
+                    region_id += 1
+                    region_count = 0
+
+        if not np.allclose(condensed_mat.sum(axis=1), filtered_counts.sum(axis=1)):
+            raise AssertionError(
+                "not all values of the sums before & after "
+                "segmentation are close")
+
+        print("saving the segmented regions...")
+        np.savetxt(
+            output.segmented_counts,
+            condensed_mat,
+            delimiter=",",
+        )
+
 
 rule merge_files:
     params:
