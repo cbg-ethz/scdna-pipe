@@ -133,17 +133,24 @@ class SecondaryAnalysis:
         self.bin_positions = bin_df
 
         print("writing output...")
+
         output_path = self.output_path + "/filtering/"
+
         np.savetxt(
-            output_path + "/" + self.sample_name + "__filtered_counts.tsv",
-            normalized_counts,
-            delimiter="\t",
+            output_path + "/" + self.sample_name + "__filtered_counts_shape.txt",
+            normalized_counts.shape
         )
 
         np.savetxt(
-            output_path + "/" + self.sample_name + "__filtered_cnvs.tsv",
+            output_path + "/" + self.sample_name + "__filtered_counts.csv",
+            normalized_counts,
+            delimiter=",",
+        )
+
+        np.savetxt(
+            output_path + "/" + self.sample_name + "__filtered_cnvs.csv",
             cnvs,
-            delimiter="\t",
+            delimiter=",",
         )
 
         bin_df.to_csv(

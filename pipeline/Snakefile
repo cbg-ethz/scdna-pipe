@@ -1,5 +1,7 @@
 import glob
 import os
+import subprocess
+import numpy as np
 from pathlib import Path
 from secondary_analysis import SecondaryAnalysis
 
@@ -51,7 +53,16 @@ rule all:
         bins_genome = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__bins_genome.tsv",
         chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__chr_stops.tsv",
         filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_cnvs.tsv",
-        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.tsv",
+        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
+        filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
+
+        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
+
+        filtered_counts_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_filtered_counts.png",
+        filtered_counts_bps_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_filtered_counts_bps.png"
 
         # cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_frequencies.txt",
         # clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clustering_score.txt",
@@ -93,13 +104,90 @@ rule remove_tenx_artifacts:
     output:
         bins_genome = os.path.join(analysis_path, "filtering", analysis_prefix) + "__bins_genome.tsv",
         chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix) + "__chr_stops.tsv",
-        filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_cnvs.tsv",
-        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.tsv"
+        filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_cnvs.csv",
+        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
+        filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt"
     run:
         for key in config['secondary_analysis']:
             assert(os.path.isfile(config['secondary_analysis'][key]))
         sa.remove_tenx_genomics_artifacts(bins=params.bins)
 
+rule detect_breakpoints:
+    params:
+        binary = config["breakpoint_detection"]["bin"],
+        window_size = config["breakpoint_detection"]["window_size"],
+        verbosity = config["breakpoint_detection"]["verbosity"],
+        threshold = config["breakpoint_detection"]["threshold"],
+        bp_detection_path = os.path.join(analysis_path, "breakpoint_detection"),
+        posfix = analysis_prefix 
+    input:
+        d_matrix_file = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
+        matrix_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt"
+    output:
+        segmented_regions = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
+        segmented_region_sizes = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt"
+    run:
+        try:
+            os.makedirs(params.bp_detection_path)
+        except FileExistsError:
+            print("breakpoint detection directory already exists.")
+        input_shape = np.loadtxt(input.matrix_shape)
+        (n_cells, n_bins) = [int(input_shape[i]) for i in range(2)]
+
+        try:
+            cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.d_matrix_file}", f"--n_bins={n_bins}",\
+                f"--n_cells={n_cells}", f"--window_size={params.window_size}", f"--postfix={params.posfix}",\
+                f"--verbosity={params.verbosity}", f"--threshold={params.threshold}"])
+        except subprocess.SubprocessError as e:
+            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
+        else:
+            print(f"subprocess out: {cmd_output}")
+            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
+        
+        os.rename(params.posfix+"_segmented_regions.txt", output.segmented_regions)
+        os.rename(params.posfix+"_segmented_region_sizes.txt", output.segmented_region_sizes)
+
+rule plot_breakpoints:
+    input:
+        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
+        segmented_regions = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt"
+    output:
+        filtered_counts_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_filtered_counts.png",
+        filtered_counts_bps_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_filtered_counts_bps.png"
+    benchmark:
+        "benchmark/plot_breakpoints.tsv"
+    run:
+        import pandas as pd
+        import seaborn as sns
+        sns.set()
+        import matplotlib.pyplot as plt
+
+        print("loading the counts...")
+        filtered_counts = np.loadtxt(input.filtered_counts, delimiter=',')
+        print(f"shape of filtered counts: {filtered_counts.shape}")
+
+        mean_filtered_counts = filtered_counts.mean()
+
+        bps = np.loadtxt(input.segmented_regions)
+        print(f"number of breakpoints: {len(bps)}")
+
+        print("plotting the heatmap ...")
+        plt.figure(figsize = (24,8))
+        ax = sns.heatmap(filtered_counts, vmax=mean_filtered_counts)
+        plt.savefig(output.filtered_counts_heatmap)
+        plt.close()
+
+        print("plotting the heatmap with breakpoints ...")
+        plt.figure(figsize = (24,8))
+        ax = sns.heatmap(filtered_counts,vmax=mean_filtered_counts)
+        ax = ax.vlines(bps, *ax.get_xlim(), colors='b', linestyles='dashed')
+        plt.savefig(output.filtered_counts_bps_heatmap)
+        plt.close()
 
 rule merge_files:
     params:
