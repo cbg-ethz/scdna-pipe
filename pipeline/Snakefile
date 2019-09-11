@@ -2,9 +2,13 @@ import glob
 import os
 import subprocess
 import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from pathlib import Path
 from secondary_analysis import SecondaryAnalysis
+sns.set()
 
 
 fastqs_path = config['fastqs_path']
@@ -60,13 +64,18 @@ rule all:
         segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
         segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
 
-        filtered_counts_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_filtered_counts.png",
-        filtered_counts_bps_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_filtered_counts_bps.png",
+        normalised_bins_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_normalised_bins.png",
+        normalised_bins_clustered_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered.png",
+        normalised_bins_clustered_bps_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered_bps.png",
 
         segmented_counts = os.path.join(analysis_path,\
-        "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv"
+        "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
+
+        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
+        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv"
 
         # cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_frequencies.txt",
         # clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clustering_score.txt",
@@ -155,43 +164,59 @@ rule detect_breakpoints:
 
 rule plot_breakpoints:
     input:
-        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
+        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
+        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
         segmented_regions = os.path.join(analysis_path,\
              "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt"
     output:
-        filtered_counts_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_filtered_counts.png",
-        filtered_counts_bps_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_filtered_counts_bps.png"
+        normalised_bins_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_normalised_bins.png",
+        normalised_bins_clustered_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered.png",
+        normalised_bins_clustered_bps_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered_bps.png"
     benchmark:
         "benchmark/plot_breakpoints.tsv"
     run:
-        import pandas as pd
-        import seaborn as sns
-        sns.set()
-        import matplotlib.pyplot as plt
+        from scipy.cluster.hierarchy import ward, leaves_list
+        from scipy.spatial.distance import pdist
 
-        print("loading the counts...")
-        filtered_counts = np.loadtxt(input.filtered_counts, delimiter=',')
-        print(f"shape of filtered counts: {filtered_counts.shape}")
+        print("loading the normalised bins...")
+        normalised_bins = np.loadtxt(input.normalised_bins, delimiter=',')
+        print(f"shape of normalised bins: {normalised_bins.shape}")
 
-        mean_filtered_counts = filtered_counts.mean()
+        print("loading the normalised regions...")
+        normalised_regions = np.loadtxt(input.normalised_regions, delimiter=',')
+        print(f"shape of normalised regions: {normalised_regions.shape}")
 
         bps = np.loadtxt(input.segmented_regions)
         print(f"number of breakpoints: {len(bps)}")
 
+        mean_normalised_bins = normalised_bins.mean()
+        mean_normalised_regions = normalised_regions.mean()
+
+        Z = ward(pdist(normalised_regions))
+        hclust_index = leaves_list(Z)
+
         print("plotting the heatmap ...")
-        plt.figure(figsize = (24,8))
-        ax = sns.heatmap(filtered_counts, vmax=mean_filtered_counts)
-        plt.savefig(output.filtered_counts_heatmap)
+        plt.figure(figsize=(24, 8))
+        ax = sns.heatmap(normalised_bins, vmax=mean_normalised_bins)
+        plt.savefig(output.normalised_bins_heatmap)
         plt.close()
 
-        print("plotting the heatmap with breakpoints ...")
-        plt.figure(figsize = (24,8))
-        ax = sns.heatmap(filtered_counts,vmax=mean_filtered_counts)
-        ax = ax.vlines(bps, *ax.get_xlim(), colors='b', linestyles='dashed')
-        plt.savefig(output.filtered_counts_bps_heatmap)
+        print("plotting the clustered heatmap ...")
+        plt.figure(figsize=(24, 8))
+        ax = sns.heatmap(normalised_bins[hclust_index], vmax=mean_normalised_bins)
+        plt.savefig(output.normalised_bins_clustered_heatmap)
         plt.close()
+
+        print("plotting the clustered heatmap with breakpoints ...")
+        plt.figure(figsize=(24, 8))
+        ax = sns.heatmap(normalised_bins[hclust_index], vmax=mean_normalised_bins)
+        ax = ax.vlines(bps, *ax.get_xlim(), colors='b', linestyles='dashed')
+        plt.savefig(output.normalised_bins_clustered_bps_heatmap)
+        plt.close()
+
 
 rule segment_regions:
     input:
@@ -236,6 +261,46 @@ rule segment_regions:
             condensed_mat,
             delimiter=",",
         )
+
+rule normalise_counts:
+    input:
+        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
+        segmented_counts = os.path.join(analysis_path,\
+                "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv"
+    output:
+        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
+        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv"
+    benchmark:
+        "benchmark/normalise_counts.tsv"    
+    run:
+        from sklearn.preprocessing import normalize
+
+        print("loading the filtered counts...")
+        filtered_counts = np.loadtxt(input.filtered_counts, delimiter=',')
+        print("normalising the bins...")
+        normalized_filtered_bins = normalize(filtered_counts, axis=1, norm="l1")
+        # normalise but make the row sum equal to n_bins
+        normalized_filtered_bins *= normalized_filtered_bins.shape[1]
+        print(f"shape of normalised bins: {normalized_filtered_bins.shape}")
+        print("saving the normalised bins...")
+        np.savetxt(
+            output.normalised_bins,
+            normalized_filtered_bins,
+            delimiter=",",
+        )
+        
+        print("loading the segmented counts...")
+        segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
+        print("normalising the regions...")
+        normalized_filtered_regions = normalize(segmented_counts, axis=1, norm="l1")
+        print(f"shape of normalised regions: {normalized_filtered_regions.shape}")
+        print("saving the normalised bins...")
+        np.savetxt(
+            output.normalised_regions,
+            normalized_filtered_regions,
+            delimiter=",",
+        )
+
 
 
 rule merge_files:
