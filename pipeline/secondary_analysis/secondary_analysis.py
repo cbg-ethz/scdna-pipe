@@ -32,8 +32,6 @@ class SecondaryAnalysis:
         :param sample_name: Name of the sample, to be added to the output names
         :param output_path: Desired path for the output files
         """
-        self.filtered_normalized_counts = None
-        self.filtered_cnvs = None
         self.chr_stops = None
         self.bin_positions = None
         self.clustering_distance = None
@@ -167,35 +165,24 @@ class SecondaryAnalysis:
 
         h5f.close()
 
-    def apply_phenograph(self, n_jobs=1, save_dist=False):
+    def apply_phenograph(self, normalised_regions_path, n_jobs=1):
         """
         Runs the phenograph clustering algorithm on the object and alters its fields
         :param n_jobs: The number of threads for clustering
         :return:
         """
 
-        if self.filtered_cnvs is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely filtered_cnvs is not set"
-            )
+        print("loading the normalised regions...")
+        normalised_regions = np.loadtxt(normalised_regions_path, delimiter=',')
+        print(f"shape of normalised regions: {normalised_regions.shape}")
 
-        if self.filtered_normalized_counts is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely filtered_normalized_counts is not set"
-            )
+        n_cells = normalised_regions.shape[0]
 
-        filtered_counts = self.filtered_normalized_counts
-        normalized_filtered_counts = normalize(filtered_counts, axis=1, norm="l1")
-
-        cnvs = self.filtered_cnvs
-
-        n_cells = normalized_filtered_counts.shape[0]
-
-        print("n_cells: " + str(n_cells))
+        print(f"n_cells: {str(n_cells)}")
         n_neighbours = int(n_cells / 10)
-        print("n_neighbours: " + str(n_neighbours))
+        print(f"n_neighbours to be used: {str(n_neighbours)}")
         communities, graph, Q = phenograph.cluster(
-            data=normalized_filtered_counts, k=n_neighbours, n_jobs=n_jobs, jaccard=True
+            data=normalised_regions, k=n_neighbours, n_jobs=n_jobs, jaccard=True
         )
 
         # computing the distance matrix from graph
@@ -205,111 +192,31 @@ class SecondaryAnalysis:
         dist = (arr_full - arr_full.max()) * (-1)
         np.fill_diagonal(dist, 0)
 
-        print("shape of the distance matrix:")
-        print(dist.shape)
+        print(f"shape of the distance matrix: {dist.shape}")
 
-        # write dist to file
-        # later use dist for all of the plots
-        self.clustering_distance = dist
-        if save_dist:
-            dist_fname = (
-                args.output_path + "/" + args.sample_name + "_phenograph_distance.csv"
-            )
-            np.savetxt(fname=dist_fname, X=dist, delimiter=",")
+        dist_fname = (
+            os.path.join(self.output_path, "clustering", self.sample_name) + "__phenograph_distance.csv"
+        )
+        np.savetxt(fname=dist_fname, X=dist, delimiter=",")
 
-        print(communities)  # one of the outputs
-
+        print(f"Communities: {communities}")
         communities_df = pd.DataFrame(communities, columns=["cluster"])
         communities_df["cell_barcode"] = communities_df.index
         communities_df = communities_df[
             ["cell_barcode", "cluster"]
-        ]  # order the columns
-        communities_df.head()
+        ]
 
-        output_path = self.output_path + "/clustering/"
+        output_path = os.path.join(self.output_path, "clustering", self.sample_name)
+        print(f"output path: {output_path}")
         communities_df.to_csv(
-            output_path
-            + "/"
-            + self.sample_name
-            + "__clusters_phenograph_assignment.tsv",
+            output_path + "__clusters_phenograph_assignment.tsv",
             sep="\t",
-            index=False,
+            index=False
         )
 
         # write the modularity score, for stability
-        f = open(output_path + "/" + self.sample_name + "__clustering_score.txt", "w")
-        f.write(str(Q))
-        f.close()
-
-        cells_by_cluster = []
-
-        community_dict = dict((Counter(communities)))
-
-        community_ids = sorted(list(community_dict))
-
-        # normalise to get the cluster frequencies
-        factor = 1.0 / sum(community_dict.values())
-        normalised_d = {k: v * factor for k, v in community_dict.items()}
-
-        with open(
-            output_path + "/" + self.sample_name + "__cluster_sizes.txt", "w"
-        ) as community_dict_file:
-            for idx, (key, value) in enumerate(
-                sorted(community_dict.items(), key=lambda x: x[0])
-            ):
-                community_dict_file.write("{} : {} ".format(key, value))
-                if idx != len(community_dict) - 1:
-                    community_dict_file.write(",")
-
-        with open(
-            output_path + "/" + self.sample_name + "__cluster_frequencies.txt", "w"
-        ) as community_dict_file:
-            for idx, (key, value) in enumerate(
-                sorted(normalised_d.items(), key=lambda x: x[0])
-            ):
-                community_dict_file.write("{} : {} ".format(key, value))
-                if idx != len(community_dict) - 1:
-                    community_dict_file.write(",")
-
-        for cluster in community_ids:
-            cells_by_cluster.append(filtered_counts[communities == cluster])
-
-        avg_clusters = [m.mean(0) for m in cells_by_cluster]
-
-        avg_clusters_df = pd.DataFrame(avg_clusters)
-
-        avg_clusters_df["cluster_ids"] = community_ids  # add the community_ids
-
-        avg_clusters_df.to_csv(
-            output_path
-            + "/"
-            + self.sample_name
-            + "__clusters_phenograph_count_profiles.tsv",
-            sep="\t",
-            index=False,
-            header=True,
-        )
-
-        cnvs_per_cluster = []
-        for cluster in community_ids:
-            cnvs_per_cluster.append(cnvs[communities == cluster])
-
-        cn_median_clusters = [np.nanmedian(c, axis=0) for c in cnvs_per_cluster]
-        cn_median_clusters_df = pd.DataFrame(cn_median_clusters)
-        cn_median_clusters_df["cluster_ids"] = community_ids
-
-        cn_median_clusters_df.to_csv(
-            output_path
-            + "/"
-            + self.sample_name
-            + "__clusters_phenograph_cn_profiles.tsv",
-            sep="\t",
-            index=False,
-            header=True,
-        )
-
-        self.cn_median_clusters_df = cn_median_clusters_df
-        self.communities_df = communities_df
+        with open(output_path + "__clustering_score.txt", "w") as f:
+            f.write(str(Q))
 
     def plot_clusters(self):
         """
