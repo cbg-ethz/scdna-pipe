@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from pathlib import Path
 from secondary_analysis import SecondaryAnalysis
+from collections import Counter
 sns.set()
 
 
@@ -73,13 +74,17 @@ rule all:
 
         segmented_counts = os.path.join(analysis_path,\
         "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
+        segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
 
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
 
         clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
         phenograph_distance = os.path.join(analysis_path, "clustering", analysis_prefix) + "__phenograph_distance.csv",
-        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv"
+        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
+
+        avg_counts = os.path.join(analysis_path,\
+                "clustering", analysis_prefix) + "_avg_counts.csv"
 
         # cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_frequencies.txt",
         # clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clustering_score.txt",
@@ -229,7 +234,8 @@ rule segment_regions:
                 "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt"
     output:
         segmented_counts = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv"
+                "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
+        segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt"
     benchmark:
         "benchmark/segment_regions.tsv"
     run:
@@ -265,6 +271,12 @@ rule segment_regions:
             condensed_mat,
             delimiter=",",
         )
+
+        np.savetxt(
+            output.segmented_counts_shape,
+            condensed_mat.shape
+        )
+
 
 rule normalise_counts:
     input:
@@ -316,6 +328,45 @@ rule clustering:
         "benchmark/clustering.tsv"
     run:
         sa.apply_phenograph(input.normalised_regions)
+
+rule create_averaged_region_matrix:
+    """
+    Creates the averaged regions by using cluster assignments
+    """
+    input:
+        segmented_counts = os.path.join(analysis_path,\
+                "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
+        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv"
+    output:
+        avg_counts = os.path.join(analysis_path,\
+                "clustering", analysis_prefix) + "_avg_counts.csv"
+    benchmark:
+        "benchmark/create_averaged_region_matrix.tsv"
+    run:
+        print("loading the segmented counts...")
+        segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
+        print("normalising the regions...")
+
+        phenograph_assignments = pd.read_csv(input.clusters_phenograph_assignment, sep='\t')
+        communities = phenograph_assignments.cluster.values
+
+        community_dict = dict((Counter(communities)))
+        community_ids = sorted(list(community_dict))
+
+        cluster_sizes = [v for (k,v) in sorted(community_dict.items())]
+        print(f"cluster sizes: {cluster_sizes}")
+
+        cells_by_cluster = []
+        for cluster in community_ids:
+            cells_by_cluster.append(segmented_counts[communities == cluster])
+
+        avg_clusters = [m.mean(0) for m in cells_by_cluster]
+        avg_clusters_df = pd.DataFrame(avg_clusters)
+        print(f"shape of average clusters: {avg_clusters_df.shape}")
+
+        replicated_df = pd.DataFrame(np.repeat(avg_clusters_df.values,cluster_sizes,axis=0))
+
+        np.savetxt(output.avg_counts, replicated_df.values, delimiter=",")
 
 rule merge_files:
     params:
