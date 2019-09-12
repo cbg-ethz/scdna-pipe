@@ -32,11 +32,7 @@ class SecondaryAnalysis:
         :param sample_name: Name of the sample, to be added to the output names
         :param output_path: Desired path for the output files
         """
-        self.chr_stops = None
-        self.bin_positions = None
-        self.clustering_distance = None
-        self.cn_median_clusters_df = None
-        self.communities_df = None
+
         self.sample_name = sample_name
         self.output_path = output_path
         self.h5_path = h5_path
