@@ -84,7 +84,10 @@ rule all:
         clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
 
         avg_counts = os.path.join(analysis_path,\
-                "clustering", analysis_prefix) + "_avg_counts.csv"
+                "clustering", analysis_prefix) + "_avg_counts.csv",
+
+        empty_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree.txt",
+        empty_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree_cnvs.txt"
 
         # cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_frequencies.txt",
         # clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clustering_score.txt",
@@ -329,6 +332,7 @@ rule clustering:
     run:
         sa.apply_phenograph(input.normalised_regions)
 
+
 rule create_averaged_region_matrix:
     """
     Creates the averaged regions by using cluster assignments
@@ -367,6 +371,49 @@ rule create_averaged_region_matrix:
         replicated_df = pd.DataFrame(np.repeat(avg_clusters_df.values,cluster_sizes,axis=0))
 
         np.savetxt(output.avg_counts, replicated_df.values, delimiter=",")
+
+rule learn_empty_tree:
+    params:
+        binary = config["inference"]["bin"],
+        ploidy = config["inference"]["ploidy"],
+        verbosity = config["inference"]["verbosity"],
+        copy_number_limit = config["inference"]["copy_number_limit"],
+        n_iters = config["inference"]["learn_nu"]["n_iters"],
+        n_nodes = config["inference"]["learn_nu"]["n_nodes"],
+        move_probs = config["inference"]["learn_nu"]["move_probs"],
+        seed = config["inference"]["seed"],
+        posfix = "empty_tree"
+    input:
+        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
+        avg_counts = os.path.join(analysis_path,\
+                "clustering", analysis_prefix) + "_avg_counts.csv",
+        segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
+        segmented_region_sizes = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt"
+    output:
+        empty_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree.txt",
+        empty_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree_cnvs.txt"
+    benchmark:
+        "benchmark/learn_empty_tree.tsv"
+    run:
+        input_shape = np.loadtxt(input.segmented_counts_shape)
+        (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
+        
+        move_probs_str = ",".join(str(p) for p in params.move_probs)
+
+        try:
+            cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.avg_counts}", f"--n_regions={n_regions}",\
+                f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
+                f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}", f"--n_nodes={params.n_nodes}",\
+                f"--move_probs={move_probs_str}", f"--seed={params.seed}", f"--region_sizes_file={input.segmented_region_sizes}"])
+        except subprocess.SubprocessError as e:
+            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
+        else:
+            print(f"subprocess out: {cmd_output}")
+            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
+
+        os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_tree_inferred.txt", output.empty_tree)
+        os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_inferred_cnvs.csv", output.empty_tree_inferred_cnvs)
 
 rule merge_files:
     params:
