@@ -160,6 +160,7 @@ class SecondaryAnalysis:
         """
         Runs the phenograph clustering algorithm on the object and alters its fields
         :param n_jobs: The number of threads for clustering
+        :param normalised_regions_path: The path to the normalised regions
         :return:
         """
 
