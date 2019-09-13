@@ -240,32 +240,6 @@ class SecondaryAnalysis:
         output_path = self.output_path + "/clustering/"
 
         cmap = matplotlib.cm.get_cmap("Dark2")
-        tsne = TSNE(n_components=2, perplexity=30, metric="precomputed").fit_transform(
-            self.clustering_distance
-        )
-        df_tsne = pd.DataFrame(tsne)
-        df_tsne["cluster"] = self.communities_df["cluster"].values
-        df_tsne["color"] = (df_tsne["cluster"] + 1) / len(
-            self.cn_median_clusters_df.index
-        )  # +1 because outliers -1
-        ax = df_tsne.plot(
-            kind="scatter",
-            x=0,
-            y=1,
-            c=cmap(df_tsne["color"]),
-            figsize=(10, 8),
-            colorbar=False,
-            grid=False,
-            title="Phenograph Clusters on CNV Data",
-        )
-        axes = plt.axes()
-        axes.xaxis.label.set_visible(False)
-        axes.yaxis.label.set_visible(False)
-        fig = ax.get_figure()
-
-        print("Saving tsne figure.")
-        fig.savefig(output_path + "/" + self.sample_name + "__tsne_output.png")
-        plt.close()
 
         chr_stops_df = self.chr_stops
         chr_stops_df.columns = ["pos"]
