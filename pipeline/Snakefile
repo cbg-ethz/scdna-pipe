@@ -384,7 +384,6 @@ rule learn_empty_tree:
         seed = config["inference"]["seed"],
         posfix = "empty_tree"
     input:
-        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
         avg_counts = os.path.join(analysis_path,\
                 "clustering", analysis_prefix) + "_avg_counts.csv",
         segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
