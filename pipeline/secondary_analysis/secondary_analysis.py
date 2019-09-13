@@ -121,11 +121,6 @@ class SecondaryAnalysis:
         cnvs = cnvs.astype("float")
         cnvs[cnvs < 0] = None
 
-        self.filtered_cnvs = cnvs
-        self.chr_stops = df_chr_stops
-        self.filtered_normalized_counts = normalized_counts
-        self.bin_positions = bin_df
-
         print("writing output...")
 
         output_path = self.output_path + "/filtering/"
