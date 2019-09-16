@@ -12,6 +12,7 @@ from collections import Counter
 sns.set()
 
 
+bin_size = config['bin_size']
 fastqs_path = config['fastqs_path']
 moved_fastqs_path = os.path.join(fastqs_path, "merged", "tricked")
 analysis_path = config['analysis_path']
@@ -90,7 +91,15 @@ rule all:
         empty_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree_cnvs.csv",
 
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv"
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
+
+        overlapping_cluster_plot = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_profile_overlapping.png",
+
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
+        tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
+
+        gene_cn_df = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_df.csv",
+        heatmap_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_heatmap.png"
 
         # cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_frequencies.txt",
         # clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clustering_score.txt",
@@ -465,6 +474,109 @@ rule learn_cluster_trees:
 
         os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_tree_inferred.txt", output.cluster_tree)
         os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_inferred_cnvs.csv", output.cluster_tree_inferred_cnvs)
+
+rule cell_assignment:
+    input:
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv"
+    output:
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
+        tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv"
+    benchmark:
+        "benchmark/cell_assignments.tsv"
+    run:
+        inferred_cnvs = np.loadtxt(input.cluster_tree_inferred_cnvs, delimiter=',')
+        unique_cnvs, tree_cluster_sizes = np.unique(inferred_cnvs, axis=0, return_counts=True)
+
+        print("saving the unique cnv profiles...")
+        np.savetxt(
+            output.unique_cnv_profiles,
+            unique_cnvs,
+            delimiter=",",
+            fmt='%d'
+        )
+        print("saving the tree cluster sizes...")
+        np.savetxt(
+            output.tree_cluster_sizes,
+            tree_cluster_sizes,
+            delimiter=",",
+            fmt='%d'
+        )
+
+rule plot_cluster_cnvs:
+    params:
+    input:
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
+        chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__chr_stops.tsv",
+    output:
+        overlapping_cluster_plot = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_profile_overlapping.png"
+    benchmark:
+        "benchmark/plot_cluster_cnvs.tsv"
+    run:
+        sa.plot_clusters(input.chr_stops, input.unique_cnv_profiles)
+
+rule plot_heatmap:
+    params:
+        genes_path = config['secondary_analysis']['genes_path'],
+        bin_size = bin_size
+    input:
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv"
+    output:
+        gene_cn_df = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_df.csv",
+        heatmap_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_heatmap.png"
+    benchmark:
+        "benchmark/plot_heatmap.tsv"
+    run:
+        unique_cnvs = np.loadtxt(input.unique_cnv_profiles, delimiter=',')
+        cluster_ids = range(unique_cnvs.shape[0])
+        genes = pd.read_csv(params.genes_path, sep="\t")
+
+        gene_cn_df = pd.DataFrame(index=cluster_ids)
+        # for each gene
+        for index, row in tqdm(genes.iterrows()):
+            start_bin = int(row["Gene start (bp)"] / params.bin_size)
+            stop_bin = int(row["Gene end (bp)"] / params.bin_size)
+            chromosome = str(row["Chromosome/scaffold name"])
+            gene_name = row["Gene name"]
+            # print(start_bin, stop_bin)
+            gene_cn_per_cluster = []
+            for c_id in cluster_ids:
+                cn_states = unique_cnvs[
+                    c_id, start_bin : stop_bin + 1
+                ]
+                min_cn_cell_bin = np.min(
+                    cn_states
+                )  # all the bins within the gene, min due to biology
+                gene_cn_per_cluster.append(min_cn_cell_bin)
+            print(gene_cn_per_cluster)
+            gene_cn_df[gene_name] = gene_cn_per_cluster
+
+        gene_cn_df = gene_cn_df.T
+        gene_cn_df.sort_index(inplace=True)
+
+        gene_cn_df.to_csv(
+            output.gene_cn_df
+        )
+
+        figure_width = gene_cn_df.shape[0] / 2 + 1.5
+        plt.figure(figsize=(8, figure_width))
+        heatmap = sns.heatmap(
+            gene_cn_df,
+            annot=True,
+            cmap="bwr",
+            vmin=0,
+            vmax=4,
+            xticklabels=True,
+            yticklabels=True,
+            cbar_kws={"ticks": [0, 1, 2, 3, 4]},
+        )
+        heatmap.set_title("Copy number values of genes per cluster")
+        heatmap.set_facecolor("#656565")
+        heatmap = heatmap.get_figure()
+        heatmap.savefig(
+            output.heatmap_cnvs
+        )
+        plt.close()
+
 
 rule merge_files:
     params:

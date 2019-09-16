@@ -210,52 +210,39 @@ class SecondaryAnalysis:
         with open(output_path + "__clustering_score.txt", "w") as f:
             f.write(str(Q))
 
-    def plot_clusters(self):
+    def plot_clusters(self, chr_stops_path, unique_cnvs_path):
         """
-        Creates the following clustering figures: T-SNE plot on Louvain embedding and copy number values
+        Plots the copy number values
         for each cluster across the chromosome
+        :param chr_stops_path: Path to the file containing the chromosome stop positions
+        :param unique_cnvs_path: path to the file containing unique copy number profiles
         :return:
         """
-        print("plotting clusters...")
-        if self.clustering_distance is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely clustering_distance is not set"
-            )
-        if self.chr_stops is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely chr_stops is not set"
-            )
-        if self.cn_median_clusters_df is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely cn_median_clusters is not set"
-            )
-        if self.communities_df is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely communities_df is not set"
-            )
+
+        unique_cnvs = np.loadtxt(unique_cnvs_path, delimiter=',')
+        chr_stops_df = pd.read_csv(chr_stops_path, sep='\t', index_col=0)
+        chr_stops_df.columns = ["pos"]
+        
 
         # the max val to be used in the plot
         # max_val = np.nanmax(cluster_means.values)
         max_val = 12  # max CN value
 
-        output_path = self.output_path + "/clustering/"
+        output_path = os.path.join(self.output_path, "tree_learning")
 
         cmap = matplotlib.cm.get_cmap("Dark2")
-
-        chr_stops_df = self.chr_stops
-        chr_stops_df.columns = ["pos"]
 
         # use the formula below to get the distinct colors
         # color = cmap(float(i)/N)
         print("saving copy number figures by cluster.")
-        for i, cluster_idx in enumerate(self.cn_median_clusters_df.index):
+        for i, row in enumerate(unique_cnvs):
             plt.figure(figsize=(20, 6))
             ax = plt.scatter(
-                y=self.cn_median_clusters_df.iloc[i].values,
-                x=range(len(self.cn_median_clusters_df.iloc[i].values)),
-                label="cluster id: " + str(cluster_idx),
+                y=unique_cnvs[i],
+                x=range(len(row)),
+                label="cluster id: " + str(i),
                 color=cmap(
-                    float(cluster_idx + 1) / len(self.cn_median_clusters_df.index)
+                    float(i + 1) / len(unique_cnvs)
                 ),
                 s=1,
             )
@@ -265,24 +252,21 @@ class SecondaryAnalysis:
             for index, row in chr_stops_df.iterrows():
                 plt.text(index, -0.5, "chr " + row["pos"], rotation=90)
             plt.savefig(
-                output_path
-                + "/"
-                + self.sample_name
-                + "__cluster_profile_"
-                + str(cluster_idx)
+                os.path.join(output_path, self.sample_name) + "__cluster_profile_"
+                + str(i)
                 + ".png"
             )
             plt.close()
 
         print("Saving overlapping copy number profile figures by cluster.")
         plt.figure(figsize=(20, 6))
-        for i, cluster_idx in enumerate(self.cn_median_clusters_df.index):
+        for i, row in enumerate(unique_cnvs):
             ax = plt.scatter(
-                y=self.cn_median_clusters_df.iloc[i].values + (i + 1) / 10,
-                x=range(len(self.cn_median_clusters_df.iloc[i].values)),
-                label="cluster id: " + str(cluster_idx),
+                y=row + (i + 1) / 10,
+                x=range(len(row)),
+                label="cluster id: " + str(i),
                 color=cmap(
-                    float(cluster_idx + 1) / len(self.cn_median_clusters_df.index)
+                    float(i + 1) / len(unique_cnvs)
                 ),
                 alpha=0.8,
                 s=1,
@@ -293,7 +277,7 @@ class SecondaryAnalysis:
             for index, row in chr_stops_df.iterrows():
                 plt.text(index, -0.5, "chr " + row["pos"], rotation=90)
         plt.savefig(
-            output_path + "/" + self.sample_name + "__cluster_profile_overlapping.png"
+            os.path.join(output_path, self.sample_name)+"__cluster_profile_overlapping.png"
         )
         plt.close()
 
