@@ -9,6 +9,7 @@ from tqdm import tqdm
 from pathlib import Path
 from secondary_analysis import SecondaryAnalysis
 from collections import Counter
+import re
 sns.set()
 
 
@@ -49,6 +50,60 @@ def rename_fastq(s_name):
     new_name = '_'.join(split_name[6:7]+split_name[-4:])
     return new_name
 
+def tree_to_graphviz(tree_path):
+    """
+        reads the file containing trees converts it to graphviz format
+        :param tree_path: path to the tree file.
+        :return: string object containing the graphviz formatted tree
+    """
+    with open(tree_path) as f:
+        list_tree_file = list(f)
+
+    graphviz_header = ["digraph { \n", "node [style=filled,color=\"#D4C0D6\"]"
+                "edge [arrowhead=none, color=\"#602A86\"]"]
+    
+    graphviz_labels = []
+    graphviz_links = []
+
+    graphviz_labels.append("0[label=\"Neutral\"]") # root
+
+    for line in list_tree_file: 
+        if line.startswith("node 0:"):
+            continue
+        elif line.startswith("node"):
+            comma_splits = line.split(",")
+            
+            comma_first = re.split(" |:",comma_splits[0])
+            node_id = comma_first[1]
+            p_id = comma_first[4]
+            comma_rest = comma_splits[1:]
+            comma_rest[0] = comma_rest[0].lstrip('[')
+            comma_rest[-1] = comma_rest[-1].rstrip(']\n')
+            merged_labels = [] 
+            [k_begin, previous_v] = (int(x) for x in comma_rest[0].split(":"))
+            k_end = k_begin
+            for term in comma_rest[1:]: # events vector
+                [k,v] = (int(x) for x in term.split(":"))
+                if k==k_end+1 and v==previous_v:
+                    k_end = k # update the end
+                else:
+                    if k_begin == k_end:
+                        merged_labels.append(f"{previous_v:+}R{k_begin}")
+                    else:
+                        merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
+                    k_begin = k_end = k          
+                previous_v = v
+            # print the last one
+            if k_begin == k_end:
+                merged_labels.append(f"{previous_v:+}R{k_begin}")
+            else:
+                merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
+            
+            str_merged_labels = " ".join(f"{x}\n" if i%10 == 0 and i>0 else str(x) for i, x in enumerate(merged_labels))
+            graphviz_labels.append(f"{node_id}[label=\"{str_merged_labels}\"]")
+            graphviz_links.append(f"{p_id} -> {node_id}")
+
+    return graphviz_header+graphviz_labels+graphviz_links+["}"]
 
 rule all:
     input:
@@ -99,7 +154,9 @@ rule all:
         tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
 
         gene_cn_df = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_df.csv",
-        heatmap_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_heatmap.png"
+        heatmap_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_heatmap.png",
+
+        cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz"
 
         # cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_frequencies.txt",
         # clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clustering_score.txt",
@@ -527,6 +584,9 @@ rule plot_heatmap:
         "benchmark/plot_heatmap.tsv"
     run:
         unique_cnvs = np.loadtxt(input.unique_cnv_profiles, delimiter=',')
+        # reshape if 1D array
+        if (unique_cnvs.ndim == 1):
+            unique_cnvs = np.reshape(unique_cnvs,(-1,unique_cnvs.shape[0]))
         cluster_ids = range(unique_cnvs.shape[0])
         genes = pd.read_csv(params.genes_path, sep="\t")
 
@@ -559,10 +619,11 @@ rule plot_heatmap:
 
         figure_width = gene_cn_df.shape[0] / 2 + 1.5
         plt.figure(figsize=(8, figure_width))
+        cmap = sns.diverging_palette(220, 10, as_cmap=True)
         heatmap = sns.heatmap(
             gene_cn_df,
             annot=True,
-            cmap="bwr",
+            cmap=cmap,
             vmin=0,
             vmax=4,
             xticklabels=True,
@@ -577,6 +638,20 @@ rule plot_heatmap:
         )
         plt.close()
 
+rule visualise_trees:
+    input:
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt"
+    output:
+        cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz"
+    run:
+        tree_as_list = tree_to_graphviz(input.cluster_tree)
+        
+        for line in tree_as_list:
+            print(f"{line}\n")
+        
+        with open(output.cluster_tree_image, "w") as file:
+            for line in tree_as_list:
+                file.write(f"{line}\n")
 
 rule merge_files:
     params:
