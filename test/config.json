@@ -9,6 +9,7 @@
   "analysis_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/test/test_analysis_path/",
   "scripts_dir": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/scripts/",
   "10x_artifacts": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/required_files/10x_artifacts",
+  "bin_size": 20000,
   "tricking_fastqs": {
   "mem": "1000",
   "time": "1438"
@@ -32,7 +33,7 @@
   {
     "window_size":10,
     "verbosity":3,
-    "threshold":3,
+    "threshold":8.1,
     "d_matrix_file":"/Users/mtuncel/git_repos/sc-dna/data/adi_steif/read_count_tables/SA501X3F_corr_20regions.txt",
     "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/sc-dna/bin/breakpoint_detection"
   },
@@ -50,7 +51,7 @@
     },
     "cluster_trees":
     {
-      "n_iters": 10000,
+      "n_iters": 50000,
       "n_nodes": 0,
       "move_probs": [0,1,0,0,0,1,0,1,0,1,0.4,1]
     },
