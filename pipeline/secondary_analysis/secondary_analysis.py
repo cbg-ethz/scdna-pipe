@@ -220,13 +220,18 @@ class SecondaryAnalysis:
         """
 
         unique_cnvs = np.loadtxt(unique_cnvs_path, delimiter=',')
+        # reshape if 1D array
+        if (unique_cnvs.ndim == 1):
+            unique_cnvs = np.reshape(unique_cnvs,(-1,unique_cnvs.shape[0]))
+        cluster_ids = range(unique_cnvs.shape[0])
+
         chr_stops_df = pd.read_csv(chr_stops_path, sep='\t', index_col=0)
         chr_stops_df.columns = ["pos"]
         
 
         # the max val to be used in the plot
         # max_val = np.nanmax(cluster_means.values)
-        max_val = 12  # max CN value
+        max_val = 8  # max CN value
 
         output_path = os.path.join(self.output_path, "tree_learning")
 
@@ -246,7 +251,7 @@ class SecondaryAnalysis:
                 ),
                 s=1,
             )
-            plt.axis([None, None, 0, max_val])  # to make the axises same
+            plt.axis([None, None, -0.2, max_val])  # to make the axises same
             plt.legend(loc="upper left")
             plt.xticks([], [])
             for index, row in chr_stops_df.iterrows():
@@ -271,7 +276,7 @@ class SecondaryAnalysis:
                 alpha=0.8,
                 s=1,
             )
-            plt.axis([None, None, 0, max_val])  # to make the axises same
+            plt.axis([None, None, -0.2, max_val])  # to make the axises same
             plt.legend(loc="upper left")
             plt.xticks([], [])
             for index, row in chr_stops_df.iterrows():
