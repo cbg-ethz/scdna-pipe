@@ -15,6 +15,8 @@ if os.environ.get("DISPLAY", "") == "":
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import seaborn as sns
+
+sns.set()
 from tqdm import tqdm
 
 
@@ -379,7 +381,7 @@ class SecondaryAnalysis:
                 ),
                 s=1,
             )
-            plt.axis([None, None, 0, max_val])  # to make the axises same
+            plt.axis([None, None, -0.2, max_val])  # to make the axises same
             plt.legend(loc="upper left")
             plt.xticks([], [])
             for index, row in chr_stops_df.iterrows():
@@ -407,7 +409,7 @@ class SecondaryAnalysis:
                 alpha=0.8,
                 s=1,
             )
-            plt.axis([None, None, 0, max_val])  # to make the axises same
+            plt.axis([None, None, -0.2, max_val])  # to make the axises same
             plt.legend(loc="upper left")
             plt.xticks([], [])
             for index, row in chr_stops_df.iterrows():
@@ -539,10 +541,11 @@ class SecondaryAnalysis:
 
             figure_width = chr_df.shape[0] / 2 + 1.5
             plt.figure(figsize=(8, figure_width))
+            cmap = sns.diverging_palette(220, 10, as_cmap=True)
             heatmap = sns.heatmap(
                 chr_df,
                 annot=True,
-                cmap="bwr",
+                cmap=cmap,
                 vmin=0,
                 vmax=4,
                 xticklabels=True,
@@ -551,9 +554,7 @@ class SecondaryAnalysis:
             )
             heatmap.set_title(f"Chromosome {str(i)}")
             heatmap.set_facecolor("#656565")
-            # heatmap.get_legend().remove()
             heatmap = heatmap.get_figure()
-            # heatmap.set_size_inches(19.7, 20.27)
             heatmap.savefig(
                 f"{output_path}/{self.sample_name}__cn_genes_clusters_chr{str(i)}_heatmap.png"
             )
