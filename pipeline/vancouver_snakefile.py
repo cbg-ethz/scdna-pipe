@@ -139,7 +139,7 @@ rule all:
         cluster_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree_cnvs.csv",\
             repeat_id=[x for x in range(0,cluster_tree_rep)]),
 
-        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_robustness.txt",
+        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt",
 
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
         tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
@@ -482,7 +482,7 @@ rule cluster_tree_robustness:
         cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
              repeat_id=[x for x in range(0,cluster_tree_rep)])
     output:
-        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_robustness.txt"
+        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt"
     benchmark:
         "benchmark/robustness_results.tsv"
     run:
@@ -511,6 +511,7 @@ rule cluster_tree_robustness:
         if robustness_ratio < params.robustness_thr:
             raise Exception("The trees found are not robust, you may want to change the configurations") 
 
+rule pick_max_cluster_tree:
 
 
 rule cell_assignment:
