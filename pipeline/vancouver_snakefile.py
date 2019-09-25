@@ -165,7 +165,10 @@ rule all:
         tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
 
         cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
-        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png"
+        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
+
+        nu_on_cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree.txt",
+        nu_on_cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree_cnvs.csv"
 
     output:
         
@@ -546,6 +549,48 @@ rule pick_max_cluster_tree:
         os.symlink(trees_sorted[max_index], output.cluster_tree)
         os.symlink(trees_inferred_cnvs_sorted[max_index], output.cluster_tree_inferred_cnvs)
 
+rule learn_nu_on_cluster_tree:
+    params:
+        binary = config["inference"]["bin"],
+        ploidy = config["inference"]["ploidy"],
+        verbosity = config["inference"]["verbosity"],
+        copy_number_limit = config["inference"]["copy_number_limit"],
+        n_iters = config["inference"]["learn_nu_cluster_trees"]["n_iters"],
+        move_probs = config["inference"]["learn_nu_cluster_trees"]["move_probs"],
+        n_nodes = 0, # needed only for the output naming
+        seed = config["inference"]["seed"],
+        posfix = "nu_on_cluster_tree"
+    input:
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
+        segmented_counts = os.path.join(analysis_path,\
+                "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
+        segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt"
+    output:
+        nu_on_cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree.txt",
+        nu_on_cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree_cnvs.csv"
+    benchmark:
+        "benchmark/learn_nu_on_cluster_tree.tsv"
+    run:
+        input_shape = np.loadtxt(input.segmented_counts_shape)
+        (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
+        
+        move_probs_str = ",".join(str(p) for p in params.move_probs)
+
+        try:
+            cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.segmented_counts}", f"--tree_file={input.cluster_tree}",\
+             f"--n_regions={n_regions}",f"--n_nodes={params.n_nodes}",\
+                f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
+                f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}",\
+                f"--move_probs={move_probs_str}", f"--seed={params.seed}", f"--region_sizes_file={input.segmented_region_sizes}"])
+        except subprocess.SubprocessError as e:
+            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
+        else:
+            print(f"subprocess out: {cmd_output}")
+            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
+
+        os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_tree_inferred.txt", output.nu_on_cluster_tree)
+        os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_inferred_cnvs.csv", output.nu_on_cluster_tree_inferred_cnvs)
 
 rule cell_assignment:
     input:

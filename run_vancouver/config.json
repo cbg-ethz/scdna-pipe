@@ -28,7 +28,7 @@
     {
       "n_iters": 1000,
       "n_nodes": 0,
-      "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1]
+      "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1,0]
     },
     "cluster_trees":
     {
@@ -38,7 +38,15 @@
       "n_reps": 10,
       "robustness_thr": 0.5
     },
-    "seed": 41
+    "learn_nu_cluster_trees":
+    {
+      "n_iters": 20000,
+      "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1,0]
+    },
+    "full_trees":
+    {
 
+    },
+    "seed": 41
   }
 }
