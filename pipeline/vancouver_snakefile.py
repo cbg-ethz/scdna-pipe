@@ -158,10 +158,14 @@ rule all:
 
         robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt",
 
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
+
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
         tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
 
-        cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz"
+        cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
+        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png"
 
     output:
         
@@ -519,6 +523,29 @@ rule cluster_tree_robustness:
         if robustness_ratio < params.robustness_thr:
             raise Exception("The trees found are not robust, you may want to change the configurations") 
 
+rule pick_max_cluster_tree:
+    input:
+        cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
+             repeat_id=[x for x in range(0,cluster_tree_rep)]),
+        cluster_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree_cnvs.csv",\
+            repeat_id=[x for x in range(0,cluster_tree_rep)])
+    output:
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv"
+    benchmark:
+        "benchmark/pick_max_cluster_tree.tsv"
+    run:
+        import operator
+
+        trees_sorted = sorted(input.cluster_tree_with_rep)
+        trees_inferred_cnvs_sorted = sorted(input.cluster_tree_inferred_cnvs_with_rep)
+
+        tree_scores = get_tree_scores(trees_sorted)
+        max_index, max_score = max(enumerate(tree_scores), key=operator.itemgetter(1))
+
+        os.symlink(trees_sorted[max_index], output.cluster_tree)
+        os.symlink(trees_inferred_cnvs_sorted[max_index], output.cluster_tree_inferred_cnvs)
+
 
 rule cell_assignment:
     input:
@@ -551,14 +578,22 @@ rule visualise_trees:
     input:
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt"
     output:
-        cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz"
+        cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
+        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png"
     run:
         tree_as_list = tree_to_graphviz(input.cluster_tree)
         
         for line in tree_as_list:
             print(f"{line}\n")
         
-        with open(output.cluster_tree_image, "w") as file:
+        with open(output.cluster_tree_graphviz, "w") as file:
             for line in tree_as_list:
                 file.write(f"{line}\n")
 
+        try:
+            cmd_output = subprocess.run(["dot", "-Tpng", f"{output.cluster_tree_graphviz}", "-o", f"{output.cluster_tree_figure}"])
+        except subprocess.SubprocessError as e:
+            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
+        else:
+            print(f"subprocess out: {cmd_output}")
+            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
