@@ -38,6 +38,23 @@ sa = SecondaryAnalysis(
     all_genes_path=all_genes_path,
 )
 
+def get_tree_scores(tree_paths):
+    """
+        Creates the list of tree scores by parsing the tree files
+        :param trees_path: a list of tree paths
+        :return: the list of tree scores
+    """
+    tree_scores = []
+    for tree_path in tree_paths:
+        with open(tree_path) as f:
+            list_tree_file = list(f)
+        
+        for line in list_tree_file: 
+            if line.startswith("Tree score:"):
+                score = line.rstrip("\n").lstrip("Tree score:").lstrip(" ")
+                tree_scores.append(float(score))
+
+    return tree_scores
 
 
 def rename_fastq(s_name):
@@ -484,18 +501,9 @@ rule cluster_tree_robustness:
     output:
         robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt"
     benchmark:
-        "benchmark/robustness_results.tsv"
+        "benchmark/cluster_tree_robustness.tsv"
     run:
-        tree_scores = []
-        for tree_path in input.cluster_tree_with_rep:
-            with open(tree_path) as f:
-                list_tree_file = list(f)
-            
-            for line in list_tree_file: 
-                if line.startswith("Tree score:"):
-                    score = line.rstrip("\n").lstrip("Tree score:").lstrip(" ")
-                    tree_scores.append(float(score))
-
+        tree_scores = get_tree_scores(input.cluster_tree_with_rep)
         max_score = max(tree_scores)
         score_dispersions = [abs(max_score-x) for x in tree_scores]
 
@@ -510,8 +518,6 @@ rule cluster_tree_robustness:
 
         if robustness_ratio < params.robustness_thr:
             raise Exception("The trees found are not robust, you may want to change the configurations") 
-
-rule pick_max_cluster_tree:
 
 
 rule cell_assignment:
