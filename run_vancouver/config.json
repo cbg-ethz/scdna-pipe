@@ -24,6 +24,7 @@
     "verbosity": 0,
     "copy_number_limit": 2,
     "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/sc-dna/bin/inference",
+    "robustness_thr": 0.3,
     "learn_nu": 
     {
       "n_iters": 1000,
@@ -34,9 +35,8 @@
     {
       "n_iters": 100000,
       "n_nodes": 0,
-      "move_probs": [0,1,0,1,0,1,0,1,0,1,0.4,1,0.01],
-      "n_reps": 10,
-      "robustness_thr": 0.5
+      "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,1,0.01],
+      "n_reps": 10
     },
     "learn_nu_cluster_trees":
     {
@@ -45,7 +45,10 @@
     },
     "full_trees":
     {
-
+      "n_iters": 200000,
+      "n_nodes": 0,
+      "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,0,0.01],
+      "n_reps": 10
     },
     "seed": 41
   }
