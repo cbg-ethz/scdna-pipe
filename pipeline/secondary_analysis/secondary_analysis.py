@@ -84,33 +84,46 @@ class SecondaryAnalysis:
         bin_df["end"] = bin_df["start"] + bin_size
         print(bin_df.head())
 
+        # exclude unmappable bins
+        is_mappable = []
+        for chr in all_chromosomes:
+            is_mappable = np.concatenate([is_mappable,h5f['genome_tracks']['is_mappable'][chr][:]])
+
+        unmappable = ~np.array(is_mappable, dtype=bool)
+
+        print(f"unmappable bins len: {len(unmappable)}")
+        print(f"unmappable bins sum: {sum(unmappable)}")
+        
+
         # exclude 10x artifact bins
         artifact_bins = np.loadtxt(bins, delimiter="\t").astype(bool)
 
-        assert artifact_bins.shape[0] == normalized_counts.shape[1]
+        print(f"artifact bins mask len: {len(artifact_bins)}")
+        print(f"artifact bins mask sum: {sum(artifact_bins)}")
 
-        print("artifact bins mask len")
-        print(len(artifact_bins))
-        print("artifact bins mask sum")
-        print(sum(artifact_bins))
+        assert artifact_bins.shape[0] == normalized_counts.shape[1]
+        assert unmappable.shape[0] == artifact_bins.shape[0]
+        to_filter_out = np.logical_or(unmappable, artifact_bins)
+        print(f"combined filter len: {len(to_filter_out)}")
+        print(f"combined filter sum: {sum(to_filter_out)}")
 
         print("normalized_counts matrix shape before & after filtering")
         print(normalized_counts.shape)
-        normalized_counts = normalized_counts[:, ~artifact_bins]
+        normalized_counts = normalized_counts[:, ~to_filter_out]
         print(normalized_counts.shape)
 
         print("cnvs matrix shape before & after filtering")
         print(cnvs.shape)
-        cnvs = cnvs[:, ~artifact_bins]
+        cnvs = cnvs[:, ~to_filter_out]
         print(cnvs.shape)
 
         print("bin_df shape before & after filtering")
         print(bin_df.shape)
-        bin_df = bin_df[~artifact_bins]
+        bin_df = bin_df[~to_filter_out]
         print(bin_df.shape)
 
         print("filtering chromosome stop positions")
-        filtered_chr_stops = np.array(chr_stop_positions)[~artifact_bins]
+        filtered_chr_stops = np.array(chr_stop_positions)[~to_filter_out]
 
         df_chr_stops = pd.DataFrame(columns=["chr"])
         for idx, val in enumerate(filtered_chr_stops):
@@ -124,6 +137,12 @@ class SecondaryAnalysis:
         print("writing output...")
 
         output_path = self.output_path + "/filtering/"
+
+        np.savetxt(
+            os.path.join(output_path, self.sample_name) + "__excluded_bins.csv",
+            to_filter_out,
+            delimiter=','
+        )
 
         np.savetxt(
             output_path + "/" + self.sample_name + "__filtered_counts_shape.txt",

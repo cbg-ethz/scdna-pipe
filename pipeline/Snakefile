@@ -114,9 +114,10 @@ rule all:
         cellranger = "cellranger_done.txt",
         bins_genome = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__bins_genome.tsv",
         chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__chr_stops.tsv",
-        filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_cnvs.tsv",
+        filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_cnvs.csv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
         filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
+        excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
 
         segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
         segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
@@ -200,7 +201,8 @@ rule remove_tenx_artifacts:
         chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix) + "__chr_stops.tsv",
         filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_cnvs.csv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
-        filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt"
+        filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
+        excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
     run:
         for key in config['secondary_analysis']:
             assert(os.path.isfile(config['secondary_analysis'][key]))
@@ -229,7 +231,7 @@ rule detect_breakpoints:
             print("breakpoint detection directory already exists.")
         input_shape = np.loadtxt(input.matrix_shape)
         (n_cells, n_bins) = [int(input_shape[i]) for i in range(2)]
-
+        
         try:
             cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.d_matrix_file}", f"--n_bins={n_bins}",\
                 f"--n_cells={n_cells}", f"--window_size={params.window_size}", f"--postfix={params.posfix}",\
@@ -278,22 +280,23 @@ rule plot_breakpoints:
 
         Z = ward(pdist(normalised_regions))
         hclust_index = leaves_list(Z)
+        cmap = sns.diverging_palette(220, 10, as_cmap=True)
 
         print("plotting the heatmap ...")
         plt.figure(figsize=(24, 8))
-        ax = sns.heatmap(normalised_bins, vmax=mean_normalised_bins)
+        ax = sns.heatmap(normalised_bins, vmax=2, cmap=cmap)
         plt.savefig(output.normalised_bins_heatmap)
         plt.close()
 
         print("plotting the clustered heatmap ...")
         plt.figure(figsize=(24, 8))
-        ax = sns.heatmap(normalised_bins[hclust_index], vmax=mean_normalised_bins)
+        ax = sns.heatmap(normalised_bins[hclust_index], vmax=2, cmap=cmap)
         plt.savefig(output.normalised_bins_clustered_heatmap)
         plt.close()
 
         print("plotting the clustered heatmap with breakpoints ...")
         plt.figure(figsize=(24, 8))
-        ax = sns.heatmap(normalised_bins[hclust_index], vmax=mean_normalised_bins)
+        ax = sns.heatmap(normalised_bins[hclust_index], vmax=2, cmap=cmap)
         ax = ax.vlines(bps, *ax.get_xlim(), colors='b', linestyles='dashed')
         plt.savefig(output.normalised_bins_clustered_bps_heatmap)
         plt.close()

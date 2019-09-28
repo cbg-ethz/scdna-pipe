@@ -2,7 +2,7 @@
   "self":"/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/test/config.json",
   "sample_name":"MYNESYB_S2",
   "sequencing_prefix": "MYNESYB-T_scD_250c-r1v1.0_r1v1.0-AHCJTCBGXC",
-  "analysis_prefix": "MYNESYB-T_scD_Ar1v1.8",
+  "analysis_prefix": "MYNESYB-T_scD_Ar1v1.8_mappable_only",
   "ref_genome_version": "GRCh37",
   "ref_genome_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/data/refdata-GRCh37-1.0.0_dna",
   "fastqs_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MYNESYB-T/singlecell_dna/openbis",
@@ -34,6 +34,8 @@
     "window_size":10,
     "verbosity":3,
     "threshold":8.1,
+    "min_cells": 4,
+    "max_cells": 277,
     "d_matrix_file":"/Users/mtuncel/git_repos/sc-dna/data/adi_steif/read_count_tables/SA501X3F_corr_20regions.txt",
     "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/sc-dna/bin/breakpoint_detection"
   },
@@ -51,7 +53,7 @@
     },
     "cluster_trees":
     {
-      "n_iters": 60000,
+      "n_iters": 10000,
       "n_nodes": 0,
       "move_probs": [0,1,0,0,0,1,0,1,0,1,0.4,1],
       "n_reps": 10
