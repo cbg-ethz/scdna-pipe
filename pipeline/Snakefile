@@ -159,7 +159,8 @@ rule all:
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
         heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_heatmap.png",
 
-        cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
+        cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
+        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
 
         #symlink directories
         raw_files_list = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt",
@@ -651,16 +652,25 @@ rule visualise_trees:
     input:
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt"
     output:
-        cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz"
+        cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
+        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png"
     run:
         tree_as_list = tree_to_graphviz(input.cluster_tree)
         
         for line in tree_as_list:
             print(f"{line}\n")
         
-        with open(output.cluster_tree_image, "w") as file:
+        with open(output.cluster_tree_graphviz, "w") as file:
             for line in tree_as_list:
                 file.write(f"{line}\n")
+
+        try:
+            cmd_output = subprocess.run(["dot", "-Tpng", f"{output.cluster_tree_graphviz}", "-o", f"{output.cluster_tree_figure}"])
+        except subprocess.SubprocessError as e:
+            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
+        else:
+            print(f"subprocess out: {cmd_output}")
+            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
 
 rule merge_files:
     params:
