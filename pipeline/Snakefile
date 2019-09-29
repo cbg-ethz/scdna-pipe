@@ -151,7 +151,7 @@ rule all:
 
         inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
 
-        # overlapping_cluster_plot = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_profile_overlapping.png",
+        overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
 
         # unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
         # tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
@@ -588,9 +588,9 @@ rule plot_cluster_cnvs:
     params:
     input:
         inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
-        chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__chr_stops.tsv"
+        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv"
     output:
-        overlapping_cluster_plot = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_profile_overlapping.png"
+        overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png"
     benchmark:
         "benchmark/plot_cluster_cnvs.tsv"
     run:

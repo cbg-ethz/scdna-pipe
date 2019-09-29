@@ -276,7 +276,7 @@ class SecondaryAnalysis:
                 cnvs_counter += 1
             cnvs_mat.append(c_row)
 
-        cnvs_arr =  np.array(cnvs_mat).T
+        cnvs_arr =  np.array(cnvs_mat, dtype=float).T
         print(f"cnvs_arr shape: {cnvs_arr.shape}")
 
         print("writing the inferred cnvs...")
@@ -287,20 +287,16 @@ class SecondaryAnalysis:
             fmt="%s"
         )
 
-    def plot_clusters(self, chr_stops_path, unique_cnvs_path):
+    def plot_clusters(self, chr_stops_path, cnvs_arr_path):
         """
         Plots the copy number values
         for each cluster across the chromosome
         :param chr_stops_path: Path to the file containing the chromosome stop positions
-        :param unique_cnvs_path: path to the file containing unique copy number profiles
+        :param cnvs_array_path: path to the file containing unique copy number profiles (including missing values)
         :return:
         """
 
-        unique_cnvs = np.loadtxt(unique_cnvs_path, delimiter=',')
-        # reshape if 1D array
-        if (unique_cnvs.ndim == 1):
-            unique_cnvs = np.reshape(unique_cnvs,(-1,unique_cnvs.shape[0]))
-        cluster_ids = range(unique_cnvs.shape[0])
+        cnvs_arr = np.loadtxt(cnvs_arr_path, delimiter=',')
 
         chr_stops_df = pd.read_csv(chr_stops_path, sep='\t', index_col=0)
         chr_stops_df.columns = ["pos"]
@@ -310,27 +306,28 @@ class SecondaryAnalysis:
         # max_val = np.nanmax(cluster_means.values)
         max_val = 8  # max CN value
 
-        output_path = os.path.join(self.output_path, "tree_learning")
+        output_path = os.path.join(self.output_path, "inferred_cnvs")
 
         cmap = matplotlib.cm.get_cmap("Dark2")
 
         # use the formula below to get the distinct colors
         # color = cmap(float(i)/N)
         print("saving copy number figures by cluster.")
-        for i, row in enumerate(unique_cnvs):
+        for i, row in enumerate(cnvs_arr):
             plt.figure(figsize=(20, 6))
             ax = plt.scatter(
-                y=unique_cnvs[i],
+                y=cnvs_arr[i],
                 x=range(len(row)),
                 label="cluster id: " + str(i),
                 color=cmap(
-                    float(i + 1) / len(unique_cnvs)
+                    float(i + 1) / len(cnvs_arr)
                 ),
                 s=1,
             )
             plt.axis([None, None, -0.2, max_val])  # to make the axises same
             plt.legend(loc="upper left")
             plt.xticks([], [])
+            plt.text(0, -0.5, "0")
             for index, row in chr_stops_df.iterrows():
                 plt.text(index, -0.5, "chr " + row["pos"], rotation=90)
             plt.savefig(
@@ -342,13 +339,13 @@ class SecondaryAnalysis:
 
         print("Saving overlapping copy number profile figures by cluster.")
         plt.figure(figsize=(20, 6))
-        for i, row in enumerate(unique_cnvs):
+        for i, row in enumerate(cnvs_arr):
             ax = plt.scatter(
-                y=row + (i + 1) / 10,
+                y=cnvs_arr[i],
                 x=range(len(row)),
                 label="cluster id: " + str(i),
                 color=cmap(
-                    float(i + 1) / len(unique_cnvs)
+                    float(i + 1) / len(cnvs_arr)
                 ),
                 alpha=0.8,
                 s=1,
@@ -356,6 +353,7 @@ class SecondaryAnalysis:
             plt.axis([None, None, -0.2, max_val])  # to make the axises same
             plt.legend(loc="upper left")
             plt.xticks([], [])
+            plt.text(0, -0.5, "0")
             for index, row in chr_stops_df.iterrows():
                 plt.text(index, -0.5, "chr " + row["pos"], rotation=90)
         plt.savefig(
