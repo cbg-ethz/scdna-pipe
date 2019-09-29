@@ -831,38 +831,6 @@ rule copy_cellranger_outputs:
          ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/web_summary.html'\
              '{params.cellranger_path}/renamed/{params.analysis_prefix}__web_summary.html';"
 
-# rule secondary_analysis:
-#     params:
-#         analysis_prefix = analysis_prefix,
-#         analysis_path = analysis_path,
-#         h5_path = config['secondary_analysis']['h5_path'],
-#         genes_path = config['secondary_analysis']['genes_path'],
-#         all_genes_path = config['secondary_analysis']['all_genes_path'],
-#         bins = config['secondary_analysis']['bins_to_remove'],
-#         script_dir = scripts_dir+"../pipeline/run_secondary_analysis.py",
-#         config_file = config['self']
-#     input:
-#         rules.run_cellranger.output.cnv_data
-#     output:
-#         bins_genome = os.path.join(analysis_path, "filtering", analysis_prefix) + "__bins_genome.tsv",
-#         chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix) + "__chr_stops.tsv",
-#         filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_cnvs.tsv",
-#         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.tsv",
-
-#         cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix) + "__cluster_frequencies.txt",
-#         clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
-#         cluster_profile_overlapping = os.path.join(analysis_path, "clustering", analysis_prefix) + "__cluster_profile_overlapping.png",
-#         cluster_sizes = os.path.join(analysis_path, "clustering", analysis_prefix) + "__cluster_sizes.txt",
-#         clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
-#         clusters_phenograph_cn_profiles = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_cn_profiles.tsv",
-#         clusters_phenograph_count_profiles = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_count_profiles.tsv",
-#         cn_cluster = os.path.join(analysis_path, "clustering", analysis_prefix) + "__cn_cluster.h5",
-#         cn_gene_cluster = os.path.join(analysis_path, "clustering", analysis_prefix) + "__cn_gene_cluster.tsv",
-#         tsne_output = os.path.join(analysis_path, "clustering", analysis_prefix) + "__tsne_output.png",
-#         done = "secondary_analysis_done.txt"
-#     shell:
-#         'python {params.script_dir} -c {params.config_file}; touch secondary_analysis_done.txt'
-
 rule create_raw_symlinks:
     params:
         seq_prefix = seq_prefix,
