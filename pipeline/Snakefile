@@ -153,11 +153,11 @@ rule all:
 
         overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
 
-        # unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
-        # tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
+        tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
 
-        # gene_cn_df = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_df.csv",
-        # heatmap_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_heatmap.png",
+        gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
+        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_heatmap.png"
 
         # cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz"
 
@@ -601,18 +601,16 @@ rule plot_heatmap:
         genes_path = config['secondary_analysis']['genes_path'],
         bin_size = bin_size
     input:
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv"
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
     output:
-        gene_cn_df = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_df.csv",
-        heatmap_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_heatmap.png"
+        gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
+        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_heatmap.png"
     benchmark:
         "benchmark/plot_heatmap.tsv"
     run:
-        unique_cnvs = np.loadtxt(input.unique_cnv_profiles, delimiter=',')
-        # reshape if 1D array
-        if (unique_cnvs.ndim == 1):
-            unique_cnvs = np.reshape(unique_cnvs,(-1,unique_cnvs.shape[0]))
-        cluster_ids = range(unique_cnvs.shape[0])
+        cnvs_arr = np.loadtxt(input.inferred_cnvs, delimiter=',')
+        cluster_ids = range(cnvs_arr.shape[0])
+
         genes = pd.read_csv(params.genes_path, sep="\t")
 
         gene_cn_df = pd.DataFrame(index=cluster_ids)
@@ -625,7 +623,7 @@ rule plot_heatmap:
             # print(start_bin, stop_bin)
             gene_cn_per_cluster = []
             for c_id in cluster_ids:
-                cn_states = unique_cnvs[
+                cn_states = cnvs_arr[
                     c_id, start_bin : stop_bin + 1
                 ]
                 min_cn_cell_bin = np.min(
