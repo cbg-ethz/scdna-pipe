@@ -112,8 +112,8 @@ rule all:
         tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
         move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
         cellranger = "cellranger_done.txt",
-        bins_genome = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__bins_genome.tsv",
-        chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__chr_stops.tsv",
+        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
+        bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv",
         filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_cnvs.csv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
         filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
@@ -149,15 +149,17 @@ rule all:
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
         cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
 
-        overlapping_cluster_plot = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_profile_overlapping.png",
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
 
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
-        tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
+        # overlapping_cluster_plot = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_profile_overlapping.png",
 
-        gene_cn_df = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_df.csv",
-        heatmap_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_heatmap.png",
+        # unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
+        # tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
 
-        cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz"
+        # gene_cn_df = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_df.csv",
+        # heatmap_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cn_gene_heatmap.png",
+
+        # cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz"
 
         # cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_frequencies.txt",
         # clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clustering_score.txt",
@@ -197,8 +199,6 @@ rule remove_tenx_artifacts:
     input:
         os.path.join(cellranger_path, cr_sample_name) + "/outs/cnv_data.h5"
     output:
-        bins_genome = os.path.join(analysis_path, "filtering", analysis_prefix) + "__bins_genome.tsv",
-        chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix) + "__chr_stops.tsv",
         filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_cnvs.csv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
         filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
@@ -207,6 +207,17 @@ rule remove_tenx_artifacts:
         for key in config['secondary_analysis']:
             assert(os.path.isfile(config['secondary_analysis'][key]))
         sa.remove_tenx_genomics_artifacts(bins=params.bins)
+
+rule extract_genomic_info:
+    input:
+        os.path.join(cellranger_path, cr_sample_name) + "/outs/cnv_data.h5"
+    output:
+        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
+        bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv"
+    benchmark:
+        "benchmark/extract_genomic_info.tsv"
+    run:
+        sa.extract_genomic_info()
 
 rule detect_breakpoints:
     params:
@@ -562,17 +573,28 @@ rule cell_assignment:
             fmt='%d'
         )
 
+rule add_filtered_bins_back:
+    input:
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
+        excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv"
+    output:
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
+    benchmark:
+        "benchmark/add_filtered_bins_back.tsv"
+    run:
+        sa.add_filtered_bins_back(input.unique_cnv_profiles, input.excluded_bins)
+
 rule plot_cluster_cnvs:
     params:
     input:
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
-        chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__chr_stops.tsv",
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
+        chr_stops = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__chr_stops.tsv"
     output:
         overlapping_cluster_plot = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_profile_overlapping.png"
     benchmark:
         "benchmark/plot_cluster_cnvs.tsv"
     run:
-        sa.plot_clusters(input.chr_stops, input.unique_cnv_profiles)
+        sa.plot_clusters(input.chr_stops, input.inferred_cnvs)
 
 rule plot_heatmap:
     params:

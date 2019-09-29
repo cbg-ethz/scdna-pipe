@@ -44,12 +44,12 @@ class SecondaryAnalysis:
             if not os.path.exists(path):
                 os.makedirs(path)
 
-    def remove_tenx_genomics_artifacts(self, bins):
+    def extract_genomic_info(self):
         """
-        Filters out the technical noise produced by 10x genomics sequencing artifacts.
-        :param bins: The list of bins corresponding to technical noise
+        Outputs the chromosome stops and bin start stop positions
         :return:
         """
+        
         h5f = h5py.File(self.h5_path, "r")
 
         n_cells = h5f["cell_barcodes"].value.shape[0]
@@ -72,6 +72,52 @@ class SecondaryAnalysis:
                 idx
             ]  # -1 because it is a size info
 
+        bin_size = h5f["constants"]["bin_size"][()]
+        normalized_counts = merge_chromosomes(h5f)
+        n_bins = normalized_counts.shape[1]
+        bin_ids = [x for x in range(0, n_bins)]
+        bin_df = pd.DataFrame(bin_ids, columns=["bin_ids"])
+
+        bin_df["start"] = bin_df["bin_ids"] * bin_size
+        bin_df["end"] = bin_df["start"] + bin_size
+        print(bin_df.head())
+
+        chr_stops_arr = np.array(chr_stop_positions)
+
+        df_chr_stops = pd.DataFrame(columns=["chr"])
+        for idx, val in enumerate(chr_stops_arr):
+            if val != None:
+                # print((idx,val))
+                df_chr_stops.loc[idx] = val
+
+        output_path = os.path.join(self.output_path, "genomic_coordinates")
+
+        bin_df.to_csv(
+            os.path.join(output_path, self.sample_name) + "__bins_genome.tsv",
+            sep="\t",
+            index=False,
+        )
+
+        df_chr_stops.to_csv(
+            os.path.join(output_path, self.sample_name) + "__chr_stops.tsv", sep="\t"
+        )
+
+        print("Output written to: " + output_path)
+
+        h5f.close()
+        
+
+    def remove_tenx_genomics_artifacts(self, bins):
+        """
+        Filters out the technical noise produced by 10x genomics sequencing artifacts.
+        :param bins: The list of bins corresponding to technical noise
+        :return:
+        """
+        h5f = h5py.File(self.h5_path, "r")
+
+        n_cells = h5f["cell_barcodes"].value.shape[0]
+        all_chromosomes = list(h5f["normalized_counts"].keys())
+
         cnvs = merge_chromosomes(h5f, key="cnvs")
         normalized_counts = merge_chromosomes(h5f)
 
@@ -93,7 +139,6 @@ class SecondaryAnalysis:
 
         print(f"unmappable bins len: {len(unmappable)}")
         print(f"unmappable bins sum: {sum(unmappable)}")
-        
 
         # exclude 10x artifact bins
         artifact_bins = np.loadtxt(bins, delimiter="\t").astype(bool)
@@ -116,20 +161,6 @@ class SecondaryAnalysis:
         print(cnvs.shape)
         cnvs = cnvs[:, ~to_filter_out]
         print(cnvs.shape)
-
-        print("bin_df shape before & after filtering")
-        print(bin_df.shape)
-        bin_df = bin_df[~to_filter_out]
-        print(bin_df.shape)
-
-        print("filtering chromosome stop positions")
-        filtered_chr_stops = np.array(chr_stop_positions)[~to_filter_out]
-
-        df_chr_stops = pd.DataFrame(columns=["chr"])
-        for idx, val in enumerate(filtered_chr_stops):
-            if val != None:
-                # print((idx,val))
-                df_chr_stops.loc[idx] = val
 
         cnvs = cnvs.astype("float")
         cnvs[cnvs < 0] = None
@@ -159,16 +190,6 @@ class SecondaryAnalysis:
             output_path + "/" + self.sample_name + "__filtered_cnvs.csv",
             cnvs,
             delimiter=",",
-        )
-
-        bin_df.to_csv(
-            output_path + "/" + self.sample_name + "__bins_genome.tsv",
-            sep="\t",
-            index=False,
-        )
-
-        df_chr_stops.to_csv(
-            output_path + "/" + self.sample_name + "__chr_stops.tsv", sep="\t"
         )
 
         print("Output written to: " + output_path)
@@ -228,6 +249,43 @@ class SecondaryAnalysis:
         # write the modularity score, for stability
         with open(output_path + "__clustering_score.txt", "w") as f:
             f.write(str(Q))
+
+    def add_filtered_bins_back(self, unique_cnvs_path, bin_mask_path):
+        """
+        Adds the filtered bins back to the inferred cnvs
+        :param unique_cnvs_path: path to the file containing unique copy number profiles
+        :param bin_mask_path: path to the excluded bins file
+        :return:
+        """
+        unique_cnvs = np.loadtxt(unique_cnvs_path, delimiter=',')
+        print(f"unique_cnvs shape: {unique_cnvs.shape}")
+        bin_mask = np.loadtxt(bin_mask_path, delimiter=',')
+        print(f"bin_mask shape: {bin_mask.shape}")
+
+        cnvs_mat = []
+        cnvs_counter = 0
+
+        for bin_idx, bin_val in enumerate(bin_mask):
+            c_row = []
+            if bin_val:
+                for c_id in range(unique_cnvs.shape[0]):        
+                    c_row.append(None)
+            else:
+                for c_id in range(unique_cnvs.shape[0]):
+                    c_row.append(unique_cnvs[c_id][cnvs_counter])
+                cnvs_counter += 1
+            cnvs_mat.append(c_row)
+
+        cnvs_arr =  np.array(cnvs_mat).T
+        print(f"cnvs_arr shape: {cnvs_arr.shape}")
+
+        print("writing the inferred cnvs...")
+        np.savetxt(
+            os.path.join(self.output_path, "inferred_cnvs", self.sample_name) + "__inferred_cnvs.csv",
+            cnvs_arr,
+            delimiter=",",
+            fmt="%s"
+        )
 
     def plot_clusters(self, chr_stops_path, unique_cnvs_path):
         """
