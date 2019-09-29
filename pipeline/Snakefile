@@ -157,30 +157,16 @@ rule all:
         tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
 
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
-        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_heatmap.png"
+        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_heatmap.png",
 
-        # cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz"
+        cluster_tree_image = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
 
-        # cluster_frequencies = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_frequencies.txt",
-        # clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clustering_score.txt",
-        # cluster_profile_overlapping = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_profile_overlapping.png",
-        # cluster_sizes = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_sizes.txt",
-        # clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clusters_phenograph_assignment.tsv",
-        # clusters_phenograph_cn_profiles = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clusters_phenograph_cn_profiles.tsv",
-        # clusters_phenograph_count_profiles = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__clusters_phenograph_count_profiles.tsv",
-        # cn_cluster = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_cluster.h5",
-        # cn_gene_cluster = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_gene_cluster.tsv",
-        # tsne_output = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__tsne_output.png",
-        # secondary_analysis = "secondary_analysis_done.txt",
-        # cluster_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_profile_files.txt",
-        # heatmap_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_genes_clusters_files.txt",
-
-        # symlink directories
-        # raw_files_list = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt",
-        # sym_r1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
-        # sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
-        # sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes),
-        # checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5",
+        #symlink directories
+        raw_files_list = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt",
+        sym_r1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
+        sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
+        sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes),
+        checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5",
 
         # # copy cellranger outputs
         # cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", 
