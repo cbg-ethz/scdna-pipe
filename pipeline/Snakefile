@@ -33,6 +33,17 @@ all_genes_path = config['secondary_analysis']['all_genes_path']
 analysis_prefix = config['analysis_prefix']
 seq_prefix = config["sequencing_prefix"]
 
+try:
+    cluster_tree_rep = config["inference"]["cluster_trees"]["n_reps"]
+except KeyError:
+    cluster_tree_rep = 10
+
+try:
+    full_tree_rep = config["inference"]["full_trees"]["n_reps"]
+except KeyError:
+    full_tree_rep = 10
+
+
 sa = SecondaryAnalysis(
     sample_name=analysis_prefix,
     output_path=analysis_path,
@@ -40,6 +51,25 @@ sa = SecondaryAnalysis(
     genes_path=genes_path,
     all_genes_path=all_genes_path,
 )
+
+def get_tree_scores(tree_paths):
+    """
+        Creates the list of tree scores by parsing the tree files
+        :param trees_path: a list of tree paths
+        :return: the list of tree scores
+    """
+    tree_scores = []
+    for tree_path in tree_paths:
+        with open(tree_path) as f:
+            list_tree_file = list(f)
+        
+        for line in list_tree_file: 
+            if line.startswith("Tree score:"):
+                score = line.rstrip("\n").lstrip("Tree score:").lstrip(" ")
+                tree_scores.append(float(score))
+
+    return tree_scores
+
 
 def rename_fastq(s_name):
     '''
@@ -145,6 +175,14 @@ rule all:
 
         empty_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree.txt",
         empty_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree_cnvs.csv",
+
+        cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
+             repeat_id=[x for x in range(0,cluster_tree_rep)]),
+
+        cluster_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree_cnvs.csv",\
+            repeat_id=[x for x in range(0,cluster_tree_rep)]),
+
+        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt",
 
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
         cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
@@ -493,8 +531,7 @@ rule learn_cluster_trees:
         n_iters = config["inference"]["cluster_trees"]["n_iters"],
         n_nodes = config["inference"]["cluster_trees"]["n_nodes"],
         move_probs = config["inference"]["cluster_trees"]["move_probs"],
-        seed = config["inference"]["seed"],
-        posfix = "cluster_trees"
+        posfix = "cluster_trees" + "_{cluster_tree_rep}"
     input:
         avg_counts = os.path.join(analysis_path,\
                 "clustering", analysis_prefix) + "_avg_counts.csv",
@@ -503,8 +540,8 @@ rule learn_cluster_trees:
              "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
         empty_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree.txt"
     output:
-        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv"
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{cluster_tree_rep}" + "__cluster_tree.txt",
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{cluster_tree_rep}" + "__cluster_tree_cnvs.csv"
     benchmark:
         "benchmark/learn_cluster_trees.tsv"
     run:
@@ -518,12 +555,11 @@ rule learn_cluster_trees:
                 l_parts = l.split(':')
                 if l_parts[0] == 'Nu':
                     nu = l_parts[1].strip()
-        
         try:
             cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.avg_counts}", f"--n_regions={n_regions}",\
                 f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
                 f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}", f"--n_nodes={params.n_nodes}",\
-                f"--move_probs={move_probs_str}", f"--seed={params.seed}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}"])
+                f"--move_probs={move_probs_str}", f"--seed={wildcards.cluster_tree_rep}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}"])
         except subprocess.SubprocessError as e:
             print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
         else:
@@ -532,6 +568,57 @@ rule learn_cluster_trees:
 
         os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_tree_inferred.txt", output.cluster_tree)
         os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_inferred_cnvs.csv", output.cluster_tree_inferred_cnvs)
+
+rule cluster_tree_robustness:
+    params:
+        robustness_thr = config["inference"]["robustness_thr"]
+    input:
+        cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
+             repeat_id=[x for x in range(0,cluster_tree_rep)])
+    output:
+        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt"
+    benchmark:
+        "benchmark/cluster_tree_robustness.tsv"
+    run:
+        tree_scores = get_tree_scores(input.cluster_tree_with_rep)
+        max_score = max(tree_scores)
+        score_dispersions = [abs(max_score-x) for x in tree_scores]
+
+        is_robust = [x<=1 for x in score_dispersions]
+        robustness_ratio = sum(is_robust) / len(is_robust)
+        print(f"Robustness ratio: {robustness_ratio}")
+        
+        with open(output.robustness_results, "w") as f:
+            f.write(f"Scores differences from the max: {score_dispersions}\n")
+            f.write(f"Robustness vector of trees: {is_robust}\n")
+            f.write(f"Robustness ratio: {robustness_ratio}\n")    
+
+        if robustness_ratio < params.robustness_thr:
+            raise Exception("The trees found are not robust, you may want to change the configurations") 
+
+rule pick_max_cluster_tree:
+    input:
+        cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
+             repeat_id=[x for x in range(0,cluster_tree_rep)]),
+        cluster_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree_cnvs.csv",\
+            repeat_id=[x for x in range(0,cluster_tree_rep)])
+    output:
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv"
+    benchmark:
+        "benchmark/pick_max_cluster_tree.tsv"
+    run:
+        import operator
+
+        trees_sorted = sorted(input.cluster_tree_with_rep)
+        trees_inferred_cnvs_sorted = sorted(input.cluster_tree_inferred_cnvs_with_rep)
+
+        tree_scores = get_tree_scores(trees_sorted)
+        max_index, max_score = max(enumerate(tree_scores), key=operator.itemgetter(1))
+
+        os.symlink(trees_sorted[max_index], output.cluster_tree)
+        os.symlink(trees_inferred_cnvs_sorted[max_index], output.cluster_tree_inferred_cnvs)
+
 
 rule cell_assignment:
     input:
@@ -691,6 +778,7 @@ rule merge_files:
         mv {params.fastqs_path}/MERGED_BSSE* {params.fastqs_path}/merged;\
         chmod 755 {params.fastqs_path}/merged/*;\
 	touch merge_files_done.txt"
+
 
 rule rename_fastqs:
     input:
