@@ -166,7 +166,6 @@ rule all:
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
 
         clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
-        phenograph_distance = os.path.join(analysis_path, "clustering", analysis_prefix) + "__phenograph_distance.csv",
         clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
 
         avg_counts = os.path.join(analysis_path,\
@@ -431,7 +430,6 @@ rule clustering:
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv"
     output:
         clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
-        phenograph_distance = os.path.join(analysis_path, "clustering", analysis_prefix) + "__phenograph_distance.csv",
         clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv"
     benchmark:
         "benchmark/clustering.tsv"
