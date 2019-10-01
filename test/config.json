@@ -36,7 +36,6 @@
     "threshold":8.1,
     "min_cells": 4,
     "max_cells": 277,
-    "d_matrix_file":"/Users/mtuncel/git_repos/sc-dna/data/adi_steif/read_count_tables/SA501X3F_corr_20regions.txt",
     "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/sc-dna/bin/breakpoint_detection"
   },
   "inference":
