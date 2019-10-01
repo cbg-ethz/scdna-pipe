@@ -144,7 +144,6 @@ rule all:
         cellranger = "cellranger_done.txt",
         chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv",
-        filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_cnvs.csv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
         filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
@@ -224,7 +223,6 @@ rule remove_tenx_artifacts:
     input:
         os.path.join(cellranger_path, cr_sample_name) + "/outs/cnv_data.h5"
     output:
-        filtered_cnvs = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_cnvs.csv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
         filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",

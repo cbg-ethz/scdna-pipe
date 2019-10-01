@@ -118,7 +118,6 @@ class SecondaryAnalysis:
         n_cells = h5f["cell_barcodes"].value.shape[0]
         all_chromosomes = list(h5f["normalized_counts"].keys())
 
-        cnvs = merge_chromosomes(h5f, key="cnvs")
         normalized_counts = merge_chromosomes(h5f)
 
         bin_size = h5f["constants"]["bin_size"][()]
@@ -157,17 +156,9 @@ class SecondaryAnalysis:
         normalized_counts = normalized_counts[:, ~to_filter_out]
         print(normalized_counts.shape)
 
-        print("cnvs matrix shape before & after filtering")
-        print(cnvs.shape)
-        cnvs = cnvs[:, ~to_filter_out]
-        print(cnvs.shape)
-
-        cnvs = cnvs.astype("float")
-        cnvs[cnvs < 0] = None
-
         print("writing output...")
 
-        output_path = self.output_path + "/filtering/"
+        output_path = os.path.join(self.output_path, "filtering")
 
         np.savetxt(
             os.path.join(output_path, self.sample_name) + "__excluded_bins.csv",
@@ -183,12 +174,6 @@ class SecondaryAnalysis:
         np.savetxt(
             output_path + "/" + self.sample_name + "__filtered_counts.csv",
             normalized_counts,
-            delimiter=",",
-        )
-
-        np.savetxt(
-            output_path + "/" + self.sample_name + "__filtered_cnvs.csv",
-            cnvs,
             delimiter=",",
         )
 
