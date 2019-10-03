@@ -18,8 +18,9 @@ fastqs_path = config['fastqs_path']
 moved_fastqs_path = os.path.join(fastqs_path, "merged", "tricked")
 analysis_path = config['analysis_path']
 
-symlinks_path = os.path.join(analysis_path, '..', 'symlinks')
-sym_raw_path = os.path.join(symlinks_path, "raw")
+to_upload_path = os.path.join(analysis_path, '..', 'to_upload')
+sym_raw_path = os.path.join(to_upload_path, "raw")
+sym_derived_path = os.path.join(to_upload_path, "derived")
 cellranger_path = os.path.join(analysis_path, "cellranger")
 scripts_dir = config['scripts_dir']+'/'
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
@@ -43,6 +44,36 @@ try:
 except KeyError:
     full_tree_rep = 10
 
+derived_file_names = [
+            "cnv_data.h5",
+            "web_summary.html",
+            "summary.csv",
+            "alarms_summary.txt",
+            "chr_stops.tsv",
+            "bins_genome.tsv",
+            "filtered_counts.csv",
+            "excluded_bins.csv",
+            "segmented_regions.txt",
+            "segmented_region_sizes.txt",
+            "segmented_counts.csv",
+            "normalised_bins.csv",
+            "normalised_regions.csv",
+            "normalised_bins_clustered.png",
+            "normalised_bins_clustered_bps.png",
+            "clusters_phenograph_assignment.tsv",
+            "clustering_score.txt",
+            "avg_counts.csv",
+            "cluster_tree.txt",
+            "cluster_tree_inferred_cnvs.csv",
+            "unique_cluster_tree_cnvs.csv",
+            "inferred_cnvs.csv",
+            "tree_cluster_sizes.txt",
+            "cluster_profile_files.txt",
+            "cluster_profile_overlapping.png",
+            "cn_gene_df.csv",
+            "heatmap_cnvs.png",
+            "Summary.txt"
+        ]
 
 sa = SecondaryAnalysis(
     sample_name=analysis_prefix,
@@ -193,7 +224,7 @@ rule all:
         tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
 
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
-        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_heatmap.png",
+        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png",
 
         cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
         cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
@@ -204,6 +235,11 @@ rule all:
         sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
         sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes),
         checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5",
+
+        # derived symlinks
+        derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{derived_filename}") for derived_filename in derived_file_names]
+
+        # raw symlinks
 
         # # copy cellranger outputs
         # cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", 
@@ -674,7 +710,7 @@ rule plot_heatmap:
         inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
     output:
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
-        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_heatmap.png"
+        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png"
     benchmark:
         "benchmark/plot_heatmap.tsv"
     run:
@@ -946,3 +982,86 @@ rule create_raw_symlinks:
         "ln -s {input.r1_fastqs} {output.r1_fastqs};\
             ln -s {params.old_file_name}{wildcards.lane_no}_R2_001.fastq.gz {output.r2_fastqs};\
                 ln -s {params.old_file_name}{wildcards.lane_no}_I1_001.fastq.gz {output.i1_fastqs};"
+
+rule create_derived_symlinks:
+    params:
+        cellranger_path = cellranger_path,
+        analysis_prefix = analysis_prefix
+    input:
+        cellranger = "cellranger_done.txt",
+        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
+        bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv",
+        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
+        excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
+        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
+        segmented_counts = os.path.join(analysis_path,\
+        "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
+        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
+        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
+        normalised_bins_clustered_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered.png",
+        normalised_bins_clustered_bps_heatmap = os.path.join(analysis_path,\
+             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered_bps.png",
+        clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
+        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
+        avg_counts = os.path.join(analysis_path,\
+                "clustering", analysis_prefix) + "_avg_counts.csv",
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
+        tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
+        overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
+        gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
+        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png",
+
+    output:
+        derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{filename}") for filename in derived_file_names]
+    run:
+        
+        os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", os.path.join(sym_derived_path, f"{analysis_prefix}__alarms_summary.txt"))
+        os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", os.path.join(sym_derived_path, f"{analysis_prefix}__cnv_data.h5"))
+        os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", os.path.join(sym_derived_path, f"{analysis_prefix}__summary.csv"))
+        os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html", os.path.join(sym_derived_path, f"{analysis_prefix}__web_summary.html"))
+
+        os.symlink(input.chr_stops, os.path.join(sym_derived_path, f"{analysis_prefix}__chr_stops.tsv"))
+        os.symlink(input.bins_genome, os.path.join(sym_derived_path, f"{analysis_prefix}__bins_genome.tsv"))
+        os.symlink(input.filtered_counts, os.path.join(sym_derived_path, f"{analysis_prefix}__filtered_counts.csv"))
+
+        os.symlink(input.excluded_bins, os.path.join(sym_derived_path, f"{analysis_prefix}__excluded_bins.csv"))
+
+        os.symlink(input.segmented_regions, os.path.join(sym_derived_path, f"{analysis_prefix}__segmented_regions.txt"))
+        os.symlink(input.segmented_region_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__segmented_region_sizes.txt"))
+        os.symlink(input.segmented_counts, os.path.join(sym_derived_path, f"{analysis_prefix}__segmented_counts.csv"))
+
+        os.symlink(input.normalised_bins, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins.csv"))
+        os.symlink(input.normalised_regions, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_regions.csv"))
+
+        os.symlink(input.normalised_bins_clustered_heatmap, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins_clustered.png"))
+        os.symlink(input.normalised_bins_clustered_bps_heatmap, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins_clustered_bps.png"))
+
+        os.symlink(input.clustering_score, os.path.join(sym_derived_path, f"{analysis_prefix}__clustering_score.txt"))
+        os.symlink(input.clusters_phenograph_assignment, os.path.join(sym_derived_path, f"{analysis_prefix}__clusters_phenograph_assignment.tsv"))
+
+        os.symlink(input.avg_counts, os.path.join(sym_derived_path, f"{analysis_prefix}__avg_counts.csv"))
+        os.symlink(input.cluster_tree, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree.txt"))
+        os.symlink(input.cluster_tree_inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_inferred_cnvs.csv"))
+        os.symlink(input.unique_cnv_profiles, os.path.join(sym_derived_path, f"{analysis_prefix}__unique_cluster_tree_cnvs.csv"))
+        os.symlink(input.inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__inferred_cnvs.csv"))
+
+        os.symlink(input.tree_cluster_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__tree_cluster_sizes.txt"))
+        os.symlink(input.overlapping_cluster_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_overlapping.png"))
+
+        cluster_profile_plots = glob.glob(os.path.join(analysis_path, "inferred_cnvs", f"{analysis_prefix}__cluster_profile_[0-9]*.png"))
+        print(cluster_profile_plots)
+        with open(os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_files.txt"), "w") as file:
+            for cluster_profile_plot in cluster_profile_plots:
+                f_name = cluster_profile_plot.split("/")[-1]
+                os.symlink(cluster_profile_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__{f_name}"))
+                file.write(f"{f_name}\n")
+
+        os.symlink(input.gene_cn_df, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df.csv"))
+        os.symlink(input.heatmap_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__heatmap_cnvs.png"))
+
+        open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w").close()
