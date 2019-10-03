@@ -808,7 +808,7 @@ rule merge_files:
 	    mkdir {params.fastqs_path}/merged;\
 	fi ; \
         mv {params.fastqs_path}/MERGED_BSSE* {params.fastqs_path}/merged;\
-        chmod 755 {params.fastqs_path}/merged/*;\
+        chmod 775 {params.fastqs_path}/merged/*;\
 	touch merge_files_done.txt"
 
 
