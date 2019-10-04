@@ -108,10 +108,10 @@ def get_gene_cn_df(genes, cnvs_arr, bin_size):
             cn_states = cnvs_arr[
                 c_id, start_bin : stop_bin + 1
             ]
-            min_cn_cell_bin = np.min(
+            median_cn_cell_bin = np.median(
                 cn_states
             )  # all the bins within the gene, min due to biology
-            gene_cn_per_cluster.append(min_cn_cell_bin)
+            gene_cn_per_cluster.append(median_cn_cell_bin)
         print(gene_cn_per_cluster)
         gene_cn_df[gene_name] = gene_cn_per_cluster
 
