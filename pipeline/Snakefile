@@ -1,5 +1,6 @@
 import glob
 import os
+import h5py
 import subprocess
 import numpy as np
 import pandas as pd
@@ -97,7 +98,7 @@ def get_gene_cn_df(genes, cnvs_arr, bin_size):
     gene_cn_df = pd.DataFrame(index=cluster_ids)
     
     # for each gene
-    for index, row in tqdm(genes.iterrows()):
+    for index, row in tqdm(genes.iterrows(), total=genes.shape[0]):
         start_bin = int(row["Gene start (bp)"] / bin_size)
         stop_bin = int(row["Gene end (bp)"] / bin_size)
         chromosome = str(row["Chromosome/scaffold name"])
@@ -112,7 +113,6 @@ def get_gene_cn_df(genes, cnvs_arr, bin_size):
                 cn_states
             )  # all the bins within the gene, min due to biology
             gene_cn_per_cluster.append(median_cn_cell_bin)
-        print(gene_cn_per_cluster)
         gene_cn_df[gene_name] = gene_cn_per_cluster
 
     print("Transposing the dataframe...")
@@ -278,7 +278,7 @@ rule all:
         checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5",
 
         # derived symlinks
-        derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{derived_filename}") for derived_filename in derived_file_names]
+        derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{derived_filename}") for derived_filename in derived_file_names],
 
         # raw symlinks
 
@@ -287,6 +287,8 @@ rule all:
         # cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", 
         # cr_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", 
         # cr_web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html"
+
+        cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
 
     output:
         
@@ -783,6 +785,30 @@ rule plot_heatmap:
             output.heatmap_cnvs
         )
         plt.close()
+
+rule create_cn_cluster_h5:
+    params:
+        all_genes_path = all_genes_path,
+        bin_size = bin_size
+    input:
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
+    output:
+        cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
+    benchmark:
+        "benchmark/create_cn_cluster_h5"
+    run:
+        cnvs_arr = np.loadtxt(input.inferred_cnvs, delimiter=',')
+        genes = pd.read_csv(params.all_genes_path, sep="\t")
+
+        gene_cn_df = get_gene_cn_df(genes, cnvs_arr, bin_size)
+
+        cn_cluster_h5 = h5py.File(output.cn_cluster_h5, "w")
+        gene_attributes = cn_cluster_h5.create_group("gene_attrs")
+        gene_names = np.array(gene_cn_df.index.values, dtype="S16")
+
+        gene_attributes.create_dataset("gene_names", data=gene_names)
+        cn_cluster_h5.create_dataset("matrix", data=gene_cn_df.values)
+        cn_cluster_h5.close()
 
 rule visualise_trees:
     input:
