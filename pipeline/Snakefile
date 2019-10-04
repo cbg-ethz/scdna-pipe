@@ -83,6 +83,47 @@ sa = SecondaryAnalysis(
     all_genes_path=all_genes_path,
 )
 
+def get_gene_cn_df(genes, cnvs_arr, bin_size):
+    """
+        Creates and returns the dataframe of copy numbers, genes by cluster ids
+        :param genes: The input list of genes to be specified
+        :param cnvs_arr: Copy number matrix per cell per bin
+        :param bin_size: Integer constant speciying size of each bin
+        :return: CN dataframe of genes by clusters
+    """
+    print(f"genes shape: {genes.shape}")
+    print(f"cnvs_arr shape: {cnvs_arr.shape}")
+    cluster_ids = range(cnvs_arr.shape[0])
+    gene_cn_df = pd.DataFrame(index=cluster_ids)
+    
+    # for each gene
+    for index, row in tqdm(genes.iterrows()):
+        start_bin = int(row["Gene start (bp)"] / bin_size)
+        stop_bin = int(row["Gene end (bp)"] / bin_size)
+        chromosome = str(row["Chromosome/scaffold name"])
+        gene_name = row["Gene name"]
+        # print(start_bin, stop_bin)
+        gene_cn_per_cluster = []
+        for c_id in cluster_ids:
+            cn_states = cnvs_arr[
+                c_id, start_bin : stop_bin + 1
+            ]
+            min_cn_cell_bin = np.min(
+                cn_states
+            )  # all the bins within the gene, min due to biology
+            gene_cn_per_cluster.append(min_cn_cell_bin)
+        print(gene_cn_per_cluster)
+        gene_cn_df[gene_name] = gene_cn_per_cluster
+
+    print("Transposing the dataframe...")
+    gene_cn_df = gene_cn_df.T
+    print("Sorting the genes...")
+    gene_cn_df.sort_index(inplace=True)
+
+    print(gene_cn_df.head())
+    return gene_cn_df
+
+
 def get_tree_scores(tree_paths):
     """
         Creates the list of tree scores by parsing the tree files
@@ -715,32 +756,8 @@ rule plot_heatmap:
         "benchmark/plot_heatmap.tsv"
     run:
         cnvs_arr = np.loadtxt(input.inferred_cnvs, delimiter=',')
-        cluster_ids = range(cnvs_arr.shape[0])
-
         genes = pd.read_csv(params.genes_path, sep="\t")
-
-        gene_cn_df = pd.DataFrame(index=cluster_ids)
-        # for each gene
-        for index, row in tqdm(genes.iterrows()):
-            start_bin = int(row["Gene start (bp)"] / params.bin_size)
-            stop_bin = int(row["Gene end (bp)"] / params.bin_size)
-            chromosome = str(row["Chromosome/scaffold name"])
-            gene_name = row["Gene name"]
-            # print(start_bin, stop_bin)
-            gene_cn_per_cluster = []
-            for c_id in cluster_ids:
-                cn_states = cnvs_arr[
-                    c_id, start_bin : stop_bin + 1
-                ]
-                min_cn_cell_bin = np.min(
-                    cn_states
-                )  # all the bins within the gene, min due to biology
-                gene_cn_per_cluster.append(min_cn_cell_bin)
-            print(gene_cn_per_cluster)
-            gene_cn_df[gene_name] = gene_cn_per_cluster
-
-        gene_cn_df = gene_cn_df.T
-        gene_cn_df.sort_index(inplace=True)
+        gene_cn_df = get_gene_cn_df(genes, cnvs_arr, bin_size)
 
         gene_cn_df.to_csv(
             output.gene_cn_df
