@@ -15,6 +15,8 @@ if os.environ.get("DISPLAY", "") == "":
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import seaborn as sns
+
+sns.set()
 from tqdm import tqdm
 
 
@@ -434,3 +436,57 @@ class SecondaryAnalysis:
 
         cnv_data.close()
         cn_cluster_h5.close()
+
+    def plot_heatmap(self):
+        """
+        Creates the heapmap of CN values per gene per cluster
+        :return:
+        """
+
+        if self.communities_df is None:
+            raise UnboundAttributeError(
+                "The object attribute, namely communities_df is not set"
+            )
+
+        genes = pd.read_csv(self.genes_path, sep="\t")
+        cnv_data = h5py.File(self.h5_path)
+
+        gene_cn_df = self.get_gene_cluster_cn(genes, self.communities_df)
+        gene_cn_df = gene_cn_df.T
+        output_path = self.output_path + "/clustering/"
+
+        gene_cn_df.to_csv(
+            output_path + "/" + self.sample_name + "__cn_gene_cluster.tsv", sep="\t"
+        )
+
+        for i in range(1, 23):
+            chr_df = gene_cn_df[gene_cn_df.index.str.startswith(f"{str(i)}/")]
+
+            if chr_df.empty:
+                continue
+
+            chr_df.index = chr_df.index.to_series().str.split("/").str[1:].str.join("/")
+            chr_df = chr_df.sort_index(axis=0)
+
+            figure_width = chr_df.shape[0] / 2 + 1.5
+            plt.figure(figsize=(8, figure_width))
+            cmap = sns.diverging_palette(220, 10, as_cmap=True)
+            heatmap = sns.heatmap(
+                chr_df,
+                annot=True,
+                cmap=cmap,
+                vmin=0,
+                vmax=4,
+                xticklabels=True,
+                yticklabels=True,
+                cbar_kws={"ticks": [0, 1, 2, 3, 4]},
+            )
+            heatmap.set_title(f"Chromosome {str(i)}")
+            heatmap.set_facecolor("#656565")
+            heatmap = heatmap.get_figure()
+            heatmap.savefig(
+                f"{output_path}/{self.sample_name}__cn_genes_clusters_chr{str(i)}_heatmap.png"
+            )
+            plt.close()
+
+        cnv_data.close()
