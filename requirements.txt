@@ -3,7 +3,7 @@ scipy >= 1.0.1
 h5py >= 2.7.1
 pandas >= 0.23.0
 git+git://github.com/anilbey/PhenoGraph.git@7ef72746688217b2feed2f3f8226da2f304c532c#egg=Phenograph
-snakemake == 4.8.0
+snakemake >= 4.8.0
 scikit-learn >= 0.20.1
 biopython
 tqdm
