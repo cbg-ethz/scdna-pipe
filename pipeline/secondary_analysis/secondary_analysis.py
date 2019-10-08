@@ -10,7 +10,7 @@ import os
 import matplotlib
 
 if os.environ.get("DISPLAY", "") == "":
-    print("no display found. Using non-interactive Agg backend")
+    # print("no display found. Using non-interactive Agg backend")
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
@@ -34,13 +34,7 @@ class SecondaryAnalysis:
         :param sample_name: Name of the sample, to be added to the output names
         :param output_path: Desired path for the output files
         """
-        self.filtered_normalized_counts = None
-        self.filtered_cnvs = None
-        self.chr_stops = None
-        self.bin_positions = None
-        self.clustering_distance = None
-        self.cn_median_clusters_df = None
-        self.communities_df = None
+
         self.sample_name = sample_name
         self.output_path = output_path
         self.h5_path = h5_path
@@ -52,12 +46,12 @@ class SecondaryAnalysis:
             if not os.path.exists(path):
                 os.makedirs(path)
 
-    def remove_tenx_genomics_artifacts(self, bins):
+    def extract_genomic_info(self):
         """
-        Filters out the technical noise produced by 10x genomics sequencing artifacts.
-        :param bins: The list of bins corresponding to technical noise
+        Outputs the chromosome stops and bin start stop positions
         :return:
         """
+        
         h5f = h5py.File(self.h5_path, "r")
 
         n_cells = h5f["cell_barcodes"].value.shape[0]
@@ -80,7 +74,52 @@ class SecondaryAnalysis:
                 idx
             ]  # -1 because it is a size info
 
-        cnvs = merge_chromosomes(h5f, key="cnvs")
+        bin_size = h5f["constants"]["bin_size"][()]
+        normalized_counts = merge_chromosomes(h5f)
+        n_bins = normalized_counts.shape[1]
+        bin_ids = [x for x in range(0, n_bins)]
+        bin_df = pd.DataFrame(bin_ids, columns=["bin_ids"])
+
+        bin_df["start"] = bin_df["bin_ids"] * bin_size
+        bin_df["end"] = bin_df["start"] + bin_size
+        print(bin_df.head())
+
+        chr_stops_arr = np.array(chr_stop_positions)
+
+        df_chr_stops = pd.DataFrame(columns=["chr"])
+        for idx, val in enumerate(chr_stops_arr):
+            if val != None:
+                # print((idx,val))
+                df_chr_stops.loc[idx] = val
+
+        output_path = os.path.join(self.output_path, "genomic_coordinates")
+
+        bin_df.to_csv(
+            os.path.join(output_path, self.sample_name) + "__bins_genome.tsv",
+            sep="\t",
+            index=False,
+        )
+
+        df_chr_stops.to_csv(
+            os.path.join(output_path, self.sample_name) + "__chr_stops.tsv", sep="\t"
+        )
+
+        print("Output written to: " + output_path)
+
+        h5f.close()
+        
+
+    def remove_tenx_genomics_artifacts(self, bins):
+        """
+        Filters out the technical noise produced by 10x genomics sequencing artifacts.
+        :param bins: The list of bins corresponding to technical noise
+        :return:
+        """
+        h5f = h5py.File(self.h5_path, "r")
+
+        n_cells = h5f["cell_barcodes"].value.shape[0]
+        all_chromosomes = list(h5f["normalized_counts"].keys())
+
         normalized_counts = merge_chromosomes(h5f)
 
         bin_size = h5f["constants"]["bin_size"][()]
@@ -92,105 +131,77 @@ class SecondaryAnalysis:
         bin_df["end"] = bin_df["start"] + bin_size
         print(bin_df.head())
 
+        # exclude unmappable bins
+        is_mappable = []
+        for chr in all_chromosomes:
+            is_mappable = np.concatenate([is_mappable,h5f['genome_tracks']['is_mappable'][chr][:]])
+
+        unmappable = ~np.array(is_mappable, dtype=bool)
+
+        print(f"unmappable bins len: {len(unmappable)}")
+        print(f"unmappable bins sum: {sum(unmappable)}")
+
         # exclude 10x artifact bins
         artifact_bins = np.loadtxt(bins, delimiter="\t").astype(bool)
 
-        assert artifact_bins.shape[0] == normalized_counts.shape[1]
+        print(f"artifact bins mask len: {len(artifact_bins)}")
+        print(f"artifact bins mask sum: {sum(artifact_bins)}")
 
-        print("artifact bins mask len")
-        print(len(artifact_bins))
-        print("artifact bins mask sum")
-        print(sum(artifact_bins))
+        assert artifact_bins.shape[0] == normalized_counts.shape[1]
+        assert unmappable.shape[0] == artifact_bins.shape[0]
+        to_filter_out = np.logical_or(unmappable, artifact_bins)
+        print(f"combined filter len: {len(to_filter_out)}")
+        print(f"combined filter sum: {sum(to_filter_out)}")
 
         print("normalized_counts matrix shape before & after filtering")
         print(normalized_counts.shape)
-        normalized_counts = normalized_counts[:, ~artifact_bins]
+        normalized_counts = normalized_counts[:, ~to_filter_out]
         print(normalized_counts.shape)
 
-        print("cnvs matrix shape before & after filtering")
-        print(cnvs.shape)
-        cnvs = cnvs[:, ~artifact_bins]
-        print(cnvs.shape)
-
-        print("bin_df shape before & after filtering")
-        print(bin_df.shape)
-        bin_df = bin_df[~artifact_bins]
-        print(bin_df.shape)
-
-        print("filtering chromosome stop positions")
-        filtered_chr_stops = np.array(chr_stop_positions)[~artifact_bins]
-
-        df_chr_stops = pd.DataFrame(columns=["chr"])
-        for idx, val in enumerate(filtered_chr_stops):
-            if val != None:
-                # print((idx,val))
-                df_chr_stops.loc[idx] = val
-
-        cnvs = cnvs.astype("float")
-        cnvs[cnvs < 0] = None
-
-        self.filtered_cnvs = cnvs
-        self.chr_stops = df_chr_stops
-        self.filtered_normalized_counts = normalized_counts
-        self.bin_positions = bin_df
-
         print("writing output...")
-        output_path = self.output_path + "/filtering/"
+
+        output_path = os.path.join(self.output_path, "filtering")
+
         np.savetxt(
-            output_path + "/" + self.sample_name + "__filtered_counts.tsv",
+            os.path.join(output_path, self.sample_name) + "__excluded_bins.csv",
+            to_filter_out,
+            delimiter=','
+        )
+
+        np.savetxt(
+            output_path + "/" + self.sample_name + "__filtered_counts_shape.txt",
+            normalized_counts.shape
+        )
+
+        np.savetxt(
+            output_path + "/" + self.sample_name + "__filtered_counts.csv",
             normalized_counts,
-            delimiter="\t",
-        )
-
-        np.savetxt(
-            output_path + "/" + self.sample_name + "__filtered_cnvs.tsv",
-            cnvs,
-            delimiter="\t",
-        )
-
-        bin_df.to_csv(
-            output_path + "/" + self.sample_name + "__bins_genome.tsv",
-            sep="\t",
-            index=False,
-        )
-
-        df_chr_stops.to_csv(
-            output_path + "/" + self.sample_name + "__chr_stops.tsv", sep="\t"
+            delimiter=",",
         )
 
         print("Output written to: " + output_path)
 
         h5f.close()
 
-    def apply_phenograph(self, n_jobs=1, save_dist=False):
+    def apply_phenograph(self, normalised_regions_path, n_jobs=1):
         """
         Runs the phenograph clustering algorithm on the object and alters its fields
         :param n_jobs: The number of threads for clustering
+        :param normalised_regions_path: The path to the normalised regions
         :return:
         """
 
-        if self.filtered_cnvs is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely filtered_cnvs is not set"
-            )
+        print("loading the normalised regions...")
+        normalised_regions = np.loadtxt(normalised_regions_path, delimiter=',')
+        print(f"shape of normalised regions: {normalised_regions.shape}")
 
-        if self.filtered_normalized_counts is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely filtered_normalized_counts is not set"
-            )
+        n_cells = normalised_regions.shape[0]
 
-        filtered_counts = self.filtered_normalized_counts
-        normalized_filtered_counts = normalize(filtered_counts, axis=1, norm="l1")
-
-        cnvs = self.filtered_cnvs
-
-        n_cells = normalized_filtered_counts.shape[0]
-
-        print("n_cells: " + str(n_cells))
+        print(f"n_cells: {str(n_cells)}")
         n_neighbours = int(n_cells / 10)
-        print("n_neighbours: " + str(n_neighbours))
+        print(f"n_neighbours to be used: {str(n_neighbours)}")
         communities, graph, Q = phenograph.cluster(
-            data=normalized_filtered_counts, k=n_neighbours, n_jobs=n_jobs, jaccard=True
+            data=normalised_regions, k=n_neighbours, n_jobs=n_jobs, jaccard=True
         )
 
         # computing the distance matrix from graph
@@ -200,211 +211,128 @@ class SecondaryAnalysis:
         dist = (arr_full - arr_full.max()) * (-1)
         np.fill_diagonal(dist, 0)
 
-        print("shape of the distance matrix:")
-        print(dist.shape)
+        print(f"shape of the distance matrix: {dist.shape}")
 
-        # write dist to file
-        # later use dist for all of the plots
-        self.clustering_distance = dist
-        if save_dist:
-            dist_fname = (
-                args.output_path + "/" + args.sample_name + "_phenograph_distance.csv"
-            )
-            np.savetxt(fname=dist_fname, X=dist, delimiter=",")
+        dist_fname = (
+            os.path.join(self.output_path, "clustering", self.sample_name) + "__phenograph_distance.csv"
+        )
+        np.savetxt(fname=dist_fname, X=dist, delimiter=",")
 
-        print(communities)  # one of the outputs
-
+        print(f"Communities: {communities}")
         communities_df = pd.DataFrame(communities, columns=["cluster"])
         communities_df["cell_barcode"] = communities_df.index
         communities_df = communities_df[
             ["cell_barcode", "cluster"]
-        ]  # order the columns
-        communities_df.head()
+        ]
 
-        output_path = self.output_path + "/clustering/"
+        output_path = os.path.join(self.output_path, "clustering", self.sample_name)
+        print(f"output path: {output_path}")
         communities_df.to_csv(
-            output_path
-            + "/"
-            + self.sample_name
-            + "__clusters_phenograph_assignment.tsv",
+            output_path + "__clusters_phenograph_assignment.tsv",
             sep="\t",
-            index=False,
+            index=False
         )
 
         # write the modularity score, for stability
-        f = open(output_path + "/" + self.sample_name + "__clustering_score.txt", "w")
-        f.write(str(Q))
-        f.close()
+        with open(output_path + "__clustering_score.txt", "w") as f:
+            f.write(str(Q))
 
-        cells_by_cluster = []
-
-        community_dict = dict((Counter(communities)))
-
-        community_ids = sorted(list(community_dict))
-
-        # normalise to get the cluster frequencies
-        factor = 1.0 / sum(community_dict.values())
-        normalised_d = {k: v * factor for k, v in community_dict.items()}
-
-        with open(
-            output_path + "/" + self.sample_name + "__cluster_sizes.txt", "w"
-        ) as community_dict_file:
-            for idx, (key, value) in enumerate(
-                sorted(community_dict.items(), key=lambda x: x[0])
-            ):
-                community_dict_file.write("{} : {} ".format(key, value))
-                if idx != len(community_dict) - 1:
-                    community_dict_file.write(",")
-
-        with open(
-            output_path + "/" + self.sample_name + "__cluster_frequencies.txt", "w"
-        ) as community_dict_file:
-            for idx, (key, value) in enumerate(
-                sorted(normalised_d.items(), key=lambda x: x[0])
-            ):
-                community_dict_file.write("{} : {} ".format(key, value))
-                if idx != len(community_dict) - 1:
-                    community_dict_file.write(",")
-
-        for cluster in community_ids:
-            cells_by_cluster.append(filtered_counts[communities == cluster])
-
-        avg_clusters = [m.mean(0) for m in cells_by_cluster]
-
-        avg_clusters_df = pd.DataFrame(avg_clusters)
-
-        avg_clusters_df["cluster_ids"] = community_ids  # add the community_ids
-
-        avg_clusters_df.to_csv(
-            output_path
-            + "/"
-            + self.sample_name
-            + "__clusters_phenograph_count_profiles.tsv",
-            sep="\t",
-            index=False,
-            header=True,
-        )
-
-        cnvs_per_cluster = []
-        for cluster in community_ids:
-            cnvs_per_cluster.append(cnvs[communities == cluster])
-
-        cn_median_clusters = [np.nanmedian(c, axis=0) for c in cnvs_per_cluster]
-        cn_median_clusters_df = pd.DataFrame(cn_median_clusters)
-        cn_median_clusters_df["cluster_ids"] = community_ids
-
-        cn_median_clusters_df.to_csv(
-            output_path
-            + "/"
-            + self.sample_name
-            + "__clusters_phenograph_cn_profiles.tsv",
-            sep="\t",
-            index=False,
-            header=True,
-        )
-
-        self.cn_median_clusters_df = cn_median_clusters_df
-        self.communities_df = communities_df
-
-    def plot_clusters(self):
+    def add_filtered_bins_back(self, unique_cnvs_path, bin_mask_path):
         """
-        Creates the following clustering figures: T-SNE plot on Louvain embedding and copy number values
-        for each cluster across the chromosome
+        Adds the filtered bins back to the inferred cnvs
+        :param unique_cnvs_path: path to the file containing unique copy number profiles
+        :param bin_mask_path: path to the excluded bins file
         :return:
         """
-        print("plotting clusters...")
-        if self.clustering_distance is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely clustering_distance is not set"
-            )
-        if self.chr_stops is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely chr_stops is not set"
-            )
-        if self.cn_median_clusters_df is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely cn_median_clusters is not set"
-            )
-        if self.communities_df is None:
-            raise UnboundAttributeError(
-                "The object attribute, namely communities_df is not set"
-            )
+        unique_cnvs = np.loadtxt(unique_cnvs_path, delimiter=',')
+        print(f"unique_cnvs shape: {unique_cnvs.shape}")
+        bin_mask = np.loadtxt(bin_mask_path, delimiter=',')
+        print(f"bin_mask shape: {bin_mask.shape}")
+
+        cnvs_mat = []
+        cnvs_counter = 0
+
+        for bin_idx, bin_val in enumerate(bin_mask):
+            c_row = []
+            if bin_val:
+                for c_id in range(unique_cnvs.shape[0]):        
+                    c_row.append(None)
+            else:
+                for c_id in range(unique_cnvs.shape[0]):
+                    c_row.append(unique_cnvs[c_id][cnvs_counter])
+                cnvs_counter += 1
+            cnvs_mat.append(c_row)
+
+        cnvs_arr =  np.array(cnvs_mat, dtype=float).T
+        print(f"cnvs_arr shape: {cnvs_arr.shape}")
+
+        print("writing the inferred cnvs...")
+        np.savetxt(
+            os.path.join(self.output_path, "inferred_cnvs", self.sample_name) + "__inferred_cnvs.csv",
+            cnvs_arr,
+            delimiter=",",
+            fmt="%s"
+        )
+
+    def plot_clusters(self, chr_stops_path, cnvs_arr_path):
+        """
+        Plots the copy number values
+        for each cluster across the chromosome
+        :param chr_stops_path: Path to the file containing the chromosome stop positions
+        :param cnvs_array_path: path to the file containing unique copy number profiles (including missing values)
+        :return:
+        """
+
+        cnvs_arr = np.loadtxt(cnvs_arr_path, delimiter=',')
+
+        chr_stops_df = pd.read_csv(chr_stops_path, sep='\t', index_col=0)
+        chr_stops_df.columns = ["pos"]
+        
 
         # the max val to be used in the plot
         # max_val = np.nanmax(cluster_means.values)
-        max_val = 12  # max CN value
+        max_val = 8  # max CN value
 
-        output_path = self.output_path + "/clustering/"
+        output_path = os.path.join(self.output_path, "inferred_cnvs")
 
         cmap = matplotlib.cm.get_cmap("Dark2")
-        tsne = TSNE(n_components=2, perplexity=30, metric="precomputed").fit_transform(
-            self.clustering_distance
-        )
-        df_tsne = pd.DataFrame(tsne)
-        df_tsne["cluster"] = self.communities_df["cluster"].values
-        df_tsne["color"] = (df_tsne["cluster"] + 1) / len(
-            self.cn_median_clusters_df.index
-        )  # +1 because outliers -1
-        ax = df_tsne.plot(
-            kind="scatter",
-            x=0,
-            y=1,
-            c=cmap(df_tsne["color"]),
-            figsize=(10, 8),
-            colorbar=False,
-            grid=False,
-            title="Phenograph Clusters on CNV Data",
-        )
-        axes = plt.axes()
-        axes.xaxis.label.set_visible(False)
-        axes.yaxis.label.set_visible(False)
-        fig = ax.get_figure()
-
-        print("Saving tsne figure.")
-        fig.savefig(output_path + "/" + self.sample_name + "__tsne_output.png")
-        plt.close()
-
-        chr_stops_df = self.chr_stops
-        chr_stops_df.columns = ["pos"]
 
         # use the formula below to get the distinct colors
         # color = cmap(float(i)/N)
         print("saving copy number figures by cluster.")
-        for i, cluster_idx in enumerate(self.cn_median_clusters_df.index):
+        for i, row in enumerate(cnvs_arr):
             plt.figure(figsize=(20, 6))
             ax = plt.scatter(
-                y=self.cn_median_clusters_df.iloc[i].values,
-                x=range(len(self.cn_median_clusters_df.iloc[i].values)),
-                label="cluster id: " + str(cluster_idx),
+                y=cnvs_arr[i],
+                x=range(len(row)),
+                label="cluster id: " + str(i),
                 color=cmap(
-                    float(cluster_idx + 1) / len(self.cn_median_clusters_df.index)
+                    float(i + 1) / len(cnvs_arr)
                 ),
                 s=1,
             )
             plt.axis([None, None, -0.2, max_val])  # to make the axises same
             plt.legend(loc="upper left")
             plt.xticks([], [])
+            plt.text(0, -0.5, "0")
             for index, row in chr_stops_df.iterrows():
                 plt.text(index, -0.5, "chr " + row["pos"], rotation=90)
             plt.savefig(
-                output_path
-                + "/"
-                + self.sample_name
-                + "__cluster_profile_"
-                + str(cluster_idx)
+                os.path.join(output_path, self.sample_name) + "__cluster_profile_"
+                + str(i)
                 + ".png"
             )
             plt.close()
 
         print("Saving overlapping copy number profile figures by cluster.")
         plt.figure(figsize=(20, 6))
-        for i, cluster_idx in enumerate(self.cn_median_clusters_df.index):
+        for i, row in enumerate(cnvs_arr):
             ax = plt.scatter(
-                y=self.cn_median_clusters_df.iloc[i].values + (i + 1) / 10,
-                x=range(len(self.cn_median_clusters_df.iloc[i].values)),
-                label="cluster id: " + str(cluster_idx),
+                y=cnvs_arr[i],
+                x=range(len(row)),
+                label="cluster id: " + str(i),
                 color=cmap(
-                    float(cluster_idx + 1) / len(self.cn_median_clusters_df.index)
+                    float(i + 1) / len(cnvs_arr)
                 ),
                 alpha=0.8,
                 s=1,
@@ -412,10 +340,11 @@ class SecondaryAnalysis:
             plt.axis([None, None, -0.2, max_val])  # to make the axises same
             plt.legend(loc="upper left")
             plt.xticks([], [])
+            plt.text(0, -0.5, "0")
             for index, row in chr_stops_df.iterrows():
                 plt.text(index, -0.5, "chr " + row["pos"], rotation=90)
         plt.savefig(
-            output_path + "/" + self.sample_name + "__cluster_profile_overlapping.png"
+            os.path.join(output_path, self.sample_name)+"__cluster_profile_overlapping.png"
         )
         plt.close()
 
