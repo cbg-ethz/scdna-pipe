@@ -51,7 +51,7 @@ class SecondaryAnalysis:
         Outputs the chromosome stops and bin start stop positions
         :return:
         """
-        
+
         h5f = h5py.File(self.h5_path, "r")
 
         n_cells = h5f["cell_barcodes"].value.shape[0]
@@ -107,7 +107,6 @@ class SecondaryAnalysis:
         print("Output written to: " + output_path)
 
         h5f.close()
-        
 
     def remove_tenx_genomics_artifacts(self, bins):
         """
@@ -134,7 +133,9 @@ class SecondaryAnalysis:
         # exclude unmappable bins
         is_mappable = []
         for chr in all_chromosomes:
-            is_mappable = np.concatenate([is_mappable,h5f['genome_tracks']['is_mappable'][chr][:]])
+            is_mappable = np.concatenate(
+                [is_mappable, h5f["genome_tracks"]["is_mappable"][chr][:]]
+            )
 
         unmappable = ~np.array(is_mappable, dtype=bool)
 
@@ -165,12 +166,12 @@ class SecondaryAnalysis:
         np.savetxt(
             os.path.join(output_path, self.sample_name) + "__excluded_bins.csv",
             to_filter_out,
-            delimiter=','
+            delimiter=",",
         )
 
         np.savetxt(
             output_path + "/" + self.sample_name + "__filtered_counts_shape.txt",
-            normalized_counts.shape
+            normalized_counts.shape,
         )
 
         np.savetxt(
@@ -192,7 +193,7 @@ class SecondaryAnalysis:
         """
 
         print("loading the normalised regions...")
-        normalised_regions = np.loadtxt(normalised_regions_path, delimiter=',')
+        normalised_regions = np.loadtxt(normalised_regions_path, delimiter=",")
         print(f"shape of normalised regions: {normalised_regions.shape}")
 
         n_cells = normalised_regions.shape[0]
@@ -214,23 +215,20 @@ class SecondaryAnalysis:
         print(f"shape of the distance matrix: {dist.shape}")
 
         dist_fname = (
-            os.path.join(self.output_path, "clustering", self.sample_name) + "__phenograph_distance.csv"
+            os.path.join(self.output_path, "clustering", self.sample_name)
+            + "__phenograph_distance.csv"
         )
         np.savetxt(fname=dist_fname, X=dist, delimiter=",")
 
         print(f"Communities: {communities}")
         communities_df = pd.DataFrame(communities, columns=["cluster"])
         communities_df["cell_barcode"] = communities_df.index
-        communities_df = communities_df[
-            ["cell_barcode", "cluster"]
-        ]
+        communities_df = communities_df[["cell_barcode", "cluster"]]
 
         output_path = os.path.join(self.output_path, "clustering", self.sample_name)
         print(f"output path: {output_path}")
         communities_df.to_csv(
-            output_path + "__clusters_phenograph_assignment.tsv",
-            sep="\t",
-            index=False
+            output_path + "__clusters_phenograph_assignment.tsv", sep="\t", index=False
         )
 
         # write the modularity score, for stability
@@ -244,9 +242,9 @@ class SecondaryAnalysis:
         :param bin_mask_path: path to the excluded bins file
         :return:
         """
-        unique_cnvs = np.loadtxt(unique_cnvs_path, delimiter=',')
+        unique_cnvs = np.loadtxt(unique_cnvs_path, delimiter=",")
         print(f"unique_cnvs shape: {unique_cnvs.shape}")
-        bin_mask = np.loadtxt(bin_mask_path, delimiter=',')
+        bin_mask = np.loadtxt(bin_mask_path, delimiter=",")
         print(f"bin_mask shape: {bin_mask.shape}")
 
         cnvs_mat = []
@@ -255,7 +253,7 @@ class SecondaryAnalysis:
         for bin_idx, bin_val in enumerate(bin_mask):
             c_row = []
             if bin_val:
-                for c_id in range(unique_cnvs.shape[0]):        
+                for c_id in range(unique_cnvs.shape[0]):
                     c_row.append(None)
             else:
                 for c_id in range(unique_cnvs.shape[0]):
@@ -263,15 +261,16 @@ class SecondaryAnalysis:
                 cnvs_counter += 1
             cnvs_mat.append(c_row)
 
-        cnvs_arr =  np.array(cnvs_mat, dtype=float).T
+        cnvs_arr = np.array(cnvs_mat, dtype=float).T
         print(f"cnvs_arr shape: {cnvs_arr.shape}")
 
         print("writing the inferred cnvs...")
         np.savetxt(
-            os.path.join(self.output_path, "inferred_cnvs", self.sample_name) + "__inferred_cnvs.csv",
+            os.path.join(self.output_path, "inferred_cnvs", self.sample_name)
+            + "__inferred_cnvs.csv",
             cnvs_arr,
             delimiter=",",
-            fmt="%s"
+            fmt="%s",
         )
 
     def plot_clusters(self, chr_stops_path, cnvs_arr_path):
@@ -283,11 +282,10 @@ class SecondaryAnalysis:
         :return:
         """
 
-        cnvs_arr = np.loadtxt(cnvs_arr_path, delimiter=',')
+        cnvs_arr = np.loadtxt(cnvs_arr_path, delimiter=",")
 
-        chr_stops_df = pd.read_csv(chr_stops_path, sep='\t', index_col=0)
+        chr_stops_df = pd.read_csv(chr_stops_path, sep="\t", index_col=0)
         chr_stops_df.columns = ["pos"]
-        
 
         # the max val to be used in the plot
         # max_val = np.nanmax(cluster_means.values)
@@ -306,9 +304,7 @@ class SecondaryAnalysis:
                 y=cnvs_arr[i],
                 x=range(len(row)),
                 label="cluster id: " + str(i),
-                color=cmap(
-                    float(i + 1) / len(cnvs_arr)
-                ),
+                color=cmap(float(i + 1) / len(cnvs_arr)),
                 s=1,
             )
             plt.axis([None, None, -0.2, max_val])  # to make the axises same
@@ -318,7 +314,8 @@ class SecondaryAnalysis:
             for index, row in chr_stops_df.iterrows():
                 plt.text(index, -0.5, "chr " + row["pos"], rotation=90)
             plt.savefig(
-                os.path.join(output_path, self.sample_name) + "__cluster_profile_"
+                os.path.join(output_path, self.sample_name)
+                + "__cluster_profile_"
                 + str(i)
                 + ".png"
             )
@@ -331,9 +328,7 @@ class SecondaryAnalysis:
                 y=cnvs_arr[i],
                 x=range(len(row)),
                 label="cluster id: " + str(i),
-                color=cmap(
-                    float(i + 1) / len(cnvs_arr)
-                ),
+                color=cmap(float(i + 1) / len(cnvs_arr)),
                 alpha=0.8,
                 s=1,
             )
@@ -344,7 +339,8 @@ class SecondaryAnalysis:
             for index, row in chr_stops_df.iterrows():
                 plt.text(index, -0.5, "chr " + row["pos"], rotation=90)
         plt.savefig(
-            os.path.join(output_path, self.sample_name)+"__cluster_profile_overlapping.png"
+            os.path.join(output_path, self.sample_name)
+            + "__cluster_profile_overlapping.png"
         )
         plt.close()
 
