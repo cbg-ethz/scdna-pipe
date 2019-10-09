@@ -84,26 +84,33 @@ sa = SecondaryAnalysis(
     all_genes_path=all_genes_path,
 )
 
-def get_gene_cn_df(genes, cnvs_arr, bin_size):
+def get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops):
     """
         Creates and returns the dataframe of copy numbers, genes by cluster ids
         :param genes: The input list of genes to be specified
         :param cnvs_arr: Copy number matrix per cell per bin
         :param bin_size: Integer constant speciying size of each bin
+        :param chr_stops: Pandas Dataframe
+            Contains the final bins of each chromosome (the df index)
         :return: CN dataframe of genes by clusters
     """
     print(f"genes shape: {genes.shape}")
     print(f"cnvs_arr shape: {cnvs_arr.shape}")
     cluster_ids = range(cnvs_arr.shape[0])
     gene_cn_df = pd.DataFrame(index=cluster_ids)
-    
+
     # for each gene
     for index, row in tqdm(genes.iterrows(), total=genes.shape[0]):
         start_bin = int(row["Gene start (bp)"] / bin_size)
         stop_bin = int(row["Gene end (bp)"] / bin_size)
         chromosome = str(row["Chromosome/scaffold name"])
         gene_name = row["Gene name"]
-        # print(start_bin, stop_bin)
+
+        if chromosome != '1': # coordinates are given by chromosome
+            chr_start = chr_stops.iloc[np.where(chr_stops.index==chromosome)[0][0]-1].values[0]
+            start_bin = start_bin + chr_start
+            stop_bin = stop_bin + chr_start
+
         gene_cn_per_cluster = []
         for c_id in cluster_ids:
             cn_states = cnvs_arr[
@@ -134,8 +141,8 @@ def get_tree_scores(tree_paths):
     for tree_path in tree_paths:
         with open(tree_path) as f:
             list_tree_file = list(f)
-        
-        for line in list_tree_file: 
+
+        for line in list_tree_file:
             if line.startswith("Tree score:"):
                 score = line.rstrip("\n").lstrip("Tree score:").lstrip(" ")
                 tree_scores.append(float(score))
@@ -163,25 +170,25 @@ def tree_to_graphviz(tree_path):
 
     graphviz_header = ["digraph { \n", "node [style=filled,color=\"#D4C0D6\"]"
                 "edge [arrowhead=none, color=\"#602A86\"]"]
-    
+
     graphviz_labels = []
     graphviz_links = []
 
     graphviz_labels.append("0[label=\"Neutral\"]") # root
 
-    for line in list_tree_file: 
+    for line in list_tree_file:
         if line.startswith("node 0:"):
             continue
         elif line.startswith("node"):
             comma_splits = line.split(",")
-            
+
             comma_first = re.split(" |:",comma_splits[0])
             node_id = comma_first[1]
             p_id = comma_first[4]
             comma_rest = comma_splits[1:]
             comma_rest[0] = comma_rest[0].lstrip('[')
             comma_rest[-1] = comma_rest[-1].rstrip(']\n')
-            merged_labels = [] 
+            merged_labels = []
             [k_begin, previous_v] = (int(x) for x in comma_rest[0].split(":"))
             k_end = k_begin
             for term in comma_rest[1:]: # events vector
@@ -193,14 +200,14 @@ def tree_to_graphviz(tree_path):
                         merged_labels.append(f"{previous_v:+}R{k_begin}")
                     else:
                         merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
-                    k_begin = k_end = k          
+                    k_begin = k_end = k
                 previous_v = v
             # print the last one
             if k_begin == k_end:
                 merged_labels.append(f"{previous_v:+}R{k_begin}")
             else:
                 merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
-            
+
             str_merged_labels = " ".join(f"{x}\n" if i%10 == 0 and i>0 else str(x) for i, x in enumerate(merged_labels))
             graphviz_labels.append(f"{node_id}[label=\"{str_merged_labels}\"]")
             graphviz_links.append(f"{p_id} -> {node_id}")
@@ -283,15 +290,15 @@ rule all:
         # raw symlinks
 
         # # copy cellranger outputs
-        # cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", 
-        # cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", 
-        # cr_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", 
+        # cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
+        # cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
+        # cr_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
         # cr_web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html"
 
         cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
 
     output:
-        
+
     run:
         print("echo rule all")
 
@@ -328,7 +335,7 @@ rule detect_breakpoints:
         threshold = config["breakpoint_detection"]["threshold"],
         bp_limit = config["breakpoint_detection"]["bp_limit"],
         bp_detection_path = os.path.join(analysis_path, "breakpoint_detection"),
-        posfix = analysis_prefix 
+        posfix = analysis_prefix
     input:
         d_matrix_file = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
         matrix_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt"
@@ -344,7 +351,7 @@ rule detect_breakpoints:
             print("breakpoint detection directory already exists.")
         input_shape = np.loadtxt(input.matrix_shape)
         (n_cells, n_bins) = [int(input_shape[i]) for i in range(2)]
-        
+
         try:
             cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.d_matrix_file}", f"--n_bins={n_bins}",\
                 f"--n_cells={n_cells}", f"--window_size={params.window_size}", f"--postfix={params.posfix}",\
@@ -354,7 +361,7 @@ rule detect_breakpoints:
         else:
             print(f"subprocess out: {cmd_output}")
             print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
-        
+
         os.rename(params.posfix+"_segmented_regions.txt", output.segmented_regions)
         os.rename(params.posfix+"_segmented_region_sizes.txt", output.segmented_region_sizes)
 
@@ -475,7 +482,7 @@ rule normalise_counts:
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv"
     benchmark:
-        "benchmark/normalise_counts.tsv"    
+        "benchmark/normalise_counts.tsv"
     run:
         from sklearn.preprocessing import normalize
 
@@ -492,7 +499,7 @@ rule normalise_counts:
             normalized_filtered_bins,
             delimiter=",",
         )
-        
+
         print("loading the segmented counts...")
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
         print("normalising the regions...")
@@ -581,7 +588,7 @@ rule learn_empty_tree:
     run:
         input_shape = np.loadtxt(input.segmented_counts_shape)
         (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
-        
+
         move_probs_str = ",".join(str(p) for p in params.move_probs)
 
         try:
@@ -623,7 +630,7 @@ rule learn_cluster_trees:
     run:
         input_shape = np.loadtxt(input.segmented_counts_shape)
         (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
-        
+
         move_probs_str = ",".join(str(p) for p in params.move_probs)
 
         with open(input.empty_tree) as file:
@@ -663,14 +670,14 @@ rule cluster_tree_robustness:
         is_robust = [x<=1 for x in score_dispersions]
         robustness_ratio = sum(is_robust) / len(is_robust)
         print(f"Robustness ratio: {robustness_ratio}")
-        
+
         with open(output.robustness_results, "w") as f:
             f.write(f"Scores differences from the max: {score_dispersions}\n")
             f.write(f"Robustness vector of trees: {is_robust}\n")
-            f.write(f"Robustness ratio: {robustness_ratio}\n")    
+            f.write(f"Robustness ratio: {robustness_ratio}\n")
 
         if robustness_ratio < params.robustness_thr:
-            raise Exception("The trees found are not robust, you may want to change the configurations") 
+            raise Exception("The trees found are not robust, you may want to change the configurations")
 
 rule pick_max_cluster_tree:
     input:
@@ -751,7 +758,8 @@ rule plot_heatmap:
         genes_path = config['secondary_analysis']['genes_path'],
         bin_size = bin_size
     input:
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
+        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv"
     output:
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
         heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png"
@@ -760,7 +768,8 @@ rule plot_heatmap:
     run:
         cnvs_arr = np.loadtxt(input.inferred_cnvs, delimiter=',')
         genes = pd.read_csv(params.genes_path, sep="\t")
-        gene_cn_df = get_gene_cn_df(genes, cnvs_arr, bin_size)
+        chr_stops = pd.read_csv(input.chr_stops, sep="\t", index_col=1)
+        gene_cn_df = get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops)
 
         gene_cn_df.to_csv(
             output.gene_cn_df
@@ -792,7 +801,8 @@ rule create_cn_cluster_h5:
         all_genes_path = all_genes_path,
         bin_size = bin_size
     input:
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
+        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv"
     output:
         cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
     benchmark:
@@ -800,8 +810,9 @@ rule create_cn_cluster_h5:
     run:
         cnvs_arr = np.loadtxt(input.inferred_cnvs, delimiter=',')
         genes = pd.read_csv(params.all_genes_path, sep="\t")
+        chr_stops = pd.read_csv(input.chr_stops, sep="\t", index_col=1)
 
-        gene_cn_df = get_gene_cn_df(genes, cnvs_arr, bin_size)
+        gene_cn_df = get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops)
 
         cn_cluster_h5 = h5py.File(output.cn_cluster_h5, "w")
         gene_attributes = cn_cluster_h5.create_group("gene_attrs")
@@ -819,10 +830,10 @@ rule visualise_trees:
         cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png"
     run:
         tree_as_list = tree_to_graphviz(input.cluster_tree)
-        
+
         for line in tree_as_list:
             print(f"{line}\n")
-        
+
         with open(output.cluster_tree_graphviz, "w") as file:
             for line in tree_as_list:
                 file.write(f"{line}\n")
@@ -879,7 +890,7 @@ rule trick_fastqs:
         r1 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz",
         r2 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R2_001.fastq.gz",
         mem = config["tricking_fastqs"]["mem"],
-        time = config["tricking_fastqs"]["time"] 
+        time = config["tricking_fastqs"]["time"]
     input:
         rules.rename_fastqs.output
     output:
@@ -917,7 +928,7 @@ rule create_raw_files_list:
         sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
         sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes)
     output:
-        os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt"  
+        os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt"
     shell:
         "cd {params.sym_raw_path}; ls > {params.seq_prefix}__raw_files.txt "
 
@@ -990,9 +1001,9 @@ rule copy_cellranger_outputs:
     input:
         cellranger_done = "cellranger_done.txt"
     output:
-        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", 
-        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", 
-        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", 
+        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
+        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
+        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
         os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html"
     shell:
         "cd {params.cellranger_path}; \
@@ -1063,7 +1074,7 @@ rule create_derived_symlinks:
     output:
         derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{filename}") for filename in derived_file_names]
     run:
-        
+
         os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", os.path.join(sym_derived_path, f"{analysis_prefix}__alarms_summary.txt"))
         os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", os.path.join(sym_derived_path, f"{analysis_prefix}__cnv_data.h5"))
         os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", os.path.join(sym_derived_path, f"{analysis_prefix}__summary.csv"))
