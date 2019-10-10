@@ -90,7 +90,7 @@ def get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops):
         :param genes: The input list of genes to be specified
         :param cnvs_arr: Copy number matrix per cell per bin
         :param bin_size: Integer constant speciying size of each bin
-        :param chr_stops: Pandas Dataframe
+        :param chr_stops: Pandas DataFrame
             Contains the final bins of each chromosome (the df index)
         :return: CN dataframe of genes by clusters
     """
@@ -116,7 +116,7 @@ def get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops):
             cn_states = cnvs_arr[
                 c_id, start_bin : stop_bin + 1
             ]
-            median_cn_cell_bin = np.median(
+            median_cn_cell_bin = np.nanmedian(
                 cn_states
             )  # all the bins within the gene, min due to biology
             gene_cn_per_cluster.append(median_cn_cell_bin)
