@@ -11,6 +11,7 @@ from pathlib import Path
 from secondary_analysis import SecondaryAnalysis
 from collections import Counter
 import re
+import warnings
 sns.set()
 
 
@@ -677,7 +678,7 @@ rule cluster_tree_robustness:
             f.write(f"Robustness ratio: {robustness_ratio}\n")
 
         if robustness_ratio < params.robustness_thr:
-            raise Exception("The trees found are not robust, you may want to change the configurations")
+            warnings.warn("The trees found are not robust, you may want to change the configurations")
 
 rule pick_max_cluster_tree:
     input:
