@@ -1120,7 +1120,7 @@ rule create_derived_symlinks:
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_files.txt"), "w") as file:
             for cluster_profile_plot in cluster_profile_plots:
                 f_name = cluster_profile_plot.split("/")[-1]
-                create_symlink(cluster_profile_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__{f_name}"))
+                create_symlink(cluster_profile_plot, os.path.join(sym_derived_path, f"{f_name}"))
                 file.write(f"{f_name}\n")
 
         create_symlink(input.gene_cn_df, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df.csv"))
