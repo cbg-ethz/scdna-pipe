@@ -245,7 +245,7 @@ class SecondaryAnalysis:
         unique_cnvs = np.loadtxt(unique_cnvs_path, delimiter=",")
         print(f"unique_cnvs shape: {unique_cnvs.shape}")
         if len(unique_cnvs.shape) == 1:
-            unique_cnvs = unique_cnvs.reshape(-1, 1)
+            unique_cnvs = unique_cnvs.reshape(1, -1)
         bin_mask = np.loadtxt(bin_mask_path, delimiter=",")
         print(f"bin_mask shape: {bin_mask.shape}")
 
