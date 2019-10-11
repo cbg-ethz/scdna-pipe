@@ -31,6 +31,7 @@ cr_sample_name = sample_name[:-3] # e.g. MHELAVELA_S2 becomes MHELAVELA
 h5_path = config['secondary_analysis']['h5_path']
 genes_path = config['secondary_analysis']['genes_path']
 all_genes_path = config['secondary_analysis']['all_genes_path']
+long_list_genes_path = config['secondary_analysis']['long_list_genes_path']
 
 analysis_prefix = config['analysis_prefix']
 seq_prefix = config["sequencing_prefix"]
@@ -130,6 +131,95 @@ def get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops):
     print(gene_cn_df.head())
     return gene_cn_df
 
+def get_bin_gene_region_df(bin_size, genes, chr_stops, region_stops, bin_is_excluded, important_genes=None):
+    """
+        Creates a DataFrame with the gene and region corresponding to each bin
+        :param bin_size: integer
+        :param chr_stops: df indicating the final (unfiltered) bin of each chromosome
+        :param region_stops: df indicating the final (filtered) bin of each chromosome
+        :param bin_is_excluded: df indicating unmappable bins
+        (optional) :param important_genes: list of important genes to be flagged
+        :return: DataFrame of (gene, region, original_bin)
+    """
+
+    bin_gene_region_df = pd.DataFrame(index=range(chr_stops.iloc[-1].values[0]))
+    bin_gene_region_df["gene"] = None
+    bin_gene_region_df["region"] = None
+    if important_genes is None:
+        bin_gene_region_df["is_important"] = True
+    else:
+        bin_gene_region_df["is_important"] = False
+
+    # for each gene
+    for index, row in tqdm(genes.iterrows(), total=genes.shape[0]):
+        start_bin = int(row["Gene start (bp)"] / bin_size)
+        stop_bin = int(row["Gene end (bp)"] / bin_size)
+        chromosome = str(row["Chromosome/scaffold name"])
+
+        if chromosome != '1': # coordinates are given by chromosome
+            chr_start = chr_stops.iloc[np.where(chr_stops.index==chromosome)[0][0]-1].values[0]
+            start_bin = start_bin + chr_start
+            stop_bin = stop_bin + chr_start
+
+        gene_name = row["Gene name"]
+        bin_gene_region_df.loc[start_bin:stop_bin, "gene"] = gene_name
+
+        if important_genes is not None:
+            if gene_name in important_genes:
+                bin_gene_region_df.loc[start_bin:stop_bin, "is_important"] = True
+            else:
+                # Need this to deal with overlapping gene coordinates
+                bin_gene_region_df.loc[start_bin:stop_bin, "is_important"] = False
+
+    # Now we have a (bin, gene) dataframe. Let's remove the unmappable bins
+    bin_gene_region_df = bin_gene_region_df.iloc[np.where(bin_is_excluded==0)[0]]
+
+    # Reset the index to indicate new bin indices after filtering
+    bin_gene_region_df = bin_gene_region_df.reset_index(drop=False)
+    bin_gene_region_df = bin_gene_region_df.rename(columns={"index": "original_bin"})
+
+    # Get the regions
+    start_bin = 0
+    for index, row in tqdm(region_stops.iterrows(), total=region_stops.shape[0]):
+        stop_bin = row.values[0]
+        bin_gene_region_df.loc[start_bin:stop_bin, "region"] = index+1
+        start_bin = row.values[0]
+
+    return bin_gene_region_df
+
+def get_genes_in_region(region, bin_gene_region_df, important_only=False):
+    """
+        Returns a list of genes present in the given region index
+        :param region: integer
+        :param bin_gene_region_df: DataFrame
+            with (gene_name, region, original_bin) fields
+        :param important_only: boolean
+            indicating if only important genes should be returned
+        :return: list of gene names in region
+    """
+    gene_list = bin_gene_region_df['gene'][
+                            np.where(bin_gene_region_df['region']==region)[0]].unique()
+
+    gene_list = gene_list[gene_list != None].tolist()
+
+    if important_only:
+        # Subset only the important genes
+        important_genes = bin_gene_region_df['gene'][bin_gene_region_df['is_important']].unique()
+        gene_list = [str(gene) for gene in gene_list if gene in important_genes]
+
+    return gene_list
+
+def get_region_with_gene(gene, bin_gene_region_df):
+    """
+        Returns the region index containing a gene
+        :param gene: str
+        :param bin_gene_region_df: DataFrame
+            with (gene_name, region, original_bin) fields
+        :return: region index (integer)
+    """
+    gene = bin_gene_region_df['region'][np.where(bin_gene_region_df['gene']==gene)[0]].values[0]
+
+    return gene
 
 def get_tree_scores(tree_paths):
     """
@@ -148,7 +238,6 @@ def get_tree_scores(tree_paths):
                 tree_scores.append(float(score))
 
     return tree_scores
-
 
 def rename_fastq(s_name):
     '''
@@ -240,6 +329,8 @@ rule all:
         segmented_counts = os.path.join(analysis_path,\
         "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
         segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
+
+        bins_genes_regions_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genes_regions.csv",
 
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
@@ -472,6 +563,30 @@ rule segment_regions:
             condensed_mat.shape
         )
 
+rule create_bins_genes_regions_df:
+    input:
+        bin_size = bin_size,
+        all_genes_path = all_genes_path,
+        chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
+        excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
+        region_stops_path = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
+        long_list_path = long_list_genes_path
+    output:
+        bins_genes_regions_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genes_regions.csv"
+    benchmark:
+        "benchmark/create_bins_genes_regions_df.tsv"
+    run:
+        genes = pd.read_csv(input.all_genes_path, sep="\t")
+        chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=1)
+        excluded_bins = pd.read_csv(input.excluded_bins_path, header=None)
+        region_stops = pd.read_csv(input.region_stops_path, header=None)
+        region_stops.columns = ["bin"]
+        important_genes = pd.read_csv(input.long_list_path, sep="\t", header=None)
+        important_genes.columns = ["gene"]
+        important_genes = important_genes.gene.values.tolist()
+
+        df = get_bin_gene_region_df(input.bin_size, genes, chr_stops, region_stops, excluded_bins, important_genes=important_genes)
+        df.to_csv(output.bins_genes_regions_path)
 
 rule normalise_counts:
     input:
