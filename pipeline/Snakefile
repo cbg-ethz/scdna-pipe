@@ -606,6 +606,20 @@ rule learn_empty_tree:
         os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_tree_inferred.txt", output.empty_tree)
         os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_inferred_cnvs.csv", output.empty_tree_inferred_cnvs)
 
+        if params.verbosity > 0:
+            debug_info_out_path = os.path.join(analysis_path, "tree_learning", "debug_info", "empty_tree")
+            debug_info_with_ap = os.path.join(debug_info_out_path, analysis_prefix)
+            if not os.path.exists(debug_info_out_path):
+                os.makedirs(debug_info_out_path)
+            os.rename(f"{params.posfix}_cell_node_ids.tsv", f"{debug_info_with_ap}__cell_node_ids.tsv")
+            os.rename(f"{params.posfix}_cell_region_cnvs.csv", f"{debug_info_with_ap}__cell_region_cnvs.csv")
+            os.rename(f"{params.posfix}_markov_chain.csv", f"{debug_info_with_ap}__markov_chain.csv")
+            os.rename(f"{params.posfix}_rel_markov_chain.csv", f"{debug_info_with_ap}__rel_markov_chain.csv")
+            os.rename(f"{params.posfix}_acceptance_ratio.csv", f"{debug_info_with_ap}__acceptance_ratio.csv")
+            os.rename(f"{params.posfix}_gamma_values.csv", f"{debug_info_with_ap}__gamma_values.csv")
+
+
+
 rule learn_cluster_trees:
     params:
         binary = config["inference"]["bin"],
@@ -652,6 +666,18 @@ rule learn_cluster_trees:
 
         os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_tree_inferred.txt", output.cluster_tree)
         os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_inferred_cnvs.csv", output.cluster_tree_inferred_cnvs)
+
+        if params.verbosity > 0:
+            debug_info_out_path = os.path.join(analysis_path, "tree_learning", "debug_info", "cluster_tree")
+            debug_info_with_ap = os.path.join(debug_info_out_path, analysis_prefix)
+            if not os.path.exists(debug_info_out_path):
+                os.makedirs(debug_info_out_path)
+            os.rename(f"{params.posfix}_cell_node_ids.tsv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_cell_node_ids.tsv")
+            os.rename(f"{params.posfix}_cell_region_cnvs.csv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_cell_region_cnvs.csv")
+            os.rename(f"{params.posfix}_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_markov_chain.csv")
+            os.rename(f"{params.posfix}_rel_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_rel_markov_chain.csv")
+            os.rename(f"{params.posfix}_acceptance_ratio.csv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_acceptance_ratio.csv")
+            os.rename(f"{params.posfix}_gamma_values.csv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_gamma_values.csv")
 
 rule cluster_tree_robustness:
     params:
