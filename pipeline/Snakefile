@@ -416,7 +416,7 @@ rule all:
         "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
         segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
 
-        bins_genes_regions_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genes_regions.csv",
+        bin_gene_region_df = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_gene_region_df.csv",
 
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
@@ -453,6 +453,9 @@ rule all:
 
         cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
         cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
+
+        cluster_tree_genes_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.graphviz",
+        cluster_tree_genes_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
 
         #symlink directories
         raw_files_list = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt",
@@ -649,18 +652,19 @@ rule segment_regions:
             condensed_mat.shape
         )
 
-rule create_bins_genes_regions_df:
+rule create_bin_gene_region_df:
     input:
-        bin_size = bin_size,
         all_genes_path = all_genes_path,
         chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         region_stops_path = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
         long_list_path = long_list_genes_path
+    params:
+        bin_size = bin_size
     output:
-        bins_genes_regions_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genes_regions.csv"
+        bin_gene_region_df = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_gene_region_df.csv"
     benchmark:
-        "benchmark/create_bins_genes_regions_df.tsv"
+        "benchmark/create_bin_gene_region_df.tsv"
     run:
         genes = pd.read_csv(input.all_genes_path, sep="\t")
         chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=1)
@@ -671,8 +675,8 @@ rule create_bins_genes_regions_df:
         important_genes.columns = ["gene"]
         important_genes = important_genes.gene.values.tolist()
 
-        df = get_bin_gene_region_df(input.bin_size, genes, chr_stops, region_stops, excluded_bins, important_genes=important_genes)
-        df.to_csv(output.bins_genes_regions_path)
+        df = get_bin_gene_region_df(params.bin_size, genes, chr_stops, region_stops, excluded_bins, important_genes=important_genes)
+        df.to_csv(output.bin_gene_region_df)
 
 rule normalise_counts:
     input:
@@ -1059,7 +1063,7 @@ rule visualise_trees:
             print(f"{line}\n")
 
         with open(output.cluster_tree_genes_graphviz, "w") as file:
-            for line in tree_as_list:
+            for line in tree_genes_as_list:
                 file.write(f"{line}\n")
 
         try:
