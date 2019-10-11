@@ -11,6 +11,7 @@ from pathlib import Path
 from secondary_analysis import SecondaryAnalysis
 from collections import Counter
 import re
+import warnings
 sns.set()
 
 
@@ -877,7 +878,7 @@ rule cluster_tree_robustness:
             f.write(f"Robustness ratio: {robustness_ratio}\n")
 
         if robustness_ratio < params.robustness_thr:
-            raise Exception("The trees found are not robust, you may want to change the configurations")
+            warnings.warn("The trees found are not robust, you may want to change the configurations")
 
 rule pick_max_cluster_tree:
     input:
@@ -1298,48 +1299,54 @@ rule create_derived_symlinks:
         derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{filename}") for filename in derived_file_names]
     run:
 
-        os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", os.path.join(sym_derived_path, f"{analysis_prefix}__alarms_summary.txt"))
-        os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", os.path.join(sym_derived_path, f"{analysis_prefix}__cnv_data.h5"))
-        os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", os.path.join(sym_derived_path, f"{analysis_prefix}__summary.csv"))
-        os.symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html", os.path.join(sym_derived_path, f"{analysis_prefix}__web_summary.html"))
+        def create_symlink(source, dest):
+            if not os.path.isfile(dest):
+                os.symlink(source, dest)
+            else:
+                os.utime(dest, None)  # Set access/modified times to now
 
-        os.symlink(input.chr_stops, os.path.join(sym_derived_path, f"{analysis_prefix}__chr_stops.tsv"))
-        os.symlink(input.bins_genome, os.path.join(sym_derived_path, f"{analysis_prefix}__bins_genome.tsv"))
-        os.symlink(input.filtered_counts, os.path.join(sym_derived_path, f"{analysis_prefix}__filtered_counts.csv"))
+        create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", os.path.join(sym_derived_path, f"{analysis_prefix}__cnv_data.h5"))
+        create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", os.path.join(sym_derived_path, f"{analysis_prefix}__alarms_summary.txt"))
+        create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", os.path.join(sym_derived_path, f"{analysis_prefix}__summary.csv"))
+        create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html", os.path.join(sym_derived_path, f"{analysis_prefix}__web_summary.html"))
 
-        os.symlink(input.excluded_bins, os.path.join(sym_derived_path, f"{analysis_prefix}__excluded_bins.csv"))
+        create_symlink(input.chr_stops, os.path.join(sym_derived_path, f"{analysis_prefix}__chr_stops.tsv"))
+        create_symlink(input.bins_genome, os.path.join(sym_derived_path, f"{analysis_prefix}__bins_genome.tsv"))
+        create_symlink(input.filtered_counts, os.path.join(sym_derived_path, f"{analysis_prefix}__filtered_counts.csv"))
 
-        os.symlink(input.segmented_regions, os.path.join(sym_derived_path, f"{analysis_prefix}__segmented_regions.txt"))
-        os.symlink(input.segmented_region_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__segmented_region_sizes.txt"))
-        os.symlink(input.segmented_counts, os.path.join(sym_derived_path, f"{analysis_prefix}__segmented_counts.csv"))
+        create_symlink(input.excluded_bins, os.path.join(sym_derived_path, f"{analysis_prefix}__excluded_bins.csv"))
 
-        os.symlink(input.normalised_bins, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins.csv"))
-        os.symlink(input.normalised_regions, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_regions.csv"))
+        create_symlink(input.segmented_regions, os.path.join(sym_derived_path, f"{analysis_prefix}__segmented_regions.txt"))
+        create_symlink(input.segmented_region_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__segmented_region_sizes.txt"))
+        create_symlink(input.segmented_counts, os.path.join(sym_derived_path, f"{analysis_prefix}__segmented_counts.csv"))
 
-        os.symlink(input.normalised_bins_clustered_heatmap, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins_clustered.png"))
-        os.symlink(input.normalised_bins_clustered_bps_heatmap, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins_clustered_bps.png"))
+        create_symlink(input.normalised_bins, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins.csv"))
+        create_symlink(input.normalised_regions, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_regions.csv"))
 
-        os.symlink(input.clustering_score, os.path.join(sym_derived_path, f"{analysis_prefix}__clustering_score.txt"))
-        os.symlink(input.clusters_phenograph_assignment, os.path.join(sym_derived_path, f"{analysis_prefix}__clusters_phenograph_assignment.tsv"))
+        create_symlink(input.normalised_bins_clustered_heatmap, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins_clustered.png"))
+        create_symlink(input.normalised_bins_clustered_bps_heatmap, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins_clustered_bps.png"))
 
-        os.symlink(input.avg_counts, os.path.join(sym_derived_path, f"{analysis_prefix}__avg_counts.csv"))
-        os.symlink(input.cluster_tree, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree.txt"))
-        os.symlink(input.cluster_tree_inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_inferred_cnvs.csv"))
-        os.symlink(input.unique_cnv_profiles, os.path.join(sym_derived_path, f"{analysis_prefix}__unique_cluster_tree_cnvs.csv"))
-        os.symlink(input.inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__inferred_cnvs.csv"))
+        create_symlink(input.clustering_score, os.path.join(sym_derived_path, f"{analysis_prefix}__clustering_score.txt"))
+        create_symlink(input.clusters_phenograph_assignment, os.path.join(sym_derived_path, f"{analysis_prefix}__clusters_phenograph_assignment.tsv"))
 
-        os.symlink(input.tree_cluster_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__tree_cluster_sizes.txt"))
-        os.symlink(input.overlapping_cluster_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_overlapping.png"))
+        create_symlink(input.avg_counts, os.path.join(sym_derived_path, f"{analysis_prefix}__avg_counts.csv"))
+        create_symlink(input.cluster_tree, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree.txt"))
+        create_symlink(input.cluster_tree_inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_inferred_cnvs.csv"))
+        create_symlink(input.unique_cnv_profiles, os.path.join(sym_derived_path, f"{analysis_prefix}__unique_cluster_tree_cnvs.csv"))
+        create_symlink(input.inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__inferred_cnvs.csv"))
+
+        create_symlink(input.tree_cluster_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__tree_cluster_sizes.txt"))
+        create_symlink(input.overlapping_cluster_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_overlapping.png"))
 
         cluster_profile_plots = glob.glob(os.path.join(analysis_path, "inferred_cnvs", f"{analysis_prefix}__cluster_profile_[0-9]*.png"))
         print(cluster_profile_plots)
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_files.txt"), "w") as file:
             for cluster_profile_plot in cluster_profile_plots:
                 f_name = cluster_profile_plot.split("/")[-1]
-                os.symlink(cluster_profile_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__{f_name}"))
+                create_symlink(cluster_profile_plot, os.path.join(sym_derived_path, f"{f_name}"))
                 file.write(f"{f_name}\n")
 
-        os.symlink(input.gene_cn_df, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df.csv"))
-        os.symlink(input.heatmap_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__heatmap_cnvs.png"))
+        create_symlink(input.gene_cn_df, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df.csv"))
+        create_symlink(input.heatmap_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__heatmap_cnvs.png"))
 
         open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w").close()
