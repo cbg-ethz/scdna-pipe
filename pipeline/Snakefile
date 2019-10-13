@@ -502,7 +502,10 @@ rule learn_cluster_trees:
 
 rule cluster_tree_robustness:
     params:
-        robustness_thr = config["inference"]["robustness_thr"]
+        robustness_thr = config["inference"]["robustness_thr"],
+        n_iters = config["inference"]["cluster_trees"]["n_iters"],
+        n_reps = config["inference"]["cluster_trees"]["n_reps"],
+        verbosity = config["inference"]["verbosity"]
     input:
         cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
              repeat_id=[x for x in range(0,cluster_tree_rep)])
@@ -526,6 +529,25 @@ rule cluster_tree_robustness:
 
         if robustness_ratio < params.robustness_thr:
             warnings.warn("The trees found are not robust, you may want to change the configurations")
+
+        if params.verbosity > 0:
+            debug_info_out_path = os.path.join(analysis_path, "tree_learning", "debug_info", "cluster_tree")
+            debug_info_with_ap = os.path.join(debug_info_out_path, analysis_prefix)
+
+            n_iters = params.n_iters
+            all_chains = np.empty((n_iters,0))
+            print("MCMC convergence plots...")
+            for i in tqdm(range(params.n_reps)):
+                cluster_chain = np.loadtxt(f"{debug_info_with_ap}__{i}_markov_chain.csv",delimiter=",")
+                cluster_chain = cluster_chain.reshape(-1,1)
+                all_chains = np.append(all_chains, cluster_chain, axis = 1)
+
+            plt.figure(figsize=(20, 6))
+            plt.plot(all_chains)
+            plt.savefig(
+                f"{debug_info_with_ap}__cluster_tree_mcmcs.png"
+            )
+            plt.close()
 
 rule pick_max_cluster_tree:
     input:
