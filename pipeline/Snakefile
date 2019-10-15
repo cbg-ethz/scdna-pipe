@@ -223,86 +223,10 @@ onstart:
 
 rule all:
     input:
-        merged_fastqs = "merge_files_done.txt",
-        rename_fastqs = "rename_fastqs_done.txt",
-        tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
-        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
-        cellranger = "cellranger_done.txt",
-        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
-        bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv",
-        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
-        filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
-        excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
-
-        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
-
-        normalised_bins_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins.png",
-        normalised_bins_clustered_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered.png",
-        normalised_bins_clustered_bps_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered_bps.png",
-
-        segmented_counts = os.path.join(analysis_path,\
-        "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
-        segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
-
-        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
-        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
-
-        clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
-        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
-
-        avg_counts = os.path.join(analysis_path,\
-                "clustering", analysis_prefix) + "_avg_counts.csv",
-
-        empty_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree.txt",
-        empty_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree_cnvs.csv",
-
-        cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
-             repeat_id=[x for x in range(0,cluster_tree_rep)]),
-
-        cluster_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree_cnvs.csv",\
-            repeat_id=[x for x in range(0,cluster_tree_rep)]),
-
-        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt",
-
-        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
-
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
-
-        overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
-
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
-        tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
-
-        gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
-        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png",
-
-        cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
-        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
-
-        #symlink directories
-        raw_files_list = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt",
-        sym_r1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
-        sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
-        sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes),
+        # raw checksums file
         checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5",
-
         # derived symlinks
-        derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{derived_filename}") for derived_filename in derived_file_names],
-
-        # raw symlinks
-
-        # # copy cellranger outputs
-        cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
-        cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
-        cr_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
-        cr_web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html",
-
-        cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
+        derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{derived_filename}") for derived_filename in derived_file_names]
 
     output:
 
