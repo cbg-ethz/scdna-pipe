@@ -223,11 +223,9 @@ onstart:
 
 rule all:
     input:
-        # raw checksums file
-        checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5",
-        # derived symlinks
-        derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{derived_filename}") for derived_filename in derived_file_names]
-
+        # checksums
+        raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
+        derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5")
     output:
 
     run:
@@ -935,3 +933,14 @@ rule create_derived_symlinks:
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w") as summary_file:
             summary_file.write(f"There are {n_clusters} clones detected with copy number gains in {amplified_genes}"
             f" and copy number deletions in {deleted_genes} among the pre-selected genes.")
+
+rule create_derived_checksum:
+    params:
+        sym_derived_path = sym_derived_path,
+        analysis_prefix = analysis_prefix,
+    input:
+        derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{filename}") for filename in derived_file_names]
+    output:
+        checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5")
+    shell:
+        "cd {params.sym_derived_path}; find . -exec md5sum '{{}}' \; >  {output.checksum_file}"
