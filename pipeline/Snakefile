@@ -1009,5 +1009,5 @@ rule create_derived_symlinks:
 
         open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w").close()
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w") as summary_file:
-            summary_file.write(f"There are {n_clusters} clones detected with copy number gains in {amplified_genes}\
-             and copy number deletions in {deleted_genes} among the pre-selected genes.")
+            summary_file.write(f"There are {n_clusters} clones detected with copy number gains in {amplified_genes}"
+            f" and copy number deletions in {deleted_genes} among the pre-selected genes.")
