@@ -911,7 +911,8 @@ rule create_raw_symlinks:
 rule create_derived_symlinks:
     params:
         cellranger_path = cellranger_path,
-        analysis_prefix = analysis_prefix
+        analysis_prefix = analysis_prefix,
+        ploidy = config["inference"]["ploidy"]
     input:
         cellranger = "cellranger_done.txt",
         chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
@@ -943,7 +944,7 @@ rule create_derived_symlinks:
         cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
         cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
         cr_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
-        cr_web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html"
+        cr_web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html",
 
     output:
         derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{filename}") for filename in derived_file_names]
@@ -999,4 +1000,14 @@ rule create_derived_symlinks:
         create_symlink(input.gene_cn_df, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df.csv"))
         create_symlink(input.heatmap_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__heatmap_cnvs.png"))
 
+        # write the summary txt
+        cn_gene_df = pd.read_csv(input.gene_cn_df, index_col=0)
+        n_clusters = len(cn_gene_df.columns)
+
+        amplified_genes = cn_gene_df[(cn_gene_df > params.ploidy).any(axis='columns')].index.values.tolist()
+        deleted_genes = cn_gene_df[(cn_gene_df < params.ploidy).any(axis='columns')].index.values.tolist()
+
         open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w").close()
+        with open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w") as summary_file:
+            summary_file.write(f"There are {n_clusters} clones detected with copy number gains in {amplified_genes}\
+             and copy number deletions in {deleted_genes} among the pre-selected genes.")
