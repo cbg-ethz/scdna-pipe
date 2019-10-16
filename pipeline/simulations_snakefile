@@ -1,0 +1,68 @@
+import os
+
+'''
+parameters
+'''
+
+'''
+Trees of size n=10, 20 and 40
+n_regions = n, 2n and 4n
+10,000 bins and 500 cells
+20,000, 40,000 and 80,000 reads per cell
+'''
+
+n_nodes = config["simulate"]["n_nodes"] # values: [10,20,30]
+n_regions = [n_nodes,2*n_nodes,4*n_nodes]
+n_bins = config["simulate"]["n_bins"]
+n_reads = config["simulate"]["n_reads"]
+nu = config["simulate"]["nu"]
+
+
+try:
+    n_repetitions = config["simulate"]["n_reps"]
+except KeyError:
+    n_repetitions = 100 
+
+try:
+    n_inference_reps = config["inference"]["full_trees"]["n_reps"]
+except KeyError:
+    n_inference_reps = 10
+
+n_cells = config["simulate"]["n_cells"]
+n_iters = config["inference"]["full_trees"]["n_iters"]  # int(1000000*n_nodes/10)
+
+output_file_exts = ['d_mat.txt','ground_truth.txt','region_sizes.txt', 'tree.txt'] #, 'inferred_cnvs.txt', 'tree_inferred.txt', 'HMMcopy_inferred.txt','inferred_cnvs_segmented.txt', 'tree_inferred_segmented.txt']
+
+# trees_inf_output_exts = ['tree_inferred.txt', 'inferred_cnvs.txt'] # , 'inferred_cnvs_segmented.txt', 'tree_inferred_segmented.txt']
+
+SIM_OUTPUT= config["simulate"]["output"]
+sim_prefix=config["simulate"]["prefix"]
+
+rule all:
+    input:
+        read_region_sims = expand(os.path.join(f"{SIM_OUTPUT}_{sim_prefix}", str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads', '{rep_id}' +'_' + '{output_ext}')\
+        ,output_ext=output_file_exts, regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,n_repetitions)])
+    run:
+        print("rule all")
+
+rule run_sim:
+    params:
+        sim_bin = config["simulate"]["bin"],
+        n_nodes = n_nodes,
+        n_bins = n_bins,
+        n_cells = n_cells,
+        n_repetitions = n_repetitions,
+        n_iters = n_iters,
+        nu = nu
+    output:
+        d_mat = SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_d_mat.txt',
+        ground_truth = SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_ground_truth.txt',
+        region_sizes = SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_region_sizes.txt',
+        tree = SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_tree.txt'
+    shell:
+        "{params.sim_bin} --n_regions {wildcards.regions} --n_reads {wildcards.reads} --n_iters {params.n_iters} --n_cells {params.n_cells} --n_bins {params.n_bins} --n_nodes \
+        {params.n_nodes} --verbosity 0 --ploidy 2 --postfix {wildcards.rep_id} --nu {params.nu} --seed {wildcards.rep_id}; \
+        mv {params.n_nodes}nodes_{wildcards.regions}regions_{wildcards.reads}reads_{wildcards.rep_id}_d_mat.csv {output.d_mat}; \
+        mv {params.n_nodes}nodes_{wildcards.regions}regions_{wildcards.reads}reads_{wildcards.rep_id}_ground_truth.csv {output.ground_truth}; \
+        mv {params.n_nodes}nodes_{wildcards.regions}regions_{wildcards.reads}reads_{wildcards.rep_id}_region_sizes.txt {output.region_sizes}; \
+        mv {params.n_nodes}nodes_{wildcards.regions}regions_{wildcards.reads}reads_{wildcards.rep_id}_tree.txt {output.tree}"

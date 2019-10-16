@@ -1,0 +1,41 @@
+{
+    "simulate":
+    {
+      "bin":"/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/simulation",
+      "n_bins": 10000,
+      "n_reads": [20000, 40000, 80000],
+      "n_reps": 100,
+      "n_nodes": 10,
+      "n_cells": 400,
+      "nu": 0.15,
+      "prefix": "sims",
+      "output": "/cluster/work/bewi/members/tuncel/data/dna/sims_2019"
+
+    },
+    "breakpoint_detection":
+    {
+      "window_size":50,
+      "verbosity":1,
+      "threshold":2,
+      "min_cells": 4,
+      "bp_limit": 200,
+      "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/breakpoint_detection"
+    },
+    "inference":
+    {
+      "ploidy": 2,
+      "verbosity": 1,
+      "copy_number_limit": 2,
+      "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/inference",
+      "robustness_thr": 0.3,
+      "full_trees":
+      {
+        "n_iters": 200000,
+        "n_nodes": 0,
+        "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,0,0.01],
+        "n_reps": 10
+      },
+      "seed": 41
+    }
+  }
+  
