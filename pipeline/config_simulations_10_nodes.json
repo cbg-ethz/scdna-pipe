@@ -7,7 +7,7 @@
       "n_reps": 100,
       "n_nodes": 10,
       "n_cells": 400,
-      "nu": 0.15,
+      "nu": 0.1,
       "prefix": "sims",
       "output": "/cluster/work/bewi/members/tuncel/data/dna/sims_2019"
 
