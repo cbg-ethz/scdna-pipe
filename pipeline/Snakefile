@@ -171,7 +171,6 @@ def get_bin_gene_region_df(bin_size, genes, chr_stops, region_stops, bin_is_excl
             if important_genes is not None:
                 if gene_name in important_genes:
                     bin_gene_region_df.loc[start_bin:stop_bin+1, "is_important"] = True
-                    print(bin_gene_region_df.loc[start_bin:stop_bin+1])
                 else:
                     # Need this to deal with overlapping gene coordinates
                     bin_gene_region_df.loc[start_bin:stop_bin+1, "is_important"] = False
@@ -1051,49 +1050,6 @@ rule plot_heatmap:
         )
         plt.close()
 
-rule plot_roche_heatmap:
-    params:
-        roche_genes_path = roche_genes_path,
-        bin_size = bin_size
-    input:
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
-        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv"
-    output:
-        roche_gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_cn_gene_df.csv",
-        roche_heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_heatmap_cnvs.png"
-    benchmark:
-        "benchmark/plot_roche_heatmap.tsv"
-    run:
-        cnvs_arr = np.loadtxt(input.inferred_cnvs, delimiter=',')
-        genes = pd.read_csv(params.roche_genes_path, sep="\t")
-        chr_stops = pd.read_csv(input.chr_stops, sep="\t", index_col=1)
-        gene_cn_df = get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops)
-
-        gene_cn_df.to_csv(
-            output.gene_cn_df
-        )
-
-        figure_width = gene_cn_df.shape[0] / 2 + 1.5
-        plt.figure(figsize=(8, figure_width))
-        cmap = sns.diverging_palette(220, 10, as_cmap=True)
-        heatmap = sns.heatmap(
-            gene_cn_df,
-            annot=True,
-            cmap=cmap,
-            vmin=0,
-            vmax=4,
-            xticklabels=True,
-            yticklabels=True,
-            cbar_kws={"ticks": [0, 1, 2, 3, 4]},
-        )
-        heatmap.set_title("Copy number values of genes (in Roche's list) per cluster")
-        heatmap.set_facecolor("#656565")
-        heatmap = heatmap.get_figure()
-        heatmap.savefig(
-            output.heatmap_cnvs
-        )
-        plt.close()
-
 rule create_cn_cluster_h5:
     params:
         all_genes_path = all_genes_path,
@@ -1119,6 +1075,56 @@ rule create_cn_cluster_h5:
         gene_attributes.create_dataset("gene_names", data=gene_names)
         cn_cluster_h5.create_dataset("matrix", data=gene_cn_df.values)
         cn_cluster_h5.close()
+
+rule plot_roche_heatmap:
+    params:
+        roche_genes_path = roche_genes_path,
+        bin_size = bin_size
+    input:
+        cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
+    output:
+        roche_gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_cn_gene_df.csv",
+        roche_heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_heatmap_cnvs.png"
+    benchmark:
+        "benchmark/plot_roche_heatmap.tsv"
+    run:
+        gene_list = pd.read_csv(params.roche_genes_path, sep="\t", header=None)
+        gene_list.columns = ["gene"]
+        gene_list = gene_list.gene.values.tolist()
+
+        cn_cluster_h5 = h5py.File(input.cn_cluster_h5, "r")
+        cnvs = cn_cluster_h5['matrix']
+        gene_names = cn_cluster_h5['gene_attrs']['gene_names'][()].astype(str)
+
+        gene_cn_df = pd.DataFrame(columns=gene_list)
+        for gene in gene_list:
+            gene_cn_df[gene] = cnvs[np.where(gene_names==gene)[0][0]]
+        gene_cn_df = gene_cn_df.T
+
+        gene_cn_df.to_csv(
+            output.roche_gene_cn_df
+        )
+
+        figure_width = gene_cn_df.shape[0] / 2 + 1.5
+        plt.figure(figsize=(8, figure_width))
+        cmap = sns.diverging_palette(220, 10, as_cmap=True)
+        heatmap = sns.heatmap(
+            gene_cn_df,
+            annot=True,
+            cmap=cmap,
+            vmin=0,
+            vmax=4,
+            xticklabels=True,
+            yticklabels=True,
+            cbar_kws={"ticks": [0, 1, 2, 3, 4]},
+        )
+        heatmap.set_title("Copy number values of genes (in Roche's list) per cluster")
+        heatmap.set_facecolor("#656565")
+        heatmap = heatmap.get_figure()
+        heatmap.savefig(
+            output.roche_heatmap_cnvs
+        )
+        plt.close()
 
 rule visualise_trees:
     params:
