@@ -384,7 +384,7 @@ rule learn_cluster_trees:
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{cluster_tree_rep}" + "__cluster_tree.txt",
         cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{cluster_tree_rep}" + "__cluster_tree_cnvs.csv"
     benchmark:
-        "benchmark/learn_cluster_trees.tsv"
+        "benchmark/learn_cluster_trees_{cluster_tree_rep}.tsv"
     run:
         input_shape = np.loadtxt(input.segmented_counts_shape)
         (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
