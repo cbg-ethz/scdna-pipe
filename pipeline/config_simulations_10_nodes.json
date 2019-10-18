@@ -16,10 +16,11 @@
     {
       "window_size":50,
       "verbosity":1,
-      "threshold":2,
+      "threshold":1,
       "min_cells": 4,
-      "bp_limit": 200,
-      "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/breakpoint_detection"
+      "bp_limit": 500,
+      "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/breakpoint_detection",
+      "output": "/cluster/work/bewi/members/tuncel/data/dna/sims_2019/tree_learning/breakpoints"
     },
     "inference":
     {
