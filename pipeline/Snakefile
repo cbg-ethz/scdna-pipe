@@ -14,7 +14,6 @@ import re
 import warnings
 sns.set()
 
-
 bin_size = config['bin_size']
 fastqs_path = config['fastqs_path']
 moved_fastqs_path = os.path.join(fastqs_path, "merged", "tricked")
@@ -32,7 +31,8 @@ cr_sample_name = sample_name[:-3] # e.g. MHELAVELA_S2 becomes MHELAVELA
 h5_path = config['secondary_analysis']['h5_path']
 genes_path = config['secondary_analysis']['genes_path']
 all_genes_path = config['secondary_analysis']['all_genes_path']
-long_list_genes_path = config['secondary_analysis']['long_list_genes_path']
+important_genes_path = config['secondary_analysis']['important_genes_path']
+roche_genes_path = config['secondary_analysis']['roche_genes_path']
 
 analysis_prefix = config['analysis_prefix']
 seq_prefix = config["sequencing_prefix"]
@@ -109,7 +109,7 @@ def get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops):
         gene_name = row["Gene name"]
 
         if chromosome != '1': # coordinates are given by chromosome
-            chr_start = chr_stops.iloc[np.where(chr_stops.index==chromosome)[0][0]-1].values[0]
+            chr_start = chr_stops.iloc[np.where(chr_stops.index==chromosome)[0][0]-1].values[0] + 1
             start_bin = start_bin + chr_start
             stop_bin = stop_bin + chr_start
 
@@ -145,6 +145,7 @@ def get_bin_gene_region_df(bin_size, genes, chr_stops, region_stops, bin_is_excl
 
     bin_gene_region_df = pd.DataFrame(index=range(chr_stops.iloc[-1].values[0]))
     bin_gene_region_df["gene"] = None
+    bin_gene_region_df["chr"] = None
     bin_gene_region_df["region"] = None
     if important_genes is None:
         bin_gene_region_df["is_important"] = True
@@ -158,19 +159,22 @@ def get_bin_gene_region_df(bin_size, genes, chr_stops, region_stops, bin_is_excl
         chromosome = str(row["Chromosome/scaffold name"])
 
         if chromosome != '1': # coordinates are given by chromosome
-            chr_start = chr_stops.iloc[np.where(chr_stops.index==chromosome)[0][0]-1].values[0]
+            chr_start = chr_stops.iloc[np.where(chr_stops.index==chromosome)[0][0]-1].values[0] + 1
             start_bin = start_bin + chr_start
             stop_bin = stop_bin + chr_start
 
-        gene_name = row["Gene name"]
-        bin_gene_region_df.loc[start_bin:stop_bin, "gene"] = gene_name
-
-        if important_genes is not None:
-            if gene_name in important_genes:
-                bin_gene_region_df.loc[start_bin:stop_bin, "is_important"] = True
-            else:
-                # Need this to deal with overlapping gene coordinates
-                bin_gene_region_df.loc[start_bin:stop_bin, "is_important"] = False
+        # Check if bins already contain an important gene: if they do, skip
+        if (important_genes is None) or ((important_genes is not None) and np.all(bin_gene_region_df.loc[start_bin:stop_bin+1, "is_important"] == False)):
+            gene_name = row["Gene name"]
+            bin_gene_region_df.loc[start_bin:stop_bin+1, "gene"] = gene_name
+            bin_gene_region_df.loc[start_bin:stop_bin+1, "chr"] = chromosome
+            if important_genes is not None:
+                if gene_name in important_genes:
+                    bin_gene_region_df.loc[start_bin:stop_bin+1, "is_important"] = True
+                    print(bin_gene_region_df.loc[start_bin:stop_bin+1])
+                else:
+                    # Need this to deal with overlapping gene coordinates
+                    bin_gene_region_df.loc[start_bin:stop_bin+1, "is_important"] = False
 
     # Now we have a (bin, gene) dataframe. Let's remove the unmappable bins
     bin_gene_region_df = bin_gene_region_df.iloc[np.where(bin_is_excluded==0)[0]]
@@ -183,7 +187,7 @@ def get_bin_gene_region_df(bin_size, genes, chr_stops, region_stops, bin_is_excl
     start_bin = 0
     for index, row in tqdm(region_stops.iterrows(), total=region_stops.shape[0]):
         stop_bin = row.values[0]
-        bin_gene_region_df.loc[start_bin:stop_bin, "region"] = index+1
+        bin_gene_region_df.loc[start_bin:stop_bin+1, "region"] = index # regions are 0 indexed
         start_bin = row.values[0]
 
     return bin_gene_region_df
@@ -249,7 +253,7 @@ def rename_fastq(s_name):
     new_name = '_'.join(split_name[6:7]+split_name[-4:])
     return new_name
 
-def convert_event_region_to_gene(region_event_str, bin_gene_region_df, important_only=False):
+def convert_event_region_to_gene(region_event_str, bin_gene_region_df, important_only=False, genes_to_highlight=None, highlight_color='red'):
     """
         Returns a string indicating gene-wise events in affected region
         Examples:
@@ -260,6 +264,10 @@ def convert_event_region_to_gene(region_event_str, bin_gene_region_df, important
             with (gene_name, region, original_bin) fields
         :param important_only: boolean
             indicating if only important genes should be returned
+        :param genes_to_highlight: list
+            genes that should be displayed in a different color
+        :param highlight_color: str
+            color to use in genes to highlight
         :return: list of str
     """
     # Get event (-2, -1, +1, +2, etc)
@@ -278,6 +286,12 @@ def convert_event_region_to_gene(region_event_str, bin_gene_region_df, important
 
     gene_list = [item for sublist in gene_list for item in sublist]
 
+    # Highlight some genes
+    if genes_to_highlight is not None:
+        for index, gene in enumerate(gene_list):
+            if gene in genes_to_highlight:
+                gene_list[index] = "<font color=" + "\'" + highlight_color + "\'" + ">" + gene + "</font>"
+
     gene_string = '[' + ','.join(gene_list) + ']'
     if len(gene_list) == 0:
         gene_event_str = ""
@@ -286,7 +300,7 @@ def convert_event_region_to_gene(region_event_str, bin_gene_region_df, important
 
     return gene_event_str
 
-def convert_node_regions_to_genes(node_str, bin_gene_region_df, important_only=False):
+def convert_node_regions_to_genes(node_str, bin_gene_region_df, important_only=False, genes_to_highlight=None, **kwargs):
     """
         Returns a string indicating gene events and total number of
         amplifications and deletions in node
@@ -297,6 +311,8 @@ def convert_node_regions_to_genes(node_str, bin_gene_region_df, important_only=F
             with (gene_name, region, original_bin) fields
         :param important_only: boolean
             indicating if only important genes should be returned
+        :param genes_to_highlight: list
+            genes that should be displayed in a different color
         :return: str
     """
     region_event_strs = node_str.split(' ')
@@ -306,7 +322,9 @@ def convert_node_regions_to_genes(node_str, bin_gene_region_df, important_only=F
     gene_event_str = []
 
     for region_event_str in region_event_strs:
-        s = convert_event_region_to_gene(region_event_str, bin_gene_region_df, important_only=important_only)
+        s = convert_event_region_to_gene(region_event_str, bin_gene_region_df,
+                important_only=important_only, genes_to_highlight=genes_to_highlight,
+                highlight_color=kwargs['highlight_color'])
         gene_event_str.append(s)
 
         if region_event_str[0]=='+':
@@ -314,7 +332,7 @@ def convert_node_regions_to_genes(node_str, bin_gene_region_df, important_only=F
 
     gene_event_str = [x for x in gene_event_str if x]
     # Add newline after each x events
-    gene_event_str = ' '.join(f"{x}\n" if i%5 == 0 and i>0 else str(x) for i, x in enumerate(gene_event_str))
+    gene_event_str = ' '.join(f"{x}<br/>" if i%2 == 0 and i>0 else str(x) for i, x in enumerate(gene_event_str))
     # gene_event_str = ' '.join(gene_event_str)
 
     num_deletions = num_events - num_amplifications
@@ -322,18 +340,19 @@ def convert_node_regions_to_genes(node_str, bin_gene_region_df, important_only=F
     num_events_str = "{} +, {} -".format(num_amplifications, num_deletions)
     num_events_str
 
-    node_str = gene_event_str + "\n" + "(" + num_events_str + ")"
+    node_str = gene_event_str + " <br/>" + "(" + num_events_str + ")"
     if gene_event_str == "":
         node_str = num_events_str
 
     return node_str
 
-def tree_to_graphviz(tree_path, gene_labels=False, bin_gene_region_df=None):
+def tree_to_graphviz(tree_path, gene_labels=False, bin_gene_region_df=None, genes_to_highlight=None, **kwargs):
     """
         reads the file containing trees converts it to graphviz format
         :param tree_path: path to the tree file.
         :param gene_labels: whether to label nodes with genes
         :param bin_gene_region_df: Pandas DataFrame with gene-region correspondence
+        :param genes_to_highlight: List containing genes to highlight
         :return: string object containing the graphviz formatted tree
     """
     with open(tree_path) as f:
@@ -379,12 +398,14 @@ def tree_to_graphviz(tree_path, gene_labels=False, bin_gene_region_df=None):
             else:
                 merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
 
-            str_merged_labels = " ".join(f"{x}\n" if i%10 == 0 and i>0 else str(x) for i, x in enumerate(merged_labels))
+            str_merged_labels = " ".join(f"{x}<br/>" if i%10 == 0 and i>0 else str(x) for i, x in enumerate(merged_labels))
             if gene_labels and bin_gene_region_df is not None:
                 node_str = " ".join(merged_labels) # "+1R75 +1R218:219 +1R221:223"
-                str_merged_labels = convert_node_regions_to_genes(node_str, bin_gene_region_df, important_only=True)
+                str_merged_labels = convert_node_regions_to_genes(node_str, bin_gene_region_df,
+                                    important_only=True, genes_to_highlight=genes_to_highlight,
+                                    **kwargs)
 
-            graphviz_labels.append(f"{node_id}[label=\"{str_merged_labels}\"]")
+            graphviz_labels.append(f"{node_id}[label=<{str_merged_labels}>]") # use < > to allow HTML
             graphviz_links.append(f"{p_id} -> {node_id}")
 
     return graphviz_header+graphviz_labels+graphviz_links+["}"]
@@ -450,6 +471,9 @@ rule all:
 
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
         heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png",
+
+        roche_gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_cn_gene_df.csv",
+        roche_heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_heatmap_cnvs.png",
 
         cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
         cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
@@ -658,7 +682,7 @@ rule create_bin_gene_region_df:
         chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         region_stops_path = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
-        long_list_path = long_list_genes_path
+        important_genes_path = important_genes_path
     params:
         bin_size = bin_size
     output:
@@ -671,7 +695,7 @@ rule create_bin_gene_region_df:
         excluded_bins = pd.read_csv(input.excluded_bins_path, header=None)
         region_stops = pd.read_csv(input.region_stops_path, header=None)
         region_stops.columns = ["bin"]
-        important_genes = pd.read_csv(input.long_list_path, sep="\t", header=None)
+        important_genes = pd.read_csv(input.important_genes_path, sep="\t", header=None)
         important_genes.columns = ["gene"]
         important_genes = important_genes.gene.values.tolist()
 
@@ -1027,6 +1051,49 @@ rule plot_heatmap:
         )
         plt.close()
 
+rule plot_roche_heatmap:
+    params:
+        roche_genes_path = roche_genes_path,
+        bin_size = bin_size
+    input:
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
+        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv"
+    output:
+        roche_gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_cn_gene_df.csv",
+        roche_heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_heatmap_cnvs.png"
+    benchmark:
+        "benchmark/plot_roche_heatmap.tsv"
+    run:
+        cnvs_arr = np.loadtxt(input.inferred_cnvs, delimiter=',')
+        genes = pd.read_csv(params.roche_genes_path, sep="\t")
+        chr_stops = pd.read_csv(input.chr_stops, sep="\t", index_col=1)
+        gene_cn_df = get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops)
+
+        gene_cn_df.to_csv(
+            output.gene_cn_df
+        )
+
+        figure_width = gene_cn_df.shape[0] / 2 + 1.5
+        plt.figure(figsize=(8, figure_width))
+        cmap = sns.diverging_palette(220, 10, as_cmap=True)
+        heatmap = sns.heatmap(
+            gene_cn_df,
+            annot=True,
+            cmap=cmap,
+            vmin=0,
+            vmax=4,
+            xticklabels=True,
+            yticklabels=True,
+            cbar_kws={"ticks": [0, 1, 2, 3, 4]},
+        )
+        heatmap.set_title("Copy number values of genes (in Roche's list) per cluster")
+        heatmap.set_facecolor("#656565")
+        heatmap = heatmap.get_figure()
+        heatmap.savefig(
+            output.heatmap_cnvs
+        )
+        plt.close()
+
 rule create_cn_cluster_h5:
     params:
         all_genes_path = all_genes_path,
@@ -1054,9 +1121,12 @@ rule create_cn_cluster_h5:
         cn_cluster_h5.close()
 
 rule visualise_trees:
+    params:
+        highlight_color = config['secondary_analysis']['highlight_color']
     input:
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        bin_gene_region_df = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_gene_region_df.csv"
+        bin_gene_region_df = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_gene_region_df.csv",
+        genes_to_highlight_path = roche_genes_path
     output:
         cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
         cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
@@ -1083,7 +1153,11 @@ rule visualise_trees:
 
         # Tree with gene labels
         bin_gene_region_df = pd.read_csv(input.bin_gene_region_df, index_col=0)
-        tree_genes_as_list = tree_to_graphviz(input.cluster_tree, gene_labels=True, bin_gene_region_df=bin_gene_region_df)
+        genes_to_highlight = pd.read_csv(input.genes_to_highlight_path, sep="\t", header=None)
+        genes_to_highlight.columns = ["gene"]
+        genes_to_highlight = genes_to_highlight.gene.values.tolist()
+        tree_genes_as_list = tree_to_graphviz(input.cluster_tree, gene_labels=True, bin_gene_region_df=bin_gene_region_df,
+                                genes_to_highlight=genes_to_highlight, highlight_color=params.highlight_color)
 
         for line in tree_genes_as_list:
             print(f"{line}\n")
