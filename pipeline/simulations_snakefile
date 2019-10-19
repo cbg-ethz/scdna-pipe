@@ -97,7 +97,8 @@ rule detect_breakpoints:
         # n_cells and n_bins are global
         try:
             cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.d_matrix_file}", f"--n_bins={n_bins}",\
-                f"--n_cells={n_cells}", f"--window_size={params.window_size}", f"--postfix={wildcards.rep_id}",\
+                f"--n_cells={n_cells}", f"--window_size={params.window_size}", f"--postfix={n_nodes}nodes_{wildcards.regions}regions_"
+                f"{wildcards.reads}reads_{wildcards.rep_id}",\
                 f"--verbosity={params.verbosity}", f"--threshold={params.threshold}", f"--bp_limit={params.bp_limit}"])
         except subprocess.SubprocessError as e:
             print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
@@ -106,7 +107,7 @@ rule detect_breakpoints:
             print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
 
         for filename in bp_output_file_exts:
-            os.rename(f"{wildcards.rep_id}_{filename}", os.path.join(f"{BP_OUTPUT}_{sim_prefix}", str(n_nodes) + 'nodes_' + wildcards.regions +'regions_'+ wildcards.reads + 'reads', wildcards.rep_id +'_' + filename))
+            os.rename(f"{n_nodes}nodes_{wildcards.regions}regions_{wildcards.reads}reads_{wildcards.rep_id}_{filename}", os.path.join(f"{BP_OUTPUT}_{sim_prefix}", str(n_nodes) + 'nodes_' + wildcards.regions +'regions_'+ wildcards.reads + 'reads', wildcards.rep_id +'_' + filename))
 
 
 
