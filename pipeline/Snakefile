@@ -97,6 +97,8 @@ def get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops):
     """
     print(f"genes shape: {genes.shape}")
     print(f"cnvs_arr shape: {cnvs_arr.shape}")
+    if len(cnvs_arr.shape) == 1:
+            cnvs_arr = cnvs_arr.reshape(1, -1)
     cluster_ids = range(cnvs_arr.shape[0])
     gene_cn_df = pd.DataFrame(index=cluster_ids)
 
