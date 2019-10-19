@@ -98,6 +98,8 @@ def get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops):
     """
     print(f"genes shape: {genes.shape}")
     print(f"cnvs_arr shape: {cnvs_arr.shape}")
+    if len(cnvs_arr.shape) == 1:
+            cnvs_arr = cnvs_arr.reshape(1, -1)
     cluster_ids = range(cnvs_arr.shape[0])
     gene_cn_df = pd.DataFrame(index=cluster_ids)
 
@@ -409,67 +411,19 @@ def tree_to_graphviz(tree_path, gene_labels=False, bin_gene_region_df=None, gene
 
     return graphviz_header+graphviz_labels+graphviz_links+["}"]
 
+
+# import rules
+include: os.path.join(workflow.basedir, "rules", "breakpoint_detection.snakefile")
+
+onstart:
+    print(f"Workflow main directory: {workflow.basedir}")
+
 rule all:
     input:
-        merged_fastqs = "merge_files_done.txt",
-        rename_fastqs = "rename_fastqs_done.txt",
-        tricked_fastqs = expand(fastqs_path+"/merged/tricked/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
-        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
-        cellranger = "cellranger_done.txt",
-        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
-        bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv",
-        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
-        filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
-        excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
-
-        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
-
-        normalised_bins_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins.png",
-        normalised_bins_clustered_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered.png",
-        normalised_bins_clustered_bps_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered_bps.png",
-
-        segmented_counts = os.path.join(analysis_path,\
-        "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
-        segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
-
-        bin_gene_region_df = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_gene_region_df.csv",
-
-        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
-        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
-
-        clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
-        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
-
-        avg_counts = os.path.join(analysis_path,\
-                "clustering", analysis_prefix) + "_avg_counts.csv",
-
-        empty_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree.txt",
-        empty_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree_cnvs.csv",
-
-        cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
-             repeat_id=[x for x in range(0,cluster_tree_rep)]),
-
-        cluster_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree_cnvs.csv",\
-            repeat_id=[x for x in range(0,cluster_tree_rep)]),
-
+        # checksums
+        raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
+        derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
         robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt",
-
-        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
-
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
-
-        overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
-
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
-        tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
-
-        gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
-        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png",
 
         roche_gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_cn_gene_df.csv",
         roche_heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_heatmap_cnvs.png",
@@ -480,26 +434,7 @@ rule all:
         cluster_tree_genes_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.graphviz",
         cluster_tree_genes_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
 
-        #symlink directories
-        raw_files_list = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt",
-        sym_r1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
-        sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
-        sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes),
-        checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5",
-
-        # derived symlinks
-        derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{derived_filename}") for derived_filename in derived_file_names],
-
-        # raw symlinks
-
-        # # copy cellranger outputs
-        # cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
-        # cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
-        # cr_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
-        # cr_web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html"
-
         cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
-
     output:
 
     run:
@@ -530,151 +465,6 @@ rule extract_genomic_info:
     run:
         sa.extract_genomic_info()
 
-rule detect_breakpoints:
-    params:
-        binary = config["breakpoint_detection"]["bin"],
-        window_size = config["breakpoint_detection"]["window_size"],
-        verbosity = config["breakpoint_detection"]["verbosity"],
-        threshold = config["breakpoint_detection"]["threshold"],
-        bp_limit = config["breakpoint_detection"]["bp_limit"],
-        bp_detection_path = os.path.join(analysis_path, "breakpoint_detection"),
-        posfix = analysis_prefix
-    input:
-        d_matrix_file = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
-        matrix_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt"
-    output:
-        segmented_regions = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
-        segmented_region_sizes = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt"
-    run:
-        try:
-            os.makedirs(params.bp_detection_path)
-        except FileExistsError:
-            print("breakpoint detection directory already exists.")
-        input_shape = np.loadtxt(input.matrix_shape)
-        (n_cells, n_bins) = [int(input_shape[i]) for i in range(2)]
-
-        try:
-            cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.d_matrix_file}", f"--n_bins={n_bins}",\
-                f"--n_cells={n_cells}", f"--window_size={params.window_size}", f"--postfix={params.posfix}",\
-                f"--verbosity={params.verbosity}", f"--threshold={params.threshold}", f"--bp_limit={params.bp_limit}"])
-        except subprocess.SubprocessError as e:
-            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
-        else:
-            print(f"subprocess out: {cmd_output}")
-            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
-
-        os.rename(params.posfix+"_segmented_regions.txt", output.segmented_regions)
-        os.rename(params.posfix+"_segmented_region_sizes.txt", output.segmented_region_sizes)
-
-rule plot_breakpoints:
-    input:
-        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
-        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
-        segmented_regions = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt"
-    output:
-        normalised_bins_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins.png",
-        normalised_bins_clustered_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered.png",
-        normalised_bins_clustered_bps_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered_bps.png"
-    benchmark:
-        "benchmark/plot_breakpoints.tsv"
-    run:
-        from scipy.cluster.hierarchy import ward, leaves_list
-        from scipy.spatial.distance import pdist
-
-        print("loading the normalised bins...")
-        normalised_bins = np.loadtxt(input.normalised_bins, delimiter=',')
-        print(f"shape of normalised bins: {normalised_bins.shape}")
-
-        print("loading the normalised regions...")
-        normalised_regions = np.loadtxt(input.normalised_regions, delimiter=',')
-        print(f"shape of normalised regions: {normalised_regions.shape}")
-
-        bps = np.loadtxt(input.segmented_regions)
-        print(f"number of breakpoints: {len(bps)}")
-
-        mean_normalised_bins = normalised_bins.mean()
-        mean_normalised_regions = normalised_regions.mean()
-
-        Z = ward(pdist(normalised_regions))
-        hclust_index = leaves_list(Z)
-        cmap = sns.diverging_palette(220, 10, as_cmap=True)
-
-        print("plotting the heatmap ...")
-        plt.figure(figsize=(24, 8))
-        ax = sns.heatmap(normalised_bins, vmax=2, cmap=cmap)
-        plt.savefig(output.normalised_bins_heatmap)
-        plt.close()
-
-        print("plotting the clustered heatmap ...")
-        plt.figure(figsize=(24, 8))
-        ax = sns.heatmap(normalised_bins[hclust_index], vmax=2, cmap=cmap)
-        plt.savefig(output.normalised_bins_clustered_heatmap)
-        plt.close()
-
-        print("plotting the clustered heatmap with breakpoints ...")
-        plt.figure(figsize=(24, 8))
-        ax = sns.heatmap(normalised_bins[hclust_index], vmax=2, cmap=cmap)
-        ax = ax.vlines(bps, *ax.get_xlim(), colors='b', linestyles='dashed')
-        plt.savefig(output.normalised_bins_clustered_bps_heatmap)
-        plt.close()
-
-
-rule segment_regions:
-    input:
-        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
-        segmented_region_sizes = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt"
-    output:
-        segmented_counts = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
-        segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt"
-    benchmark:
-        "benchmark/segment_regions.tsv"
-    run:
-        print("loading the filtered counts...")
-        filtered_counts = np.loadtxt(input.filtered_counts, delimiter=',')
-        n_cells = filtered_counts.shape[0]
-        region_sizes = np.loadtxt(input.segmented_region_sizes)
-        n_regions = len(region_sizes)
-        sum_region_sizes = np.sum(region_sizes)
-        condensed_mat = np.zeros((n_cells, n_regions))
-
-        print("segmenting the bins...")
-        for i in tqdm(range(n_cells)):
-            region_id = 0
-            region_count = 0
-            # import ipdb; ipdb.set_trace() # debugging starts here
-            for j in range(int(sum_region_sizes)):
-                to_add = filtered_counts[i][j]
-                condensed_mat[i][region_id] += to_add
-                region_count += 1
-                if region_count == region_sizes[region_id]:
-                    region_id += 1
-                    region_count = 0
-
-        if not np.allclose(condensed_mat.sum(axis=1), filtered_counts.sum(axis=1)):
-            raise AssertionError(
-                "not all values of the sums before & after "
-                "segmentation are close")
-
-        print("saving the segmented regions...")
-        np.savetxt(
-            output.segmented_counts,
-            condensed_mat,
-            delimiter=",",
-        )
-
-        np.savetxt(
-            output.segmented_counts_shape,
-            condensed_mat.shape
-        )
-
 rule create_bin_gene_region_df:
     input:
         all_genes_path = all_genes_path,
@@ -701,45 +491,6 @@ rule create_bin_gene_region_df:
         df = get_bin_gene_region_df(params.bin_size, genes, chr_stops, region_stops, excluded_bins, important_genes=important_genes)
         df.to_csv(output.bin_gene_region_df)
 
-rule normalise_counts:
-    input:
-        filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
-        segmented_counts = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv"
-    output:
-        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
-        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv"
-    benchmark:
-        "benchmark/normalise_counts.tsv"
-    run:
-        from sklearn.preprocessing import normalize
-
-        print("loading the filtered counts...")
-        filtered_counts = np.loadtxt(input.filtered_counts, delimiter=',')
-        print("normalising the bins...")
-        normalized_filtered_bins = normalize(filtered_counts, axis=1, norm="l1")
-        # normalise but make the row sum equal to n_bins
-        normalized_filtered_bins *= normalized_filtered_bins.shape[1]
-        print(f"shape of normalised bins: {normalized_filtered_bins.shape}")
-        print("saving the normalised bins...")
-        np.savetxt(
-            output.normalised_bins,
-            normalized_filtered_bins,
-            delimiter=",",
-        )
-
-        print("loading the segmented counts...")
-        segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
-        print("normalising the regions...")
-        normalized_filtered_regions = normalize(segmented_counts, axis=1, norm="l1")
-        print(f"shape of normalised regions: {normalized_filtered_regions.shape}")
-        print("saving the normalised bins...")
-        np.savetxt(
-            output.normalised_regions,
-            normalized_filtered_regions,
-            delimiter=",",
-        )
-
 rule clustering:
     input:
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv"
@@ -750,7 +501,6 @@ rule clustering:
         "benchmark/clustering.tsv"
     run:
         sa.apply_phenograph(input.normalised_regions)
-
 
 rule create_averaged_region_matrix:
     """
@@ -869,7 +619,7 @@ rule learn_cluster_trees:
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{cluster_tree_rep}" + "__cluster_tree.txt",
         cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{cluster_tree_rep}" + "__cluster_tree_cnvs.csv"
     benchmark:
-        "benchmark/learn_cluster_trees.tsv"
+        "benchmark/learn_cluster_trees_{cluster_tree_rep}.tsv"
     run:
         input_shape = np.loadtxt(input.segmented_counts_shape)
         (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
@@ -910,7 +660,10 @@ rule learn_cluster_trees:
 
 rule cluster_tree_robustness:
     params:
-        robustness_thr = config["inference"]["robustness_thr"]
+        robustness_thr = config["inference"]["robustness_thr"],
+        n_iters = config["inference"]["cluster_trees"]["n_iters"],
+        n_reps = config["inference"]["cluster_trees"]["n_reps"],
+        verbosity = config["inference"]["verbosity"]
     input:
         cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
              repeat_id=[x for x in range(0,cluster_tree_rep)])
@@ -934,6 +687,25 @@ rule cluster_tree_robustness:
 
         if robustness_ratio < params.robustness_thr:
             warnings.warn("The trees found are not robust, you may want to change the configurations")
+
+        if params.verbosity > 0:
+            debug_info_out_path = os.path.join(analysis_path, "tree_learning", "debug_info", "cluster_tree")
+            debug_info_with_ap = os.path.join(debug_info_out_path, analysis_prefix)
+
+            n_iters = params.n_iters
+            all_chains = np.empty((n_iters,0))
+            print("MCMC convergence plots...")
+            for i in tqdm(range(params.n_reps)):
+                cluster_chain = np.loadtxt(f"{debug_info_with_ap}__{i}_markov_chain.csv",delimiter=",")
+                cluster_chain = cluster_chain.reshape(-1,1)
+                all_chains = np.append(all_chains, cluster_chain, axis = 1)
+
+            plt.figure(figsize=(20, 6))
+            plt.plot(all_chains)
+            plt.savefig(
+                f"{debug_info_with_ap}__cluster_tree_mcmcs.png"
+            )
+            plt.close()
 
 rule pick_max_cluster_tree:
     input:
@@ -1377,7 +1149,8 @@ rule create_raw_symlinks:
 rule create_derived_symlinks:
     params:
         cellranger_path = cellranger_path,
-        analysis_prefix = analysis_prefix
+        analysis_prefix = analysis_prefix,
+        ploidy = config["inference"]["ploidy"]
     input:
         cellranger = "cellranger_done.txt",
         chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
@@ -1406,6 +1179,10 @@ rule create_derived_symlinks:
         overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
         heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png",
+        cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
+        cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
+        cr_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
+        cr_web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html",
 
     output:
         derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{filename}") for filename in derived_file_names]
@@ -1461,4 +1238,25 @@ rule create_derived_symlinks:
         create_symlink(input.gene_cn_df, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df.csv"))
         create_symlink(input.heatmap_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__heatmap_cnvs.png"))
 
+        # write the summary txt
+        cn_gene_df = pd.read_csv(input.gene_cn_df, index_col=0)
+        n_clusters = len(cn_gene_df.columns)
+
+        amplified_genes = cn_gene_df[(cn_gene_df > params.ploidy).any(axis='columns')].index.values.tolist()
+        deleted_genes = cn_gene_df[(cn_gene_df < params.ploidy).any(axis='columns')].index.values.tolist()
+
         open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w").close()
+        with open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w") as summary_file:
+            summary_file.write(f"There are {n_clusters} clones detected with copy number gains in {amplified_genes}"
+            f" and copy number deletions in {deleted_genes} among the pre-selected genes.")
+
+rule create_derived_checksum:
+    params:
+        sym_derived_path = sym_derived_path,
+        analysis_prefix = analysis_prefix,
+    input:
+        derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{filename}") for filename in derived_file_names]
+    output:
+        checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5")
+    shell:
+        "cd {params.sym_derived_path}; find . -exec md5sum '{{}}' \; >  {output.checksum_file}"

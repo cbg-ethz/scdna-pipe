@@ -285,6 +285,8 @@ class SecondaryAnalysis:
         """
 
         cnvs_arr = np.loadtxt(cnvs_arr_path, delimiter=",")
+        if len(cnvs_arr.shape) == 1:
+            cnvs_arr = cnvs_arr.reshape(1, -1)
 
         chr_stops_df = pd.read_csv(chr_stops_path, sep="\t", index_col=0)
         chr_stops_df.columns = ["pos"]
