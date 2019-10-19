@@ -227,7 +227,11 @@ rule all:
     input:
         # checksums
         raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
-        derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5")
+        derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
+        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt",
+        cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
+        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
+        cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
     output:
 
     run:
