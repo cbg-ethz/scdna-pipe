@@ -16,6 +16,8 @@
     "window_size":10,
     "verbosity":3,
     "threshold":2,
+    "min_cells": 4,
+    "bp_limit": 500,
     "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/sc-dna/bin/breakpoint_detection"
   },
   "inference":
