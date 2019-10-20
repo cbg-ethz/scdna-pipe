@@ -413,7 +413,7 @@ def tree_to_graphviz(tree_path, gene_labels=False, bin_gene_region_df=None, gene
 
 
 # import rules
-include: os.path.join(workflow.basedir, "rules", "breakpoint_detection.snakefile")
+include: os.path.join(workflow.basedir, "rules", "breakpoint_detection.smk")
 
 onstart:
     print(f"Workflow main directory: {workflow.basedir}")
