@@ -23,7 +23,7 @@
   "inference":
   {
     "ploidy": 2,
-    "verbosity": 0,
+    "verbosity": 1,
     "copy_number_limit": 2,
     "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/inference",
     "robustness_thr": 0.3,
