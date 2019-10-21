@@ -634,6 +634,60 @@ rule plot_roche_heatmap:
         )
         plt.close()
 
+rule visualise_trees:
+    params:
+        highlight_color = config['secondary_analysis']['highlight_color']
+    input:
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
+        bin_gene_region_df = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_gene_region_df.csv",
+        genes_to_highlight_path = roche_genes_path
+    output:
+        cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
+        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
+        cluster_tree_genes_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.graphviz",
+        cluster_tree_genes_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png"
+    run:
+        # Tree with region labels
+        tree_as_list = tree_to_graphviz(input.cluster_tree)
+
+        for line in tree_as_list:
+            print(f"{line}\n")
+
+        with open(output.cluster_tree_graphviz, "w") as file:
+            for line in tree_as_list:
+                file.write(f"{line}\n")
+
+        try:
+            cmd_output = subprocess.run(["dot", "-Tpng", f"{output.cluster_tree_graphviz}", "-o", f"{output.cluster_tree_figure}"])
+        except subprocess.SubprocessError as e:
+            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
+        else:
+            print(f"subprocess out: {cmd_output}")
+            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
+
+        # Tree with gene labels
+        bin_gene_region_df = pd.read_csv(input.bin_gene_region_df, index_col=0)
+        genes_to_highlight = pd.read_csv(input.genes_to_highlight_path, sep="\t", header=None)
+        genes_to_highlight.columns = ["gene"]
+        genes_to_highlight = genes_to_highlight.gene.values.tolist()
+        tree_genes_as_list = tree_to_graphviz(input.cluster_tree, gene_labels=True, bin_gene_region_df=bin_gene_region_df,
+                                genes_to_highlight=genes_to_highlight, highlight_color=params.highlight_color)
+
+        for line in tree_genes_as_list:
+            print(f"{line}\n")
+
+        with open(output.cluster_tree_genes_graphviz, "w") as file:
+            for line in tree_genes_as_list:
+                file.write(f"{line}\n")
+
+        try:
+            cmd_output = subprocess.run(["dot", "-Tpng", f"{output.cluster_tree_genes_graphviz}", "-o", f"{output.cluster_tree_genes_figure}"])
+        except subprocess.SubprocessError as e:
+            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
+        else:
+            print(f"subprocess out: {cmd_output}")
+            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
+
 rule merge_files:
     params:
         fastqs_path = fastqs_path,
