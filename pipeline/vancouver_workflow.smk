@@ -10,6 +10,7 @@ from pathlib import Path
 from secondary_analysis import SecondaryAnalysis
 from collections import Counter
 import re
+import warnings
 sns.set()
 
 
@@ -167,7 +168,7 @@ rule all:
         cluster_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree_cnvs.csv",\
             repeat_id=[x for x in range(0,cluster_tree_rep)]),
 
-        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt",
+        cluster_tree_robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt",
 
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
         cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
@@ -185,7 +186,9 @@ rule all:
              repeat_id=[x for x in range(0,full_tree_rep)]),
 
         full_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__full_tree_cnvs.csv",\
-            repeat_id=[x for x in range(0,full_tree_rep)])
+            repeat_id=[x for x in range(0,full_tree_rep)]),
+
+        full_tree_robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_full_tree_robustness.txt"
 
     output:
         

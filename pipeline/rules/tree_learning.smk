@@ -214,6 +214,55 @@ rule cluster_tree_robustness:
             )
             plt.close()
 
+rule full_tree_robustness:
+    params:
+        robustness_thr = config["inference"]["robustness_thr"],
+        n_iters = config["inference"]["full_trees"]["n_iters"],
+        n_reps = config["inference"]["full_trees"]["n_reps"],
+        verbosity = config["inference"]["verbosity"]
+    input:
+        full_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__full_tree.txt",\
+             repeat_id=[x for x in range(0,full_tree_rep)])
+    output:
+        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_full_tree_robustness.txt"
+    benchmark:
+        "benchmark/full_tree_robustness.tsv"
+    run:
+        tree_scores = get_tree_scores(input.full_tree_with_rep)
+        max_score = max(tree_scores)
+        score_dispersions = [abs(max_score-x) for x in tree_scores]
+
+        is_robust = [x<=1 for x in score_dispersions]
+        robustness_ratio = sum(is_robust) / len(is_robust)
+        print(f"Robustness ratio: {robustness_ratio}")
+
+        with open(output.robustness_results, "w") as f:
+            f.write(f"Scores differences from the max: {score_dispersions}\n")
+            f.write(f"Robustness vector of trees: {is_robust}\n")
+            f.write(f"Robustness ratio: {robustness_ratio}\n")
+
+        if robustness_ratio < params.robustness_thr:
+            warnings.warn("The trees found are not robust, you may want to change the configurations")
+
+        if params.verbosity > 0:
+            debug_info_out_path = os.path.join(analysis_path, "tree_learning", "debug_info", "full_tree")
+            debug_info_with_ap = os.path.join(debug_info_out_path, analysis_prefix)
+
+            n_iters = params.n_iters
+            all_chains = np.empty((n_iters,0))
+            print("MCMC convergence plots...")
+            for i in tqdm(range(params.n_reps)):
+                full_chain = np.loadtxt(f"{debug_info_with_ap}__{i}_markov_chain.csv",delimiter=",")
+                full_chain = full_chain.reshape(-1,1)
+                all_chains = np.append(all_chains, full_chain, axis = 1)
+
+            plt.figure(figsize=(20, 6))
+            plt.plot(all_chains)
+            plt.savefig(
+                f"{debug_info_with_ap}__full_tree_mcmcs.png"
+            )
+            plt.close()
+
 rule pick_max_cluster_tree:
     input:
         cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
@@ -354,3 +403,15 @@ rule learn_full_trees:
 
         os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_tree_inferred.txt", output.full_tree)
         os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_inferred_cnvs.csv", output.full_tree_inferred_cnvs)
+
+        if params.verbosity > 0:
+            debug_info_out_path = os.path.join(analysis_path, "tree_learning", "debug_info", "full_tree")
+            debug_info_with_ap = os.path.join(debug_info_out_path, analysis_prefix)
+            if not os.path.exists(debug_info_out_path):
+                os.makedirs(debug_info_out_path)
+            os.rename(f"{params.posfix}_cell_node_ids.tsv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_cell_node_ids.tsv")
+            os.rename(f"{params.posfix}_cell_region_cnvs.csv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_cell_region_cnvs.csv")
+            os.rename(f"{params.posfix}_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_markov_chain.csv")
+            os.rename(f"{params.posfix}_rel_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_rel_markov_chain.csv")
+            os.rename(f"{params.posfix}_acceptance_ratio.csv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_acceptance_ratio.csv")
+            os.rename(f"{params.posfix}_gamma_values.csv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_gamma_values.csv")
