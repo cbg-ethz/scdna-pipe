@@ -128,6 +128,7 @@ def tree_to_graphviz(tree_path):
 
 # import rules
 include: os.path.join(workflow.basedir, "rules", "breakpoint_detection.smk")
+include: os.path.join(workflow.basedir, "rules", "tree_learning.smk")
 
 onstart:
     print(f"Workflow main directory: {workflow.basedir}")
@@ -152,7 +153,6 @@ rule all:
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
 
         clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
-        phenograph_distance = os.path.join(analysis_path, "clustering", analysis_prefix) + "__phenograph_distance.csv",
         clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
 
         avg_counts = os.path.join(analysis_path,\
