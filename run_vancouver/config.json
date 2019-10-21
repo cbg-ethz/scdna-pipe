@@ -3,13 +3,13 @@
   "analysis_prefix": "vancouver_SA501X3F",
   "ref_genome_version": "GRCh37",
   "ref_genome_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/data/refdata-GRCh37-1.0.0_dna",
-  "analysis_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/run_vancouver/analysis",
+  "analysis_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/run_vancouver/analysis",
   "bin_size": 20000,
   "secondary_analysis":
   {
-    "genes_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/required_files/genes_of_interest/melanoma_gene_coordinates.tsv",
-    "all_genes_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/required_files/genes_of_interest/emsembl_hg19_genes_simplified.tsv",
-    "bins_to_remove": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv"
+    "genes_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/required_files/genes_of_interest/melanoma_gene_coordinates.tsv",
+    "all_genes_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/required_files/genes_of_interest/emsembl_hg19_genes_simplified.tsv",
+    "bins_to_remove": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv"
   },
   "breakpoint_detection":
   {
@@ -18,14 +18,14 @@
     "threshold":2,
     "min_cells": 4,
     "bp_limit": 500,
-    "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/sc-dna/bin/breakpoint_detection"
+    "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/breakpoint_detection"
   },
   "inference":
   {
     "ploidy": 2,
     "verbosity": 0,
     "copy_number_limit": 2,
-    "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-trees-integration/dna-pipeline/sc-dna/bin/inference",
+    "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/inference",
     "robustness_thr": 0.3,
     "learn_nu": 
     {
@@ -38,7 +38,8 @@
       "n_iters": 100000,
       "n_nodes": 0,
       "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,1,0.01],
-      "n_reps": 10
+      "n_reps": 10,
+      "alpha": 0
     },
     "learn_nu_cluster_trees":
     {
