@@ -14,7 +14,7 @@
     },
     "breakpoint_detection":
     {
-      "window_size":50,
+      "window_size":10,
       "verbosity":1,
       "threshold":1,
       "min_cells": 4,
