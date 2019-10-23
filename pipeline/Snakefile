@@ -451,8 +451,6 @@ rule remove_tenx_artifacts:
         filtered_counts_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
     run:
-        for key in config['secondary_analysis']:
-            assert(os.path.isfile(config['secondary_analysis'][key]))
         sa.remove_tenx_genomics_artifacts(bins=params.bins)
 
 rule extract_genomic_info:
