@@ -113,7 +113,7 @@ rule learn_cluster_trees:
         n_iters = config["inference"]["cluster_trees"]["n_iters"],
         n_nodes = config["inference"]["cluster_trees"]["n_nodes"],
         move_probs = config["inference"]["cluster_trees"]["move_probs"],
-        posfix = "cluster_trees" + "_{cluster_tree_rep}",
+        posfix = "cluster_trees" + "_{tree_rep}",
         alpha = config["inference"]["cluster_trees"]["alpha"]
     input:
         avg_counts = os.path.join(analysis_path,\
@@ -123,10 +123,10 @@ rule learn_cluster_trees:
              "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
         empty_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree.txt"
     output:
-        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{cluster_tree_rep}" + "__cluster_tree.txt",
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{cluster_tree_rep}" + "__cluster_tree_cnvs.csv"
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_rep}" + "__cluster_tree.txt",
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_rep}" + "__cluster_tree_cnvs.csv"
     benchmark:
-        "benchmark/learn_cluster_trees_{cluster_tree_rep}.tsv"
+        "benchmark/learn_cluster_trees_{tree_rep}.tsv"
     run:
         input_shape = np.loadtxt(input.segmented_counts_shape)
         (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
@@ -142,7 +142,7 @@ rule learn_cluster_trees:
             cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.avg_counts}", f"--n_regions={n_regions}",\
                 f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
                 f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}", f"--n_nodes={params.n_nodes}",\
-                f"--move_probs={move_probs_str}", f"--seed={wildcards.cluster_tree_rep}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}",
+                f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}",
                 f"--alpha={params.alpha}"])
         except subprocess.SubprocessError as e:
             print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
@@ -158,12 +158,12 @@ rule learn_cluster_trees:
             debug_info_with_ap = os.path.join(debug_info_out_path, analysis_prefix)
             if not os.path.exists(debug_info_out_path):
                 os.makedirs(debug_info_out_path)
-            os.rename(f"{params.posfix}_cell_node_ids.tsv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_cell_node_ids.tsv")
-            os.rename(f"{params.posfix}_cell_region_cnvs.csv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_cell_region_cnvs.csv")
-            os.rename(f"{params.posfix}_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_markov_chain.csv")
-            os.rename(f"{params.posfix}_rel_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_rel_markov_chain.csv")
-            os.rename(f"{params.posfix}_acceptance_ratio.csv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_acceptance_ratio.csv")
-            os.rename(f"{params.posfix}_gamma_values.csv", f"{debug_info_with_ap}__{wildcards.cluster_tree_rep}_gamma_values.csv")
+            os.rename(f"{params.posfix}_cell_node_ids.tsv", f"{debug_info_with_ap}__{wildcards.tree_rep}_cell_node_ids.tsv")
+            os.rename(f"{params.posfix}_cell_region_cnvs.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_cell_region_cnvs.csv")
+            os.rename(f"{params.posfix}_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_markov_chain.csv")
+            os.rename(f"{params.posfix}_rel_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_rel_markov_chain.csv")
+            os.rename(f"{params.posfix}_acceptance_ratio.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_acceptance_ratio.csv")
+            os.rename(f"{params.posfix}_gamma_values.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_gamma_values.csv")
 
 rule cluster_tree_robustness:
     params:
@@ -173,7 +173,7 @@ rule cluster_tree_robustness:
         verbosity = config["inference"]["verbosity"]
     input:
         cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
-             repeat_id=[x for x in range(0,cluster_tree_rep)])
+             repeat_id=[x for x in range(0,tree_rep)])
     output:
         robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt"
     benchmark:
@@ -222,7 +222,7 @@ rule full_tree_robustness:
         verbosity = config["inference"]["verbosity"]
     input:
         full_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__full_tree.txt",\
-             repeat_id=[x for x in range(0,full_tree_rep)])
+             repeat_id=[x for x in range(0,tree_rep)])
     output:
         robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_full_tree_robustness.txt"
     benchmark:
@@ -263,28 +263,28 @@ rule full_tree_robustness:
             )
             plt.close()
 
-rule pick_max_cluster_tree:
+rule pick_best_tree:
     input:
-        cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
-             repeat_id=[x for x in range(0,cluster_tree_rep)]),
-        cluster_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree_cnvs.csv",\
-            repeat_id=[x for x in range(0,cluster_tree_rep)])
+        tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__{{tree_name}}.txt",\
+             repeat_id=[x for x in range(0,tree_rep)]),
+        tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__{{tree_name}}_cnvs.csv",\
+            repeat_id=[x for x in range(0,tree_rep)])
     output:
-        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv"
+        tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.txt",
+        tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}_cnvs.csv"
     benchmark:
-        "benchmark/pick_max_cluster_tree.tsv"
+        "benchmark/pick_best_{tree_name}.tsv"
     run:
         import operator
 
-        trees_sorted = sorted(input.cluster_tree_with_rep)
-        trees_inferred_cnvs_sorted = sorted(input.cluster_tree_inferred_cnvs_with_rep)
+        trees_sorted = sorted(input.tree_with_rep)
+        trees_inferred_cnvs_sorted = sorted(input.tree_inferred_cnvs_with_rep)
 
         tree_scores = get_tree_scores(trees_sorted)
         max_index, max_score = max(enumerate(tree_scores), key=operator.itemgetter(1))
 
-        os.symlink(trees_sorted[max_index], output.cluster_tree)
-        os.symlink(trees_inferred_cnvs_sorted[max_index], output.cluster_tree_inferred_cnvs)
+        os.symlink(trees_sorted[max_index], output.tree)
+        os.symlink(trees_inferred_cnvs_sorted[max_index], output.tree_inferred_cnvs)
 
 rule cell_assignment:
     input:
@@ -366,7 +366,7 @@ rule learn_full_trees:
         n_iters = config["inference"]["full_trees"]["n_iters"],
         n_nodes = config["inference"]["full_trees"]["n_nodes"],
         move_probs = config["inference"]["full_trees"]["move_probs"],
-        posfix = "full_trees" + "_{full_tree_rep}"
+        posfix = "full_trees" + "_{tree_rep}"
     input:
         nu_on_cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree.txt",
         segmented_counts = os.path.join(analysis_path,\
@@ -374,10 +374,10 @@ rule learn_full_trees:
         segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
         segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt"
     output:
-        full_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{full_tree_rep}" + "__full_tree.txt",
-        full_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{full_tree_rep}" + "__full_tree_cnvs.csv"
+        full_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_rep}" + "__full_tree.txt",
+        full_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_rep}" + "__full_tree_cnvs.csv"
     benchmark:
-        "benchmark/learn_full_trees_{full_tree_rep}.tsv"
+        "benchmark/learn_full_trees_{tree_rep}.tsv"
     run:
         input_shape = np.loadtxt(input.segmented_counts_shape)
         (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
@@ -394,7 +394,7 @@ rule learn_full_trees:
                 f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
                 f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}", f"--n_nodes={params.n_nodes}",\
                 f"--tree_file={input.nu_on_cluster_tree}",\
-                f"--move_probs={move_probs_str}", f"--seed={wildcards.full_tree_rep}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}"])
+                f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}"])
         except subprocess.SubprocessError as e:
             print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
         else:
@@ -409,9 +409,9 @@ rule learn_full_trees:
             debug_info_with_ap = os.path.join(debug_info_out_path, analysis_prefix)
             if not os.path.exists(debug_info_out_path):
                 os.makedirs(debug_info_out_path)
-            os.rename(f"{params.posfix}_cell_node_ids.tsv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_cell_node_ids.tsv")
-            os.rename(f"{params.posfix}_cell_region_cnvs.csv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_cell_region_cnvs.csv")
-            os.rename(f"{params.posfix}_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_markov_chain.csv")
-            os.rename(f"{params.posfix}_rel_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_rel_markov_chain.csv")
-            os.rename(f"{params.posfix}_acceptance_ratio.csv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_acceptance_ratio.csv")
-            os.rename(f"{params.posfix}_gamma_values.csv", f"{debug_info_with_ap}__{wildcards.full_tree_rep}_gamma_values.csv")
+            os.rename(f"{params.posfix}_cell_node_ids.tsv", f"{debug_info_with_ap}__{wildcards.tree_rep}_cell_node_ids.tsv")
+            os.rename(f"{params.posfix}_cell_region_cnvs.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_cell_region_cnvs.csv")
+            os.rename(f"{params.posfix}_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_markov_chain.csv")
+            os.rename(f"{params.posfix}_rel_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_rel_markov_chain.csv")
+            os.rename(f"{params.posfix}_acceptance_ratio.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_acceptance_ratio.csv")
+            os.rename(f"{params.posfix}_gamma_values.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_gamma_values.csv")

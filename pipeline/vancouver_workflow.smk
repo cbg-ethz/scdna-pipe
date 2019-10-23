@@ -27,14 +27,11 @@ all_genes_path = config['secondary_analysis']['all_genes_path']
 analysis_prefix = config['analysis_prefix']
 
 try:
-    cluster_tree_rep = config["inference"]["cluster_trees"]["n_reps"]
+    tree_rep = config["inference"]["cluster_trees"]["n_reps"]
 except KeyError:
-    cluster_tree_rep = 10
+    tree_rep = 10
 
-try:
-    full_tree_rep = config["inference"]["full_trees"]["n_reps"]
-except KeyError:
-    full_tree_rep = 10
+tree_outputs = ["cluster_tree", "full_tree"]
 
 sa = SecondaryAnalysis(
     sample_name=analysis_prefix,
@@ -163,32 +160,30 @@ rule all:
         empty_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree_cnvs.csv",
 
         cluster_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree.txt",\
-             repeat_id=[x for x in range(0,cluster_tree_rep)]),
+             repeat_id=[x for x in range(0,tree_rep)]),
 
         cluster_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__cluster_tree_cnvs.csv",\
-            repeat_id=[x for x in range(0,cluster_tree_rep)]),
+            repeat_id=[x for x in range(0,tree_rep)]),
 
-        cluster_tree_robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt",
-
-        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
+        best_trees = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.txt", tree_name=tree_outputs),
+        best_tree_inferred_cnvs = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}_cnvs.csv", tree_name=tree_outputs),
 
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
         tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
 
-        cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
-        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
+        tree_graphviz = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.graphviz", tree_name=tree_outputs),
+        tree_figure =  expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.png", tree_name=tree_outputs),
 
         nu_on_cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree.txt",
         nu_on_cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree_cnvs.csv",
 
         full_tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__full_tree.txt",\
-             repeat_id=[x for x in range(0,full_tree_rep)]),
+             repeat_id=[x for x in range(0,tree_rep)]),
 
         full_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__full_tree_cnvs.csv",\
-            repeat_id=[x for x in range(0,full_tree_rep)]),
+            repeat_id=[x for x in range(0,tree_rep)]),
 
-        full_tree_robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_full_tree_robustness.txt"
+        robustness_results = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_name}_robustness.txt", tree_name=tree_outputs)
 
     output:
         
@@ -197,22 +192,22 @@ rule all:
 
 rule visualise_trees:
     input:
-        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt"
+        tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.txt"
     output:
-        cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
-        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png"
+        tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.graphviz",
+        tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.png"
     run:
-        tree_as_list = tree_to_graphviz(input.cluster_tree)
+        tree_as_list = tree_to_graphviz(input.tree)
         
         for line in tree_as_list:
             print(f"{line}\n")
         
-        with open(output.cluster_tree_graphviz, "w") as file:
+        with open(output.tree_graphviz, "w") as file:
             for line in tree_as_list:
                 file.write(f"{line}\n")
 
         try:
-            cmd_output = subprocess.run(["dot", "-Tpng", f"{output.cluster_tree_graphviz}", "-o", f"{output.cluster_tree_figure}"])
+            cmd_output = subprocess.run(["dot", "-Tpng", f"{output.tree_graphviz}", "-o", f"{output.tree_figure}"])
         except subprocess.SubprocessError as e:
             print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
         else:

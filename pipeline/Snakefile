@@ -38,14 +38,9 @@ analysis_prefix = config['analysis_prefix']
 seq_prefix = config["sequencing_prefix"]
 
 try:
-    cluster_tree_rep = config["inference"]["cluster_trees"]["n_reps"]
+    tree_rep = config["inference"]["cluster_trees"]["n_reps"]
 except KeyError:
-    cluster_tree_rep = 10
-
-try:
-    full_tree_rep = config["inference"]["full_trees"]["n_reps"]
-except KeyError:
-    full_tree_rep = 10
+    tree_rep = 10
 
 derived_file_names = [
             "cnv_data.h5",
@@ -77,6 +72,8 @@ derived_file_names = [
             "heatmap_cnvs.png",
             "Summary.txt"
         ]
+
+tree_outputs = ["cluster_tree", "full_tree"]
 
 sa = SecondaryAnalysis(
     sample_name=analysis_prefix,
@@ -424,7 +421,7 @@ rule all:
         # checksums
         raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
         derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
-        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_cluster_tree_robustness.txt",
+        robustness_results = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_name}_robustness.txt", tree_name=tree_outputs),
 
         roche_gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_cn_gene_df.csv",
         roche_heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__roche_heatmap_cnvs.png",
