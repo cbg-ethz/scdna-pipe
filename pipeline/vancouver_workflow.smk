@@ -183,7 +183,8 @@ rule all:
         full_tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__full_tree_cnvs.csv",\
             repeat_id=[x for x in range(0,tree_rep)]),
 
-        robustness_results = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_name}_robustness.txt", tree_name=tree_outputs)
+        robustness_results = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_name}_robustness.txt", tree_name=tree_outputs),
+        full_tree_inferred_cnvs_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__full_tree_cnvs.png"
 
     output:
         
@@ -213,3 +214,25 @@ rule visualise_trees:
         else:
             print(f"subprocess out: {cmd_output}")
             print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
+
+rule plot_inferred_cnvs:
+    input:
+        full_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__full_tree_cnvs.csv"
+    output:
+        full_tree_inferred_cnvs_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__full_tree_cnvs.png"
+    params:
+        ploidy = config["inference"]["ploidy"]
+    benchmark:
+        "benchmark/plot_inferred_cnvs.tsv"
+    run:
+        cnvs = np.loadtxt(input.full_tree_inferred_cnvs, delimiter=',', dtype=int)
+        cnvs -= params.ploidy
+        cmap = sns.diverging_palette(220, 10, as_cmap=True)
+        print("plotting")
+        plt.figure(figsize=(24, 8))
+        ax = sns.heatmap(cnvs, cmap=cmap)
+        colorbar = ax.collections[0].colorbar
+        colorbar.set_ticks([-2, 0, 2])
+        colorbar.set_ticklabels(['-2', '0', '2'])
+        plt.savefig(output.full_tree_inferred_cnvs_png)
+        plt.close()
