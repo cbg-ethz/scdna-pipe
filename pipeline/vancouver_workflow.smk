@@ -224,7 +224,7 @@ rule plot_inferred_cnvs:
         "benchmark/plot_inferred_cnvs.tsv"
     run:
         cnvs = np.loadtxt(input.full_tree_inferred_cnvs, delimiter=',', dtype=int)
-        cmap = sns.diverging_palette(220, 10, as_cmap=True)
+        cmap = sns.color_palette("RdBu_r", 5)
         print("plotting")
         plt.figure(figsize=(24, 8))
         ax = sns.heatmap(cnvs, cmap=cmap)
