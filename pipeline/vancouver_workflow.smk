@@ -220,19 +220,16 @@ rule plot_inferred_cnvs:
         full_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__full_tree_cnvs.csv"
     output:
         full_tree_inferred_cnvs_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__full_tree_cnvs.png"
-    params:
-        ploidy = config["inference"]["ploidy"]
     benchmark:
         "benchmark/plot_inferred_cnvs.tsv"
     run:
         cnvs = np.loadtxt(input.full_tree_inferred_cnvs, delimiter=',', dtype=int)
-        cnvs -= params.ploidy
         cmap = sns.diverging_palette(220, 10, as_cmap=True)
         print("plotting")
         plt.figure(figsize=(24, 8))
         ax = sns.heatmap(cnvs, cmap=cmap)
         colorbar = ax.collections[0].colorbar
-        colorbar.set_ticks([-2, 0, 2])
-        colorbar.set_ticklabels(['-2', '0', '2'])
+        colorbar.set_ticks([0,1,2,3,4])
+        colorbar.set_ticklabels(['0', '1', '2', '3', '4'])
         plt.savefig(output.full_tree_inferred_cnvs_png)
         plt.close()
