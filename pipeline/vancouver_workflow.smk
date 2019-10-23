@@ -229,7 +229,7 @@ rule plot_inferred_cnvs:
         plt.figure(figsize=(24, 8))
         ax = sns.heatmap(cnvs, cmap=cmap)
         colorbar = ax.collections[0].colorbar
-        colorbar.set_ticks([0,1,2,3,4])
+        colorbar.set_ticks([0.4, 1.2, 2, 2.8, 3.6])
         colorbar.set_ticklabels(['0', '1', '2', '3', '4'])
         plt.savefig(output.full_tree_inferred_cnvs_png)
         plt.close()
