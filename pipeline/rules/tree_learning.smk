@@ -366,6 +366,7 @@ rule learn_full_trees:
         n_iters = config["inference"]["full_trees"]["n_iters"],
         n_nodes = config["inference"]["full_trees"]["n_nodes"],
         move_probs = config["inference"]["full_trees"]["move_probs"],
+        cf = config["inference"]["full_trees"]["cluster_fraction"],
         posfix = "full_trees" + "_{tree_rep}"
     input:
         nu_on_cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree.txt",
@@ -393,7 +394,7 @@ rule learn_full_trees:
             cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.segmented_counts}", f"--n_regions={n_regions}",\
                 f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
                 f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}", f"--n_nodes={params.n_nodes}",\
-                f"--tree_file={input.nu_on_cluster_tree}",\
+                f"--tree_file={input.nu_on_cluster_tree}", f"--cf={params.cf}"\
                 f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}"])
         except subprocess.SubprocessError as e:
             print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
