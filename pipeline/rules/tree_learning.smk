@@ -1,3 +1,10 @@
+
+# the default case for cluster_fraction variable
+try:
+    cf = config["inference"]["full_trees"]["cluster_fraction"]
+except KeyError:
+    cf = 1.0
+
 rule clustering:
     input:
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv"
@@ -366,7 +373,7 @@ rule learn_full_trees:
         n_iters = config["inference"]["full_trees"]["n_iters"],
         n_nodes = config["inference"]["full_trees"]["n_nodes"],
         move_probs = config["inference"]["full_trees"]["move_probs"],
-        cf = config["inference"]["full_trees"]["cluster_fraction"],
+        cf = cf,
         posfix = "full_trees" + "_{tree_rep}"
     input:
         nu_on_cluster_tree = ancient(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree.txt"),
