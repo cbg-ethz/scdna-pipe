@@ -265,8 +265,8 @@ rule full_tree_robustness:
 
 rule pick_best_tree:
     input:
-        tree_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__{{tree_name}}.txt",\
-             repeat_id=[x for x in range(0,tree_rep)]),
+        tree_with_rep = ancient(expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__{{tree_name}}.txt",\
+             repeat_id=[x for x in range(0,tree_rep)])),
         tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__{{tree_name}}_cnvs.csv",\
             repeat_id=[x for x in range(0,tree_rep)])
     output:
@@ -369,7 +369,7 @@ rule learn_full_trees:
         cf = config["inference"]["full_trees"]["cluster_fraction"],
         posfix = "full_trees" + "_{tree_rep}"
     input:
-        nu_on_cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree.txt",
+        nu_on_cluster_tree = ancient(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__nu_on_cluster_tree.txt"),
         segmented_counts = os.path.join(analysis_path,\
                 "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
         segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
