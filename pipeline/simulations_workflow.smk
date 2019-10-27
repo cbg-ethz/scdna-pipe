@@ -1,5 +1,14 @@
 import os
 import itertools
+import pandas as pd
+import numpy as np
+from collections import Counter
+from sklearn.metrics import roc_curve, auc
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+from tqdm import tqdm as tqdm
+sns.set(rc={'figure.figsize':(15.7,8.27)})
 
 '''
 parameters
@@ -20,9 +29,9 @@ nu = config["simulate"]["nu"]
 
 
 try:
-    n_repetitions = config["simulate"]["n_reps"]
+    all_n_tps = config["simulate"]["n_reps"]
 except KeyError:
-    n_repetitions = 100 
+    all_n_tps = 100 
 
 try:
     n_inference_reps = config["inference"]["full_trees"]["n_reps"]
@@ -43,10 +52,18 @@ sim_prefix=config["simulate"]["prefix"]
 
 rule all:
     input:
+        mean_tpr_plots = expand(os.path.join(f"{BP_OUTPUT}_{sim_prefix}", "plots", "mean_tpr_"+\
+        f"{n_nodes}nodes_" + "{regions}regions_{reads}reads.png"), regions=n_regions,reads=n_reads),
+        mean_fpr_plots = expand(os.path.join(f"{BP_OUTPUT}_{sim_prefix}", "plots", "mean_fpr_"+\
+        f"{n_nodes}nodes_" + "{regions}regions_{reads}reads.png"), regions=n_regions,reads=n_reads),
+
+        sum_tp_plots = expand(os.path.join(f"{BP_OUTPUT}_{sim_prefix}", "plots", "sum_tps_"+\
+        f"{n_nodes}nodes_" + "{regions}regions_{reads}reads.png"), regions=n_regions,reads=n_reads),
+        sum_fp_plots = expand(os.path.join(f"{BP_OUTPUT}_{sim_prefix}", "plots", "sum_fps_"+\
+        f"{n_nodes}nodes_" + "{regions}regions_{reads}reads.png"), regions=n_regions,reads=n_reads),
+
         breakpoints = expand(os.path.join(f"{BP_OUTPUT}_{sim_prefix}", str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads', '{rep_id}' +'_' + '{bp_output_ext}')\
-        ,bp_output_ext=bp_output_file_exts, regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,n_repetitions)])
-        # read_region_sims = expand(os.path.join(f"{SIM_OUTPUT}_{sim_prefix}", str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads', '{rep_id}' +'_' + '{sim_output_ext}')\
-        # ,sim_output_ext=sim_output_file_exts, regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,n_repetitions)]),
+        ,bp_output_ext=bp_output_file_exts, regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)])
         
     run:
         print("rule all")
@@ -57,7 +74,7 @@ rule run_sim:
         n_nodes = n_nodes,
         n_bins = n_bins,
         n_cells = n_cells,
-        n_repetitions = n_repetitions,
+        all_n_tps = all_n_tps,
         n_iters = n_iters,
         nu = nu
     output:
@@ -109,12 +126,115 @@ rule detect_breakpoints:
         for filename in bp_output_file_exts:
             os.rename(f"{n_nodes}nodes_{wildcards.regions}regions_{wildcards.reads}reads_{wildcards.rep_id}_{filename}", os.path.join(f"{BP_OUTPUT}_{sim_prefix}", str(n_nodes) + 'nodes_' + wildcards.regions +'regions_'+ wildcards.reads + 'reads', wildcards.rep_id +'_' + filename))
 
+rule plot_breakpoints_thresholds:
+    params:
+        n_bins = n_bins,
+        n_nodes = n_nodes
+    input:
+        gt_files = expand(os.path.join(f"{SIM_OUTPUT}_{sim_prefix}", str(n_nodes) + 'nodes_' + '{{regions}}'+'regions_'+ '{{reads}}'+'reads', '{rep_id}' +'_' + 'ground_truth.txt')\
+        , rep_id=[x for x in range(0,all_n_tps)]),
+        bps_files = expand(os.path.join(f"{BP_OUTPUT}_{sim_prefix}", str(n_nodes) + 'nodes_' + '{{regions}}'+'regions_'+ '{{reads}}'+'reads', '{rep_id}' +'_' + 'all_bps_comparison.csv')\
+        , rep_id=[x for x in range(0,all_n_tps)])
+    output:
+        mean_tprs = os.path.join(f"{BP_OUTPUT}_{sim_prefix}", "plots", 'mean_tpr_'+ f"{n_nodes}nodes_" + '{regions}regions_{reads}reads.png'),
+        mean_fprs = os.path.join(f"{BP_OUTPUT}_{sim_prefix}", "plots", 'mean_fpr_'+ f"{n_nodes}nodes_" + '{regions}regions_{reads}reads.png'),
+        sum_tps = os.path.join(f"{BP_OUTPUT}_{sim_prefix}", "plots", 'sum_tps_'+ f"{n_nodes}nodes_" + '{regions}regions_{reads}reads.png'),
+        sum_fps = os.path.join(f"{BP_OUTPUT}_{sim_prefix}", "plots", 'sum_fps_'+ f"{n_nodes}nodes_" + '{regions}regions_{reads}reads.png')
+    run:
+        all_bins = range(0,params.n_bins)
+        all_tpr, all_fpr, all_n_tps, all_n_fps, all_bps_tables = ([] for i in range(5))
+
+        threshold_coeffs = np.linspace(1.0,16.0, 50) # 50 thresholds btw 1 and 16
+
+        for gt_file, bps_file in tqdm(zip(input.gt_files, input.bps_files)):
+            bps = pd.read_csv(bps_file, header=None)
+            bps.columns = ['idx','log_sp','stdev']
+            bps['ranking'] = bps['log_sp'] / bps['stdev']
+            # bps = bps.sort_values('ranking',ascending=False)
+            bps = bps.dropna()
+            
+            all_bps_tables.append(bps)
+            
+            # get the ground truth
+            cell_genotypes = pd.read_csv(gt_file, sep=',' ,header=None)
+            cell_genotypes = cell_genotypes[cell_genotypes.columns[:-1]] # remove the last (only NaN) column
+            cell_bps = cell_genotypes.diff(periods=1, axis=1) # apply diff to detect breakpoints
+            cell_bps = cell_bps.fillna(value=0.0) # diff makes the 1st row NaN, make it zero
+            cell_bps[cell_bps != 0] = 1 # replace the non-zeroes by 1
+            grouped_cell_bps = cell_bps.sum(axis=0) # count the non-zeroes
+            ground_truth = grouped_cell_bps[grouped_cell_bps > 0] # if they occur in at least 1 cell
+            ground_truth = ground_truth.index.tolist()
+            # end of ground truth    
+
+            # correcting for the bps 1-2 bins nearby
+            for index, row in bps.iterrows():
+                idx_val = bps.loc[index, 'idx']
+                for gt in ground_truth:
+                    if (abs(idx_val - gt) <=2 and idx_val != gt):
+                        print('correcting ' + str(idx_val) + '->' + str(gt))
+                        bps.loc[index,'idx'] = gt
+            
+            tpr_values, fpr_values, n_tps, n_fps = [], [], [], []
+            for thr in threshold_coeffs:
+                predicted_positives = []
+                predicted_negatives = []
+                for index, row in bps.iterrows():
+                    if row['ranking'] > thr:
+                        predicted_positives.append(row['idx'])
+                    else:
+                        break 
+                        
+                #import ipdb; ipdb.set_trace()
+                predicted_negatives = [i for i in all_bins if i not in predicted_positives]
+
+                true_positives = [i for i in predicted_positives if i in ground_truth]
+                false_positives = [i for i in predicted_positives if i not in ground_truth]
+
+                true_negatives = [i for i in predicted_negatives if i not in ground_truth]
+                false_negatives = [i for i in predicted_negatives if i in ground_truth]
+
+                # import ipdb; ipdb.set_trace()
+                assert(len(ground_truth) == (len(true_positives) + len(false_negatives)))
+                tpr = len(true_positives) / len(ground_truth) # len(ground_truth)
+                fpr = len(false_positives) / (params.n_bins - len(ground_truth)) # (len(false_positives) + len(true_negatives))
+                tpr_values.append(tpr)
+                fpr_values.append(fpr)
+                n_tps.append(len(true_positives))
+                n_fps.append(len(false_positives))
+                
+            
+            all_tpr.append(tpr_values)
+            all_fpr.append(fpr_values)
+            all_n_tps.append(n_tps)
+            all_n_fps.append(n_fps)
 
 
+        # Average TRP, FPR, number of predicted positives for each threshold value over all runs
+        print("Plotting...")
+        tpr_df = pd.DataFrame(all_tpr)
+        tpr_df.columns = threshold_coeffs
+        mean_tpr = tpr_df.mean()
+        ax = sns.lineplot(x=mean_tpr.index,y=mean_tpr.values).set_title('Average TPR values')
+        plt.savefig(output.mean_tprs)
+        plt.clf()
 
+        fpr_df = pd.DataFrame(all_fpr)
+        fpr_df.columns = threshold_coeffs
+        mean_fpr = fpr_df.mean()
+        ax = sns.lineplot(x=mean_fpr.index,y=mean_fpr.values).set_title('Average FPR values')
+        plt.savefig(output.mean_fprs)
+        plt.clf()
 
+        n_tps_df = pd.DataFrame(all_n_tps)
+        n_tps_df.columns = threshold_coeffs
+        sum_tps = n_tps_df.sum()
+        ax = sns.lineplot(x=sum_tps.index,y=sum_tps.values).set_title('Sum TP values')
+        plt.savefig(output.sum_tps)
+        plt.clf()
 
-        # bp_outputs = expand(os.path.join(f"{BP_OUTPUT}_{sim_prefix}", str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads', '{rep_id}' +'_' + '{bp_output_files}')\
-        # ,bp_output_files=bp_output_file_exts)
-        # segmented_regions = BP_OUTPUT + '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_segmented_regions.txt',
-        # segmented_region_sizes = BP_OUTPUT + '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_segmented_region_sizes.txt'
+        n_fps_df = pd.DataFrame(all_n_fps)
+        n_fps_df.columns = threshold_coeffs
+        sum_fps = n_fps_df.sum()
+        ax = sns.lineplot(x=sum_fps.index,y=sum_fps.values).set_title('Sum FP values')
+        plt.savefig(output.sum_fps)
+        plt.clf()
