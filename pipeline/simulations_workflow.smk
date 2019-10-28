@@ -8,6 +8,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from tqdm import tqdm as tqdm
+import phenograph
 sns.set(rc={'figure.figsize':(15.7,8.27)})
 
 '''
@@ -47,6 +48,7 @@ bp_output_file_exts = ['segmented_regions.txt', 'segmented_region_sizes.txt', 's
 
 SIM_OUTPUT= config["simulate"]["output"]
 BP_OUTPUT = config["breakpoint_detection"]["output"]
+PHENO_OUTPUT = config["phenograph"]["output"]
 sim_prefix=config["simulate"]["prefix"]
 
 
@@ -66,6 +68,9 @@ rule all:
         ,bp_output_ext=bp_output_file_exts, regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
 
         hmmcopy_inferred_cnvs = expand(SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_HMMcopy_inferred.txt'\
+        ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
+
+        phenograph_assignments = expand(f'{PHENO_OUTPUT}/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_clusters_phenograph_assignment.tsv'\
         ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)])
         
     run:
@@ -259,3 +264,29 @@ rule hmm_copy_inference:
         config["hmm_copy"]["conda_env"]
     shell:
         " Rscript {params.script} {input.d_mat}" 
+
+rule phenograph_clustering:
+    input:
+        d_mat = SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_d_mat.txt'
+    output:
+        clusters_phenograph_assignment = f'{PHENO_OUTPUT}/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_clusters_phenograph_assignment.tsv'
+    threads:
+        config["phenograph"]["threads"]
+    run:
+        normalised_regions = np.loadtxt(input.d_mat, delimiter=",")
+        n_cells = normalised_regions.shape[0]
+        print(f"n_cells: {str(n_cells)}")
+        n_neighbours = int(n_cells / 10)
+        print(f"n_neighbours to be used: {str(n_neighbours)}")
+        communities, graph, Q = phenograph.cluster(
+            data=normalised_regions, k=n_neighbours, n_jobs=threads, jaccard=True
+        )
+
+        print(f"Communities: {communities}")
+        communities_df = pd.DataFrame(communities, columns=["cluster"])
+        communities_df["cell_barcode"] = communities_df.index
+        communities_df = communities_df[["cell_barcode", "cluster"]]
+
+        communities_df.to_csv(
+            output.clusters_phenograph_assignment, sep="\t", index=False
+        )

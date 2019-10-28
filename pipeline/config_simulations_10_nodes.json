@@ -45,6 +45,11 @@
         "n_reps": 10
       },
       "seed": 41
+    },
+    "phenograph":
+    {
+      "output": "/cluster/work/bewi/members/tuncel/data/dna/sims_2019/phenograph",
+      "threads": 8
     }
   }
   
