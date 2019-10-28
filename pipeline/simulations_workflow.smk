@@ -63,7 +63,10 @@ rule all:
         f"{n_nodes}nodes_" + "{regions}regions_{reads}reads.png"), regions=n_regions,reads=n_reads),
 
         breakpoints = expand(os.path.join(f"{BP_OUTPUT}_{sim_prefix}", str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads', '{rep_id}' +'_' + '{bp_output_ext}')\
-        ,bp_output_ext=bp_output_file_exts, regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)])
+        ,bp_output_ext=bp_output_file_exts, regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
+
+        hmmcopy_inferred_cnvs = expand(SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_HMMcopy_inferred.txt'\
+        ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)])
         
     run:
         print("rule all")
@@ -238,3 +241,21 @@ rule plot_breakpoints_thresholds:
         ax = sns.lineplot(x=sum_fps.index,y=sum_fps.values).set_title('Sum FP values')
         plt.savefig(output.sum_fps)
         plt.clf()
+
+rule hmm_copy_inference:
+    params:
+        script = config["hmm_copy"]["script"],
+        n_nodes = n_nodes,
+        scratch = config["hmm_copy"]["scratch"],
+        mem = config["hmm_copy"]["mem"],
+        time = config["hmm_copy"]["time"],
+        script_inp = str(n_nodes)+"nodes_{regions}regions_{reads}reads_{rep_id}"
+    input:
+        d_mat = SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_d_mat.txt'
+    output:
+        # sample output: 10nodes_10regions_100000reads_sim1_HMMcopy_inferred.txt
+        hmmcopy_inferred_cnvs = SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_HMMcopy_inferred.txt'
+    conda:
+        config["hmm_copy"]["conda_env"]
+    shell:
+        " Rscript {params.script} {input.d_mat}" 

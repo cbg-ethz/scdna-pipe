@@ -22,6 +22,14 @@
       "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/breakpoint_detection",
       "output": "/cluster/work/bewi/members/tuncel/data/dna/sims_2019/tree_learning/breakpoints"
     },
+    "hmm_copy":
+    {
+        "script": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scripts/HMMCopyInference.R",
+        "scratch":20000,
+        "mem":"3200",
+        "time": "600",
+        "conda_env": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/pipeline/envs/hmm_copy.yaml"
+    },
     "inference":
     {
       "ploidy": 2,
