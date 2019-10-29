@@ -16,9 +16,9 @@
     {
       "window_size":10,
       "verbosity":1,
-      "threshold":1,
+      "threshold":3,
       "min_cells": 4,
-      "bp_limit": 500,
+      "bp_limit": 200,
       "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/breakpoint_detection",
       "output": "/cluster/work/bewi/members/tuncel/data/dna/sims_2019/tree_learning/breakpoints"
     },
@@ -33,23 +33,45 @@
     "inference":
     {
       "ploidy": 2,
-      "verbosity": 1,
+      "verbosity": 0,
       "copy_number_limit": 2,
       "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/inference",
-      "robustness_thr": 0.3,
+      "robustness_thr": 0.5,
+      "output": "/cluster/work/bewi/members/tuncel/data/dna/sims_2019/tree_learning",
+      "learn_nu": 
+      {
+        "n_iters": 1000,
+        "n_nodes": 0,
+        "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1,0]
+      },
+      "cluster_trees":
+      {
+        "n_iters": 10000,
+        "n_nodes": 0,
+        "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,1,0.01],
+        "n_reps": 10,
+        "alpha": 0,
+        "cluster_fraction": 1.0
+      },
+      "learn_nu_cluster_trees":
+      {
+        "n_iters": 1000,
+        "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1,0]
+      },
       "full_trees":
       {
-        "n_iters": 200000,
+        "n_iters": 10000,
         "n_nodes": 0,
         "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,0,0.01],
-        "n_reps": 10
+        "n_reps": 10,
+        "cluster_fraction": 0.8
       },
       "seed": 41
     },
     "phenograph":
     {
       "output": "/cluster/work/bewi/members/tuncel/data/dna/sims_2019/phenograph",
-      "threads": 8
+      "threads": 1
     }
   }
   
