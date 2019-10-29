@@ -304,7 +304,7 @@ rule learn_cluster_trees:
          + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' +  "_segmented_counts_shape.txt",
         segmented_region_sizes = BP_OUTPUT + '_' + sim_prefix +'_trees/'+ str(n_nodes) +\
          'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_segmented_region_sizes.txt',
-        empty_tree = f'{TREES_OUTPUT}_nu_on_avg/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_empty_tree.txt'
+        ancient(empty_tree = f'{TREES_OUTPUT}_nu_on_avg/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_empty_tree.txt')
     output:
         cluster_tree = f'{TREES_OUTPUT}_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_{tree_rep_id}_cluster_tree.txt',
         cluster_tree_inferred_cnvs = f'{TREES_OUTPUT}_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_{tree_rep_id}_cluster_tree_cnvs.csv'
