@@ -159,7 +159,7 @@ rule segment_regions:
             region_id = 0
             region_count = 0
             # import ipdb; ipdb.set_trace() # debugging starts here
-            for j in range(int(sum_region_sizes)):
+            for j in range(filtered_counts.shape[1]):
                 to_add = filtered_counts[i][j]
                 condensed_mat[i][region_id] += to_add
                 region_count += 1
@@ -296,7 +296,7 @@ rule learn_cluster_trees:
         n_iters = config["inference"]["cluster_trees"]["n_iters"],
         n_nodes = config["inference"]["cluster_trees"]["n_nodes"],
         move_probs = config["inference"]["cluster_trees"]["move_probs"],
-        posfix = f"cluster_tree{str(n_nodes)}" + "nodes_{regions}regions_{reads}reads_{rep_id}rep_{tree_rep_id}",
+        posfix = f"cluster_tree{str(n_nodes)}" + "nodes_{regions}regions_{reads}reads_{rep_id}_{tree_rep_id}",
         alpha = config["inference"]["cluster_trees"]["alpha"]
     input:
         avg_counts = f'{TREES_OUTPUT}_phenograph/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_avg_counts.csv',
@@ -323,7 +323,7 @@ rule learn_cluster_trees:
             cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.avg_counts}", f"--n_regions={n_regions}",\
                 f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
                 f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}", f"--n_nodes={params.n_nodes}",\
-                f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}",
+                f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep_id}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}",
                 f"--alpha={params.alpha}"])
         except subprocess.SubprocessError as e:
             print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
