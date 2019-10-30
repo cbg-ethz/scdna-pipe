@@ -325,7 +325,7 @@ rule learn_cluster_trees:
             cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.avg_counts}", f"--n_regions={n_regions}",\
                 f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
                 f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}", f"--n_nodes={params.n_nodes}",\
-                f"--tree_file={input.nu_on_cluster_tree}", f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep_id}",\
+                f"--tree_file={input.empty_tree}", f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep_id}",\
                 f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}", f"--alpha={params.alpha}"])
         except subprocess.SubprocessError as e:
             print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
