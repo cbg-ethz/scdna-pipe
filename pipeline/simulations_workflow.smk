@@ -61,6 +61,8 @@ sim_prefix=config["simulate"]["prefix"]
 
 rule all:
     input:
+        cluster_trees = expand(f'{TREES_OUTPUT}_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_{tree_rep_id}_cluster_tree.txt'\
+        ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)], tree_rep_id=[x for x in range(0,tree_rep)]),
         cluster_tree_inferred_cnvs = expand(f'{TREES_OUTPUT}_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_{tree_rep_id}_cluster_tree_cnvs.csv'\
         ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)], tree_rep_id=[x for x in range(0,tree_rep)]),
 
@@ -304,7 +306,7 @@ rule learn_cluster_trees:
          + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' +  "_segmented_counts_shape.txt",
         segmented_region_sizes = BP_OUTPUT + '_' + sim_prefix +'_trees/'+ str(n_nodes) +\
          'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_segmented_region_sizes.txt',
-        ancient(empty_tree = f'{TREES_OUTPUT}_nu_on_avg/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_empty_tree.txt')
+        empty_tree = ancient(f'{TREES_OUTPUT}_nu_on_avg/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_empty_tree.txt')
     output:
         cluster_tree = f'{TREES_OUTPUT}_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_{tree_rep_id}_cluster_tree.txt',
         cluster_tree_inferred_cnvs = f'{TREES_OUTPUT}_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_{tree_rep_id}_cluster_tree_cnvs.csv'
@@ -323,8 +325,8 @@ rule learn_cluster_trees:
             cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.avg_counts}", f"--n_regions={n_regions}",\
                 f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
                 f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}", f"--n_nodes={params.n_nodes}",\
-                f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep_id}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}",
-                f"--alpha={params.alpha}"])
+                f"--tree_file={input.nu_on_cluster_tree}", f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep_id}",\
+                f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}", f"--alpha={params.alpha}"])
         except subprocess.SubprocessError as e:
             print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
         else:
