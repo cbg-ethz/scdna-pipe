@@ -302,8 +302,17 @@ rule cell_assignment:
     benchmark:
         "benchmark/cell_assignments.tsv"
     run:
-        inferred_cnvs = np.loadtxt(input.cluster_tree_inferred_cnvs, delimiter=',')
-        unique_cnvs, tree_cluster_sizes = np.unique(inferred_cnvs, axis=0, return_counts=True)
+        inferred_cnvs = np.loadtxt(input.cluster_tree_inferred_cnvs, delimiter=',') # cell-wise profiles
+        unique_cnvs, tree_cluster_sizes = np.unique(inferred_cnvs, axis=0, return_counts=True) # clone-wise profiles
+
+        # Sort clones by distance to diploid profile
+        dist_to_diploid = []
+        diploid_profile = np.ones([unique_cnvs.shape[1]]) * 2
+        for c_id in range(unique_cnvs.shape[0]):
+            dist_to_diploid.append(np.linalg.norm(unique_cnvs[c_id]-diploid_profile))
+        order = np.argsort(dist_to_diploid)
+        unique_cnvs = unique_cnvs[order]
+        tree_cluster_sizes = tree_cluster_sizes[order]
 
         print("saving the unique cnv profiles...")
         np.savetxt(
@@ -346,7 +355,7 @@ rule learn_nu_on_cluster_tree:
     run:
         input_shape = np.loadtxt(input.segmented_counts_shape)
         (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
-        
+
         move_probs_str = ",".join(str(p) for p in params.move_probs)
 
         try:
@@ -389,7 +398,7 @@ rule learn_full_trees:
     run:
         input_shape = np.loadtxt(input.segmented_counts_shape)
         (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
-        
+
         move_probs_str = ",".join(str(p) for p in params.move_probs)
 
         with open(input.nu_on_cluster_tree) as file:
