@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from pathlib import Path
 from secondary_analysis import SecondaryAnalysis
+from secondary_analysis.utils import *
 from collections import Counter
 import re
 import warnings
@@ -41,88 +42,6 @@ sa = SecondaryAnalysis(
     all_genes_path=all_genes_path,
 )
 
-def get_tree_scores(tree_paths):
-    """
-        Creates the list of tree scores by parsing the tree files
-        :param trees_path: a list of tree paths
-        :return: the list of tree scores
-    """
-    tree_scores = []
-    for tree_path in tree_paths:
-        with open(tree_path) as f:
-            list_tree_file = list(f)
-        
-        for line in list_tree_file: 
-            if line.startswith("Tree score:"):
-                score = line.rstrip("\n").lstrip("Tree score:").lstrip(" ")
-                tree_scores.append(float(score))
-
-    return tree_scores
-
-
-def rename_fastq(s_name):
-    '''
-        renames the merged fastqs according to the bcl2fastq naming convention
-        Sample input name: MERGED_BSSE_QGF_123456_ZXVN2SHG5_1_QWEERTY_T_scD_250c_r1v1_0_SI-GA-H5_S1_L003_I1_001.fastq.gz
-    '''
-    split_name = s_name.split('_')
-    new_name = '_'.join(split_name[6:7]+split_name[-4:])
-    return new_name
-
-def tree_to_graphviz(tree_path):
-    """
-        reads the file containing trees converts it to graphviz format
-        :param tree_path: path to the tree file.
-        :return: string object containing the graphviz formatted tree
-    """
-    with open(tree_path) as f:
-        list_tree_file = list(f)
-
-    graphviz_header = ["digraph { \n", "node [style=filled,color=\"#D4C0D6\"]"
-                "edge [arrowhead=none, color=\"#602A86\"]"]
-    
-    graphviz_labels = []
-    graphviz_links = []
-
-    graphviz_labels.append("0[label=\"Neutral\"]") # root
-
-    for line in list_tree_file: 
-        if line.startswith("node 0:"):
-            continue
-        elif line.startswith("node"):
-            comma_splits = line.split(",")
-            
-            comma_first = re.split(" |:",comma_splits[0])
-            node_id = comma_first[1]
-            p_id = comma_first[4]
-            comma_rest = comma_splits[1:]
-            comma_rest[0] = comma_rest[0].lstrip('[')
-            comma_rest[-1] = comma_rest[-1].rstrip(']\n')
-            merged_labels = [] 
-            [k_begin, previous_v] = (int(x) for x in comma_rest[0].split(":"))
-            k_end = k_begin
-            for term in comma_rest[1:]: # events vector
-                [k,v] = (int(x) for x in term.split(":"))
-                if k==k_end+1 and v==previous_v:
-                    k_end = k # update the end
-                else:
-                    if k_begin == k_end:
-                        merged_labels.append(f"{previous_v:+}R{k_begin}")
-                    else:
-                        merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
-                    k_begin = k_end = k          
-                previous_v = v
-            # print the last one
-            if k_begin == k_end:
-                merged_labels.append(f"{previous_v:+}R{k_begin}")
-            else:
-                merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
-            
-            str_merged_labels = " ".join(f"{x}\n" if i%10 == 0 and i>0 else str(x) for i, x in enumerate(merged_labels))
-            graphviz_labels.append(f"{node_id}[label=\"{str_merged_labels}\"]")
-            graphviz_links.append(f"{p_id} -> {node_id}")
-
-    return graphviz_header+graphviz_labels+graphviz_links+["}"]
 
 # import rules
 include: os.path.join(workflow.basedir, "rules", "breakpoint_detection.smk")
