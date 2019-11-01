@@ -291,7 +291,7 @@ def plot_heatmap(gene_cn_df, is_imputed=None, output_path=None):
             if is_imputed[i,0]:
                 for j in range(is_imputed.shape[1]):
                     # heatmap.add_patch(Rectangle((j, is_imputed.shape[0]-1-i), closed=True, fill=False, edgecolor='gray', lw=3))
-                    box = np.array([[0, is_imputed.shape[0]-1-i], [4, is_imputed.shape[0]-1-i], [4, is_imputed.shape[0]-1-i+1], [0, is_imputed.shape[0]-1-i+1]])
+                    box = np.array([[0, is_imputed.shape[0]-1-i], [is_imputed.shape[1], is_imputed.shape[0]-1-i], [is_imputed.shape[1], is_imputed.shape[0]-1-i+1], [0, is_imputed.shape[0]-1-i+1]])
                     heatmap.add_patch(Polygon(box, closed=True, fill=False, edgecolor='gray', lw=1.5, ls='--', clip_on=False))
 
     if output_path is not None:
