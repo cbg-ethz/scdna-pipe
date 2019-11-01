@@ -299,7 +299,7 @@ def plot_heatmap(gene_cn_df, is_imputed=None, output_path=None):
     else:
         plt.show()
 
-def plot_profile(cnv_arr, chr_stops, id=None, add_offsets=True, s=1, cmap=None, colors_idx=None, chr_mean_pos=None, figsize=(14, 4), yticksize=11, output_path=None):
+def plot_profile(cnv_arr, chr_stops, id=None, add_offsets=True, ymax=5, s=1, cmap=None, colors_idx=None, chr_mean_pos=None, figsize=(14, 4), yticksize=11, output_path=None):
     """
     Plots CNV profiles
     :param cnv_arr: (n_subclones, n_bins) array of CNVs
@@ -307,8 +307,6 @@ def plot_profile(cnv_arr, chr_stops, id=None, add_offsets=True, s=1, cmap=None, 
     """
     if len(cnv_arr.shape) == 1:
         cnv_arr = cnv_arr.reshape(1, -1)
-
-    ymax = np.max(cnv_arr) + 0.5
 
     if chr_mean_pos is None:
         # Customize minor tick labels
@@ -380,6 +378,8 @@ def plot_cluster_cnvs(cnvs_arr, chr_stops, add_offsets=True, s=1, output_path=No
 
     n_subclones = cnvs_arr.shape[0]
 
+    ymax = np.nanmax(cnvs_arr) + 1
+
     # Customize minor tick labels
     chr_mean_pos = []
     chr_mean_pos.append(chr_stops['Unnamed: 0'][0]/2)
@@ -392,9 +392,9 @@ def plot_cluster_cnvs(cnvs_arr, chr_stops, add_offsets=True, s=1, output_path=No
     # Plot each profile separately
     for c in range(n_subclones):
         cluster_path = output_path + '__cluster_profile_' + str(c) + '.png'
-        plot_profile(cnvs_arr[c], chr_stops, id=c, s=s, colors_idx=[c], chr_mean_pos=chr_mean_pos, figsize=(14, 4), output_path=cluster_path)
+        plot_profile(cnvs_arr[c], chr_stops, id=c, s=s, ymax=ymax, colors_idx=[c], chr_mean_pos=chr_mean_pos, figsize=(14, 4), output_path=cluster_path)
 
     # Plot all profiles overlapping
     overlapping_path = output_path + '__cluster_profile_overlapping.png'
-    plot_profile(cnvs_arr, chr_stops, s=s, add_offsets=add_offsets, colors_idx=np.arange(n_subclones),
+    plot_profile(cnvs_arr, chr_stops, s=s, ymax=ymax, add_offsets=add_offsets, colors_idx=np.arange(n_subclones),
                 chr_mean_pos=chr_mean_pos, figsize=(14, 8), yticksize=13, output_path=overlapping_path)
