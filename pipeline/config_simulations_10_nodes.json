@@ -4,7 +4,7 @@
       "bin":"/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/simulation",
       "n_bins": 10000,
       "n_reads": [20000, 40000, 80000],
-      "n_reps": 100,
+      "n_reps": 40,
       "n_nodes": 10,
       "n_cells": 400,
       "nu": 0.1,
@@ -46,7 +46,7 @@
       },
       "cluster_trees":
       {
-        "n_iters": 10000,
+        "n_iters": 40000,
         "n_nodes": 0,
         "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,1,0.01],
         "n_reps": 10,
@@ -55,16 +55,16 @@
       },
       "learn_nu_cluster_trees":
       {
-        "n_iters": 1000,
+        "n_iters": 5000,
         "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1,0]
       },
       "full_trees":
       {
-        "n_iters": 10000,
+        "n_iters": 40000,
         "n_nodes": 0,
         "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,0,0.01],
         "n_reps": 10,
-        "cluster_fraction": 0.8
+        "cluster_fraction": 1.0
       },
       "seed": 41
     },

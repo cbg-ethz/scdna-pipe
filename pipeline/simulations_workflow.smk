@@ -10,6 +10,7 @@ import matplotlib.ticker as ticker
 from tqdm import tqdm as tqdm
 import re
 import phenograph
+from secondary_analysis.utils import *
 sns.set(rc={'figure.figsize':(15.7,8.27)})
 
 '''
@@ -59,22 +60,25 @@ TREES_OUTPUT = config["inference"]["output"]
 sim_prefix=config["simulate"]["prefix"]
 
 
+# the default case for cluster_fraction variable
+try:
+    cf = config["inference"]["full_trees"]["cluster_fraction"]
+except KeyError:
+    cf = 1.0
+
 rule all:
     input:
-        cluster_trees = expand(f'{TREES_OUTPUT}_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_{tree_rep_id}_cluster_tree.txt'\
-        ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)], tree_rep_id=[x for x in range(0,tree_rep)]),
-        cluster_tree_inferred_cnvs = expand(f'{TREES_OUTPUT}_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_{tree_rep_id}_cluster_tree_cnvs.csv'\
+        best_cluster_tree = expand(f'{TREES_OUTPUT}_best_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_cluster_tree.txt'\
         ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)], tree_rep_id=[x for x in range(0,tree_rep)]),
 
-        breakpoints = expand(os.path.join(f"{BP_OUTPUT}_{sim_prefix}_trees", str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads', '{rep_id}' +'_' + '{bp_output_ext}')\
-        ,bp_output_ext=bp_output_file_exts, regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
+        best_full_tree = expand(f'{TREES_OUTPUT}_best_full_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_full_tree.txt'\
+        ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)], tree_rep_id=[x for x in range(0,tree_rep)]),
 
         hmmcopy_inferred_cnvs = expand(SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_HMMcopy_inferred.txt'\
         ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
 
         phenograph_assignments = expand(f'{PHENO_OUTPUT}/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_clusters_phenograph_assignment.tsv'\
         ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)])
-
         
     run:
         print("rule all")
@@ -347,6 +351,139 @@ rule learn_cluster_trees:
             os.rename(f"{params.posfix}_rel_markov_chain.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_rel_markov_chain.csv")
             os.rename(f"{params.posfix}_acceptance_ratio.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_acceptance_ratio.csv")
             os.rename(f"{params.posfix}_gamma_values.csv", f"{debug_info_with_ap}__{wildcards.tree_rep}_gamma_values.csv")
+
+rule pick_best_cluster_tree:
+    input:
+        cluster_trees = ancient(expand(f'{TREES_OUTPUT}_cluster_tree/{str(n_nodes)}nodes_' + '{{regions}}regions_{{reads}}reads/{{rep_id}}_{tree_rep_id}_cluster_tree.txt'\
+        , tree_rep_id=[x for x in range(0,tree_rep)])),
+        cluster_tree_inferred_cnvs = ancient(expand(f'{TREES_OUTPUT}_cluster_tree/{str(n_nodes)}nodes_' + '{{regions}}regions_{{reads}}reads/{{rep_id}}_{tree_rep_id}_cluster_tree_cnvs.csv'\
+        , tree_rep_id=[x for x in range(0,tree_rep)]))
+    output:
+        best_tree = f'{TREES_OUTPUT}_best_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_cluster_tree.txt',
+        best_tree_inferred_cnvs = f'{TREES_OUTPUT}_best_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_cluster_tree_cnvs.csv'
+    run:
+        import operator
+
+        trees_sorted = sorted(input.cluster_trees)
+        trees_inferred_cnvs_sorted = sorted(input.cluster_tree_inferred_cnvs)
+
+        tree_scores = get_tree_scores(trees_sorted)
+        max_index, max_score = max(enumerate(tree_scores), key=operator.itemgetter(1))
+
+        os.symlink(trees_sorted[max_index], output.best_tree)
+        os.symlink(trees_inferred_cnvs_sorted[max_index], output.best_tree_inferred_cnvs)
+
+rule pick_best_full_tree:
+    input:
+        full_trees = ancient(expand(f'{TREES_OUTPUT}_full_tree/{str(n_nodes)}nodes_' + '{{regions}}regions_{{reads}}reads/{{rep_id}}_{tree_rep_id}_full_tree.txt'\
+        , tree_rep_id=[x for x in range(0,tree_rep)])),
+        full_tree_inferred_cnvs = ancient(expand(f'{TREES_OUTPUT}_full_tree/{str(n_nodes)}nodes_' + '{{regions}}regions_{{reads}}reads/{{rep_id}}_{tree_rep_id}_full_tree_cnvs.csv'\
+        , tree_rep_id=[x for x in range(0,tree_rep)]))
+    output:
+        best_tree = f'{TREES_OUTPUT}_best_full_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_full_tree.txt',
+        best_tree_inferred_cnvs = f'{TREES_OUTPUT}_best_full_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_full_tree_cnvs.csv'
+    run:
+        import operator
+
+        trees_sorted = sorted(input.full_trees)
+        trees_inferred_cnvs_sorted = sorted(input.full_tree_inferred_cnvs)
+
+        tree_scores = get_tree_scores(trees_sorted)
+        max_index, max_score = max(enumerate(tree_scores), key=operator.itemgetter(1))
+
+        os.symlink(trees_sorted[max_index], output.best_tree)
+        os.symlink(trees_inferred_cnvs_sorted[max_index], output.best_tree_inferred_cnvs)
+
+rule learn_nu_on_cluster_tree:
+    params:
+        binary = config["inference"]["bin"],
+        ploidy = config["inference"]["ploidy"],
+        verbosity = config["inference"]["verbosity"],
+        copy_number_limit = config["inference"]["copy_number_limit"],
+        n_iters = config["inference"]["learn_nu_cluster_trees"]["n_iters"],
+        move_probs = config["inference"]["learn_nu_cluster_trees"]["move_probs"],
+        n_nodes = 0, # needed only for the output naming
+        seed = config["inference"]["seed"],
+        posfix = f"nu_on_cluster_tree{str(n_nodes)}" + "nodes_{regions}regions_{reads}reads_{rep_id}rep"
+    input:
+        best_tree = f'{TREES_OUTPUT}_best_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_cluster_tree.txt',
+        segmented_counts = BP_OUTPUT + '_' + sim_prefix +'_trees/'+ str(n_nodes)\
+         + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + "_segmented_counts.csv",
+        segmented_counts_shape = BP_OUTPUT + '_' + sim_prefix +'_trees/'+ str(n_nodes)\
+         + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' +  "_segmented_counts_shape.txt",
+        segmented_region_sizes = BP_OUTPUT + '_' + sim_prefix +'_trees/'+ str(n_nodes)\
+         + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_segmented_region_sizes.txt'
+    output:
+        nu_on_cluster_tree = f'{TREES_OUTPUT}_nu_on_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_nu_on_cluster_tree.txt',
+        nu_on_cluster_tree_inferred_cnvs = f'{TREES_OUTPUT}_nu_on_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}__nu_on_cluster_tree.csv'
+    run:
+        input_shape = np.loadtxt(input.segmented_counts_shape)
+        (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
+        
+        move_probs_str = ",".join(str(p) for p in params.move_probs)
+
+        try:
+            cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.segmented_counts}", f"--tree_file={input.best_tree}",\
+             f"--n_regions={n_regions}",f"--n_nodes={params.n_nodes}",\
+                f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
+                f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}",\
+                f"--move_probs={move_probs_str}", f"--seed={params.seed}", f"--region_sizes_file={input.segmented_region_sizes}"])
+        except subprocess.SubprocessError as e:
+            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
+        else:
+            print(f"subprocess out: {cmd_output}")
+            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
+
+        os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_tree_inferred.txt", output.nu_on_cluster_tree)
+        os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_inferred_cnvs.csv", output.nu_on_cluster_tree_inferred_cnvs)
+
+rule learn_full_trees:
+    params:
+        binary = config["inference"]["bin"],
+        ploidy = config["inference"]["ploidy"],
+        verbosity = config["inference"]["verbosity"],
+        copy_number_limit = config["inference"]["copy_number_limit"],
+        n_iters = config["inference"]["full_trees"]["n_iters"],
+        n_nodes = config["inference"]["full_trees"]["n_nodes"],
+        move_probs = config["inference"]["full_trees"]["move_probs"],
+        cf = cf,
+        posfix = f"full_tree_tree{str(n_nodes)}" + "nodes_{regions}regions_{reads}reads_{rep_id}_{tree_rep_id}",
+    input:
+        nu_on_cluster_tree = f'{TREES_OUTPUT}_nu_on_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_nu_on_cluster_tree.txt',
+        segmented_counts = BP_OUTPUT + '_' + sim_prefix +'_trees/'+ str(n_nodes)\
+         + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + "_segmented_counts.csv",
+        segmented_counts_shape = BP_OUTPUT + '_' + sim_prefix +'_trees/'+ str(n_nodes)\
+         + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' +  "_segmented_counts_shape.txt",
+        segmented_region_sizes = BP_OUTPUT + '_' + sim_prefix +'_trees/'+ str(n_nodes)\
+         + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_segmented_region_sizes.txt'
+    output:
+        full_tree = f'{TREES_OUTPUT}_full_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_{tree_rep_id}_full_tree.txt',
+        full_tree_inferred_cnvs = f'{TREES_OUTPUT}_full_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_{tree_rep_id}_full_tree_cnvs.csv' 
+    run:
+        input_shape = np.loadtxt(input.segmented_counts_shape)
+        (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
+        
+        move_probs_str = ",".join(str(p) for p in params.move_probs)
+
+        with open(input.nu_on_cluster_tree) as file:
+            for l in file:
+                l_parts = l.split(':')
+                if l_parts[0] == 'Nu':
+                    nu = l_parts[1].strip()
+        try:
+            cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.segmented_counts}", f"--n_regions={n_regions}",\
+                f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
+                f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}", f"--n_nodes={params.n_nodes}",\
+                f"--tree_file={input.nu_on_cluster_tree}", f"--cf={params.cf}"\
+                f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep_id}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}"])
+        except subprocess.SubprocessError as e:
+            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
+        else:
+            print(f"subprocess out: {cmd_output}")
+            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
+
+        os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_tree_inferred.txt", output.full_tree)
+        os.rename(f"{params.n_nodes}nodes_{n_regions}regions_{params.posfix}_inferred_cnvs.csv", output.full_tree_inferred_cnvs)
 
 
 rule plot_breakpoints_thresholds:
