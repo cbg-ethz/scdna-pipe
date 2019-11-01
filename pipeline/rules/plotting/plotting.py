@@ -1,4 +1,4 @@
-from rules.process_cnvs import *
+from process_cnvs import *
 
 import numpy as np
 import pandas as pd
@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Polygon
 from tqdm import tqdm
 import os
+import re
 import subprocess
 
 def convert_event_region_to_gene(region_event_str, bin_gene_region_df, priority_only=False, genes_to_highlight=None, highlight_color='red', genes_only=False):

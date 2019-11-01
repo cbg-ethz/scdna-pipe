@@ -95,14 +95,18 @@ def get_genes_in_region(region, bin_gene_region_df, priority_only=False):
             indicating if only priority genes should be returned
         :return: list of gene names in region
     """
-    gene_lists = df['gene'][np.where(df['region']==region)[0]].values.tolist()
+    gene_lists = bin_gene_region_df['gene'][np.where(bin_gene_region_df['region']==region)[0]].values.tolist()
+    gene_lists = ['' if x is np.nan else x for x in gene_lists]
     gene_lists = [sublist.split(',') for sublist in gene_lists]
     gene_list = [item for sublist in gene_lists for item in sublist]
+    gene_list = [x for x in gene_list if x]
 
     if priority_only:
-        is_priority_lists = df['is_priority'][np.where(df['region']==region)[0]].values.tolist()
+        is_priority_lists = bin_gene_region_df['is_priority'][np.where(bin_gene_region_df['region']==region)[0]].values.tolist()
+        is_priority_lists = ['' if x is np.nan else x for x in is_priority_lists]
         is_priority_lists = [sublist.split(',') for sublist in is_priority_lists]
         is_priority_list = [item for sublist in is_priority_lists for item in sublist]
+        is_priority_list = [x for x in is_priority_list if x]
 
         # Subset only the priority genes
         priority_gene_list = []
@@ -133,6 +137,7 @@ def get_region_with_gene(gene, bin_gene_region_df, all=False):
     if len(region[region!=None]) > 0:
         # Get first non-None value
         region = region[region!=None][0] if not all else region
+        region = region.astype(int)
     else:
         region = None
 
