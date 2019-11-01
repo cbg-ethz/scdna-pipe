@@ -1,0 +1,82 @@
+{
+  "sample_name": "MOVAZYQ_S2",
+  "sequencing_prefix": "MOVAZYQ-T_scD_250c-r1v1.0_r1v1.0-AHCLGNBGXC",
+  "analysis_prefix": "_MOVAZYQ-T_scD_Ar1v1.9",
+  "ref_genome_version": "GRCh37",
+  "ref_genome_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/data/refdata-GRCh37-1.0.0_dna",
+  "fastqs_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MOVAZYQ-T/singlecell_dna/openbis",
+  "analysis_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MOVAZYQ-T/singlecell_dna/analysis",
+  "scripts_dir": "/cluster/work/bewi/members/pedrof/dna-pipeline/scripts/",
+  "10x_artifacts": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts",
+  "bin_size": 20000,
+  "tricking_fastqs": {
+    "mem": "1000",
+    "time": "1438"
+  },
+  "cellranger_dna": {
+    "local_cores": 48,
+    "local_mem": 192,
+    "mem_per_core": 4,
+    "mem": "4096",
+    "time": "1438"
+  },
+  "secondary_analysis": {
+    "h5_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MOVAZYQ-T/singlecell_dna/analysis/cellranger/MOVAZYQ/outs/cnv_data.h5",
+    "gene_coordinates_path": "/cluster/home/pedrof/dna-pipeline/required_files/genes_of_interest/emsembl_hg19_genes_simplified.tsv",
+    "bins_to_remove": "/cluster/home/pedrof/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv",
+    "priority_genes_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/all_important_genes.txt",
+    "disease_genes_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/melanoma_genes.txt",
+    "roche_genes_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/roche_gene_list.txt",
+  },
+  "plotting": {
+    "profiles": {
+      "add_offsets": "True",
+      "s": 5
+    },
+    "trees": {
+      "highlight_color": "yellow",
+      "max_genes_per_line": 6
+    }
+  },
+  "breakpoint_detection": {
+    "window_size": 20,
+    "verbosity": 3,
+    "threshold": 3,
+    "bp_limit": 200,
+    "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/breakpoint_detection"
+  },
+  "inference": {
+    "ploidy": 2,
+    "verbosity": 1,
+    "copy_number_limit": 2,
+    "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/inference",
+    "robustness_thr": 0.3,
+    "learn_nu":
+    {
+      "n_iters": 100,
+      "n_nodes": 0,
+      "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1,0]
+    },
+    "cluster_trees":
+    {
+      "n_iters": 100,
+      "n_nodes": 0,
+      "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,1,0.01],
+      "n_reps": 10,
+      "alpha": 0.
+    },
+    "learn_nu_cluster_trees":
+    {
+      "n_iters": 100,
+      "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1,0]
+    },
+    "full_trees":
+    {
+      "n_iters": 100,
+      "n_nodes": 0,
+      "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,0,0.01],
+      "n_reps": 10
+    },
+    "seed": 41
+  }
+}
