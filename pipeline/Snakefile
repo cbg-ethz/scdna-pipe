@@ -79,9 +79,7 @@ tree_outputs = ["cluster_tree", "full_tree"]
 sa = SecondaryAnalysis(
     sample_name=analysis_prefix,
     output_path=analysis_path,
-    h5_path=h5_path,
-    genes_path=genes_path,
-    all_genes_path=all_genes_path,
+    h5_path=h5_path
 )
 
 # import rules
