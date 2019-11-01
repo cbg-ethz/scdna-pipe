@@ -85,8 +85,8 @@ sa = SecondaryAnalysis(
 # import rules
 include: os.path.join(workflow.basedir, "rules", "tree_learning.smk")
 include: os.path.join(workflow.basedir, "rules", "breakpoint_detection.smk")
-include: os.path.join(workflow.basedir, "rules", "process_cnvs.smk")
-include: os.path.join(workflow.basedir, "rules", "plotting.smk")
+include: os.path.join(workflow.basedir, "rules", "process_cnvs", "process_cnvs.smk")
+include: os.path.join(workflow.basedir, "rules", "plotting", "plotting.smk")
 
 onstart:
     print(f"Workflow main directory: {workflow.basedir}")

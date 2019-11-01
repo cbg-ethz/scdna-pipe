@@ -109,8 +109,6 @@ rule learn_empty_tree:
             os.rename(f"{params.posfix}_acceptance_ratio.csv", f"{debug_info_with_ap}__acceptance_ratio.csv")
             os.rename(f"{params.posfix}_gamma_values.csv", f"{debug_info_with_ap}__gamma_values.csv")
 
-
-
 rule learn_cluster_trees:
     params:
         binary = config["inference"]["bin"],
@@ -131,7 +129,8 @@ rule learn_cluster_trees:
         empty_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__empty_tree.txt"
     output:
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_rep}" + "__cluster_tree.txt",
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_rep}" + "__cluster_tree_cnvs.csv"
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_rep}" + "__cluster_tree_cnvs.csv",
+        cluster_tree_cell_node_ids = os.path.join(analysis_path, "tree_learning", "debug_info", "cluster_tree", analysis_prefix) + "__{tree_rep}_cell_node_ids.tsv"
     benchmark:
         "benchmark/learn_cluster_trees_{tree_rep}.tsv"
     run:
@@ -275,10 +274,13 @@ rule pick_best_tree:
         tree_with_rep = ancient(expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__{{tree_name}}.txt",\
              repeat_id=[x for x in range(0,tree_rep)])),
         tree_inferred_cnvs_with_rep = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{repeat_id}" + "__{{tree_name}}_cnvs.csv",\
+            repeat_id=[x for x in range(0,tree_rep)]),
+        cell_node_ids_with_rep = expand(os.path.join(analysis_path, "tree_learning", "debug_info", "{{tree_name}}", analysis_prefix) + "__{repeat_id}" + "_cell_node_ids.tsv",\
             repeat_id=[x for x in range(0,tree_rep)])
     output:
         tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.txt",
-        tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}_cnvs.csv"
+        tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}_cnvs.csv",
+        cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}_cell_node_ids.tsv",
     benchmark:
         "benchmark/pick_best_{tree_name}.tsv"
     run:
@@ -286,12 +288,14 @@ rule pick_best_tree:
 
         trees_sorted = sorted(input.tree_with_rep)
         trees_inferred_cnvs_sorted = sorted(input.tree_inferred_cnvs_with_rep)
+        cell_node_assignments_sorted = sorted(input.cell_node_ids_with_rep)
 
         tree_scores = get_tree_scores(trees_sorted)
         max_index, max_score = max(enumerate(tree_scores), key=operator.itemgetter(1))
 
         os.symlink(trees_sorted[max_index], output.tree)
         os.symlink(trees_inferred_cnvs_sorted[max_index], output.tree_inferred_cnvs)
+        os.symlink(cell_node_assignments_sorted[max_index], output.cell_node_assignments)
 
 rule cell_assignment:
     input:

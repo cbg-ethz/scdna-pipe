@@ -116,7 +116,7 @@ def get_genes_in_region(region, bin_gene_region_df, priority_only=False):
 
     return gene_list
 
-def get_region_with_gene(gene, bin_gene_region_df):
+def get_region_with_gene(gene, bin_gene_region_df, all=False):
     """
         Returns the region index containing a gene
         :param gene: str
@@ -124,169 +124,17 @@ def get_region_with_gene(gene, bin_gene_region_df):
             with (gene_name, region, original_bin) fields
         :return: region index (integer)
     """
-    bins_with_gene = np.where([gene in l for l in bin_gene_region_df['gene']])[0]
+    bin_gene_region_df = bin_gene_region_df.copy(deep=True)
+    bin_gene_region_df['gene'] = bin_gene_region_df['gene'].astype(str).apply(lambda x: x.split(',')).apply(lambda x: set(x))
+    bins_with_gene = bin_gene_region_df[bin_gene_region_df['gene'].apply(lambda x: gene in x)].index.values
+
     region = np.array(bin_gene_region_df.loc[bins_with_gene,'region'].values)
 
     if len(region[region!=None]) > 0:
         # Get first non-None value
-        region = region[region!=None][0]
+        region = region[region!=None][0] if not all else region
     else:
         region = None
-
-    return region
-
-def convert_event_region_to_gene(region_event_str, bin_gene_region_df, priority_only=False, genes_to_highlight=None, highlight_color='red', genes_only=False):
-    """
-        Returns a string indicating gene-wise events in affected region
-        Examples:
-                "+2R174"     -> ["+2BRAF", "+2MALAT1"]
-                "-1R656:658" -> ["-1JAK2", "-1MLNA", "-1CDK4"]
-        :param region_event_str: str
-        :param bin_gene_region_df: DataFrame
-            with (gene_name, region, original_bin) fields
-        :param priority_only: boolean
-            indicating if only priority genes should be returned
-        :param genes_to_highlight: list
-            genes that should be displayed in a different color
-        :param highlight_color: str
-            color to use in genes to highlight
-        :return: list of str
-    """
-    # Get event (-2, -1, +1, +2, etc)
-    event_str = region_event_str[:2]
-    region_str = region_event_str[3:]
-    if ":" in region_str: # multiple regions: "-1R656:658"
-        aux = [int(region) for region in region_str.split(":")]
-        region_list = np.arange(aux[0], aux[1]+1)
-    else:
-        region_list = [int(region_str)]
-
-    gene_list = []
-    for region in region_list:
-        genes_in_region = get_genes_in_region(region, bin_gene_region_df, priority_only=priority_only)
-        gene_list.append(genes_in_region)
-
-    gene_list = [item for sublist in gene_list for item in sublist]
-
-    # Highlight some genes
-    if genes_to_highlight is not None:
-        for index, gene in enumerate(gene_list):
-            if gene in genes_to_highlight:
-                gene_list[index] = "<font color=" + "\'" + highlight_color + "\'" + ">" + gene + "</font>"
-
-    gene_string = '[' + ','.join(gene_list) + ']'
-    if len(gene_list) == 0:
-        gene_event_str = ""
-    else:
-        if not genes_only:
-            gene_event_str = event_str + gene_string
-        else:
-            gene_event_str = gene_string
-
-    return gene_event_str
-
-def convert_node_regions_to_genes(node_str, bin_gene_region_df, priority_only=False, genes_to_highlight=None, highlight_color='red', max_genes_per_line=10):
-        """
-            Returns a string indicating gene events and total number of
-            amplifications and deletions in node
-            Examples:
-                    "+2R174 +2R291:293 -1R656:658" -> "+2[BRAF,MALAT1] -1[JAK2,MLNA,CDK4]\n(3+, 1-)"
-            :param node_str: str
-            :param bin_gene_region_df: DataFrame
-                with (gene_name, region, original_bin) fields
-            :param priority_only: boolean
-                indicating if only priority genes should be returned
-            :param genes_to_highlight: list
-                genes that should be displayed in a different color
-            :return: str
-        """
-        region_event_strs = node_str.split(' ')
-        num_events = len(region_event_strs)
-
-        num_amplifications = 0
-
-        str_dict = dict()
-        possible_events = ['+4', '+3', '+2', '+1', '-1', '-2', '-3', '+4']
-        for event in possible_events:
-            str_dict[event] = []
-
-        for region_event_str in region_event_strs:
-            # Get event (-2, -1, +1, +2, etc)
-            event_str = region_event_str[:2]
-            region_str = region_event_str[3:]
-            if ":" in region_str: # multiple regions: "-1R656:658"
-                aux = [int(region) for region in region_str.split(":")]
-                region_list = np.arange(aux[0], aux[1]+1)
-            else:
-                region_list = [int(region_str)]
-
-            gene_list = []
-            for region in region_list:
-                genes_in_region = get_genes_in_region(region, bin_gene_region_df, priority_only=priority_only)
-                gene_list.append(genes_in_region)
-
-            gene_list = [item for sublist in gene_list for item in sublist]
-
-            str_dict[event_str].append(gene_list)
-
-            if region_event_str[0]=='+':
-                num_amplifications += 1
-
-        for key in str_dict:
-            str_dict[key] = [item for sublist in str_dict[key] for item in sublist]
-
-        gene_event_str = ''
-        newline = '<br/>'
-        for key in str_dict:
-            if len(str_dict[key]) != 0:
-                gene_event_str = gene_event_str + '<B>' + key + '</B>'
-                gene_event_str = gene_event_str + '[' + ','.join(f"{x}"+newline if (i+1)%max_genes_per_line == 0 else str(x) for i, x in enumerate(str_dict[key])) + ']'
-                gene_event_str = gene_event_str + " " + newline + " " + newline
-
-        num_deletions = num_events - num_amplifications
-        num_events, num_amplifications, num_deletions
-        num_events_str = "{} +, {} -".format(num_amplifications, num_deletions)
-
-        node_str = gene_event_str + "(" + num_events_str + ")"
-
-        # If newline followed by ']', replace with newline after ']'
-        node_str = node_str.replace(newline+"]", "]"+newline)
-
-        # If newline followed by ',', replace with newline after ','
-        node_str = node_str.replace(newline+",", ","+newline)
-
-        # If newline followed by newline, remove one
-        for m in re.finditer(newline, node_str):
-            index = m.start()
-            if node_str[index+len(newline):index+2*len(newline)] == newline:
-                node_str = "".join((node_str[:index+len(newline)], "", node_str[index+2*len(newline):]))
-
-        # highlight genes
-        if genes_to_highlight is not None:
-            for gene in genes_to_highlight:
-                node_str = node_str.replace(gene, "<font color=" + "\'" + highlight_color + "\'" + ">" + gene + "</font>")
-
-        if gene_event_str == "":
-            node_str = num_events_str
-
-        return node_str
-
-def get_region_with_gene(gene, bin_gene_region_df):
-    """
-        Returns the region index containing a gene
-        :param gene: str
-        :param bin_gene_region_df: DataFrame
-            with (gene_name, region, original_bin) fields
-        :return: region index (integer)
-    """
-    bins_with_gene = np.where([gene in l for l in bin_gene_region_df['gene']])[0]
-    region = np.array(bin_gene_region_df.loc[bins_with_gene,'region'].values)
-
-    if len(region[~np.isnan(region)]) > 0:
-        # Get first non-None value
-        region = int(region[~np.isnan(region)][0])
-    else:
-        region = np.nan
 
     return region
 
@@ -326,7 +174,7 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
     gene_cn_df = pd.DataFrame(index=cluster_ids)
 
     # for each gene
-    for gene in gene_list:
+    for gene in tqdm(gene_list):
         gene_cn_per_cluster = []
         for c_id in cluster_ids:
             median_cn = np.nanmedian(

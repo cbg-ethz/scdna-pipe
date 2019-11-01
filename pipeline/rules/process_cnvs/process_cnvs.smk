@@ -1,3 +1,5 @@
+from process_cnvs import *
+
 rule create_bin_gene_region_df:
     input:
         gene_coordinates_path = gene_coordinates_path,
@@ -21,28 +23,26 @@ rule create_bin_gene_region_df:
         priority_genes = pd.read_csv(input.priority_genes_path, sep="\t", header=None)
         priority_genes.columns = ["gene"]
         priority_genes = priority_genes.gene.values.tolist()
-        inferred_cnvs = np.loadtxt(inferred_cnvs_path, delimiter=',')
+        inferred_cnvs = np.loadtxt(input.inferred_cnvs_path, delimiter=',')
 
-        df = get_bin_gene_region_df(params.bin_size, genes, chr_stops, region_stops, excluded_bins, inferred_cnvs, priority_genes=priority_genes)
+        df = get_bin_gene_region_df(params.bin_size, genes, chr_stops, region_stops, excluded_bins, cnvs=inferred_cnvs, priority_genes=priority_genes)
         df.to_csv(output.bin_gene_region_df)
 
 rule create_cn_cluster_h5:
-    params:
-        gene_coordinates_path = gene_coordinates_path,
-        bin_size = bin_size
     input:
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
-        chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv"
+        bin_gene_region_df_path = rules.create_bin_gene_region_df.output.bin_gene_region_df,
+        gene_coordinates_path = gene_coordinates_path
     output:
         cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
     benchmark:
         "benchmark/create_cn_cluster_h5"
     run:
-        cnvs_arr = np.loadtxt(input.inferred_cnvs, delimiter=',')
-        genes = pd.read_csv(params.gene_coordinates_path, sep="\t")
-        chr_stops = pd.read_csv(input.chr_stops, sep="\t", index_col=1)
+        all_genes = pd.read_csv(input.gene_coordinates_path, sep="\t", index_col=0)
+        all_genes_list = all_genes['Gene name'].values.tolist()
 
-        gene_cn_df = get_gene_cn_df(genes, cnvs_arr, bin_size, chr_stops)
+        bin_gene_region_df = pd.read_csv(input.bin_gene_region_df_path, index_col=0, low_memory=False)
+
+        gene_cn_df = get_gene_cn_df(all_genes_list, bin_gene_region_df, impute=False)
 
         cn_cluster_h5 = h5py.File(output.cn_cluster_h5, "w")
         gene_attributes = cn_cluster_h5.create_group("gene_attrs")
