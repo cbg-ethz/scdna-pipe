@@ -110,8 +110,6 @@ rule all:
         cluster_tree_genes_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
 
         cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
-    output:
-
     run:
         print("echo rule all")
 
@@ -246,28 +244,6 @@ rule create_raw_checksum:
     shell:
         "cd {params.sym_raw_path}; find . -exec md5sum '{{}}' \; >  {output.checksum_file}"
 
-rule create_cluster_plots_list:
-    params:
-        analysis_prefix = analysis_prefix,
-        analysis_path = analysis_path
-    input:
-        secondary_analysis_done = "secondary_analysis_done.txt"
-    output:
-        cluster_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_profile_files.txt"
-    shell:
-        "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cluster_profile_..?\.png' > {params.analysis_prefix}__cluster_profile_files.txt"
-
-rule create_heatmap_plots_list:
-    params:
-        analysis_prefix = analysis_prefix,
-        analysis_path = analysis_path
-    input:
-        secondary_analysis_done = "secondary_analysis_done.txt"
-    output:
-        heatmap_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_genes_clusters_files.txt"
-    shell:
-        "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cn_genes_clusters_chr..?_heatmap\.png' > {params.analysis_prefix}__cn_genes_clusters_files.txt"
-
 rule run_cellranger:
     params:
         fastqs_path = fastqs_path+'/merged/tricked',
@@ -318,6 +294,28 @@ rule copy_cellranger_outputs:
              '{params.cellranger_path}/renamed/{params.analysis_prefix}__summary.csv';\
          ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/web_summary.html'\
              '{params.cellranger_path}/renamed/{params.analysis_prefix}__web_summary.html';"
+
+rule create_cluster_plots_list:
+    params:
+        analysis_prefix = analysis_prefix,
+        analysis_path = analysis_path
+    input:
+        secondary_analysis_done = "secondary_analysis_done.txt"
+    output:
+        cluster_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_profile_files.txt"
+    shell:
+        "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cluster_profile_..?\.png' > {params.analysis_prefix}__cluster_profile_files.txt"
+
+rule create_heatmap_plots_list:
+    params:
+        analysis_prefix = analysis_prefix,
+        analysis_path = analysis_path
+    input:
+        secondary_analysis_done = "secondary_analysis_done.txt"
+    output:
+        heatmap_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_genes_clusters_files.txt"
+    shell:
+        "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cn_genes_clusters_chr..?_heatmap\.png' > {params.analysis_prefix}__cn_genes_clusters_files.txt"
 
 rule create_raw_symlinks:
     params:
