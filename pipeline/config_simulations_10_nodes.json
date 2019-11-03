@@ -4,7 +4,7 @@
       "bin":"/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/simulation",
       "n_bins": 10000,
       "n_reads": [20000, 40000, 80000],
-      "n_reps": 40,
+      "n_reps": 100,
       "n_nodes": 10,
       "n_cells": 400,
       "nu": 0.1,
@@ -29,6 +29,14 @@
         "mem":"3200",
         "time": "600",
         "conda_env": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/pipeline/envs/hmm_copy.yaml"
+    },
+    "hclust":
+    {
+        "script": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scripts/HierarchicalCopyInference.R",
+        "scratch":20000,
+        "mem":"3200",
+        "time": "600",
+        "conda_env": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/pipeline/envs/hclust.yaml"
     },
     "inference":
     {
