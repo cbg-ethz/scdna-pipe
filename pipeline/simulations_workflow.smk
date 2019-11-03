@@ -77,6 +77,9 @@ rule all:
         hmmcopy_inferred_cnvs = expand(SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_HMMcopy_inferred.txt'\
         ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
 
+        hclust_inferred_cnvs = expand(SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_hclust_inferred.txt'\
+        ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
+
         phenograph_assignments = expand(f'{PHENO_OUTPUT}/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_clusters_phenograph_assignment.tsv'\
         ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)])
         
@@ -614,6 +617,23 @@ rule hmm_copy_inference:
         hmmcopy_inferred_cnvs = SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_HMMcopy_inferred.txt'
     conda:
         config["hmm_copy"]["conda_env"]
+    shell:
+        " Rscript {params.script} {input.d_mat}" 
+
+rule hierarchical_copy_inference:
+    params:
+        script = config["hclust"]["script"],
+        n_nodes = n_nodes,
+        scratch = config["hclust"]["scratch"],
+        mem = config["hclust"]["mem"],
+        time = config["hclust"]["time"],
+        script_inp = str(n_nodes)+"nodes_{regions}regions_{reads}reads_{rep_id}"
+    input:
+        d_mat = SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_d_mat.txt'
+    output:
+        hclust_inferred_cnvs = SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_hclust_inferred.txt'
+    conda:
+        config["hclust"]["conda_env"]
     shell:
         " Rscript {params.script} {input.d_mat}" 
 
