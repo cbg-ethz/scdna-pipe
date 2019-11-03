@@ -30,6 +30,14 @@
         "time": "600",
         "conda_env": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/pipeline/envs/hmm_copy.yaml"
     },
+    "hclust":
+    {
+        "script": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scripts/HierarchicalCopyInference.R",
+        "scratch":20000,
+        "mem":"3200",
+        "time": "600",
+        "conda_env": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/pipeline/envs/hclust.yaml"
+    },
     "inference":
     {
       "ploidy": 2,
@@ -46,7 +54,7 @@
       },
       "cluster_trees":
       {
-        "n_iters": 10000,
+        "n_iters": 40000,
         "n_nodes": 0,
         "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,1,0.01],
         "n_reps": 10,
@@ -55,16 +63,16 @@
       },
       "learn_nu_cluster_trees":
       {
-        "n_iters": 1000,
+        "n_iters": 5000,
         "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1,0]
       },
       "full_trees":
       {
-        "n_iters": 10000,
+        "n_iters": 40000,
         "n_nodes": 0,
         "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,0,0.01],
         "n_reps": 10,
-        "cluster_fraction": 0.8
+        "cluster_fraction": 1.0
       },
       "seed": 41
     },
