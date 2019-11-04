@@ -68,20 +68,24 @@ except KeyError:
 
 rule all:
     input:
-        best_cluster_tree = expand(f'{TREES_OUTPUT}_best_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_cluster_tree.txt'\
-        ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)], tree_rep_id=[x for x in range(0,tree_rep)]),
-
-        best_full_tree = expand(f'{TREES_OUTPUT}_best_full_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_full_tree.txt'\
-        ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)], tree_rep_id=[x for x in range(0,tree_rep)]),
-
-        hmmcopy_inferred_cnvs = expand(SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_HMMcopy_inferred.txt'\
-        ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
-
-        hclust_inferred_cnvs = expand(SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_hclust_inferred.txt'\
-        ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
-
-        phenograph_assignments = expand(f'{PHENO_OUTPUT}/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_clusters_phenograph_assignment.tsv'\
+        avg_counts_median_norm = expand(f'{TREES_OUTPUT}_phenograph/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_avg_counts_median.csv'\
         ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)])
+
+        # best_full_tree = expand(f'{TREES_OUTPUT}_best_full_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_full_tree.txt'\
+        # ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)], tree_rep_id=[x for x in range(0,tree_rep)]),
+
+        # best_cluster_tree = expand(f'{TREES_OUTPUT}_best_cluster_tree/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_cluster_tree.txt'\
+        # ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)], tree_rep_id=[x for x in range(0,tree_rep)]),
+
+
+        # hmmcopy_inferred_cnvs = expand(SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_HMMcopy_inferred.txt'\
+        # ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
+
+        # hclust_inferred_cnvs = expand(SIM_OUTPUT+ '_' + sim_prefix +'/'+ str(n_nodes) + 'nodes_' + '{regions}'+'regions_'+ '{reads}'+'reads'+ '/' + '{rep_id}' + '_hclust_inferred.txt'\
+        # ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)]),
+
+        # phenograph_assignments = expand(f'{PHENO_OUTPUT}/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_clusters_phenograph_assignment.tsv'\
+        # ,regions=n_regions,reads=n_reads, rep_id=[x for x in range(0,all_n_tps)])
         
     run:
         print("rule all")
@@ -243,6 +247,25 @@ rule create_averaged_region_matrix:
         replicated_df = pd.DataFrame(np.repeat(avg_clusters_df.values,cluster_sizes,axis=0))
 
         np.savetxt(output.avg_counts, replicated_df.values, delimiter=",")
+
+rule median_normalise_averages:
+    params:
+        ploidy = config["inference"]["ploidy"]
+    input:
+        avg_counts = f'{TREES_OUTPUT}_phenograph/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_avg_counts.csv'
+    output:
+        avg_counts_median_norm = f'{TREES_OUTPUT}_phenograph/{str(n_nodes)}nodes_' + '{regions}regions_{reads}reads/{rep_id}_avg_counts_median.csv'
+    run:
+        import pandas as pd
+        import numpy as np
+
+        df = pd.read_csv(input.avg_counts, header=None)
+        for index, row in df.iterrows():
+            row_median = row.median()
+            df.loc[index] /= row_median # median normalise
+            df.loc[index] *= params.ploidy # set the median to ploidy
+
+        np.savetxt(output.avg_counts_median_norm, df.values, delimiter=',')
 
 rule learn_empty_tree:
     params:
