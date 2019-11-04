@@ -1,4 +1,4 @@
-from process_cnvs import *
+from dnapipe.rules.process_cnvs.process_cnvs import *
 
 import numpy as np
 import pandas as pd
@@ -216,8 +216,15 @@ def tree_to_graphviz(tree_path, node_sizes=None, gene_labels=False, bin_gene_reg
                 str_merged_labels = convert_node_regions_to_genes(node_str, bin_gene_region_df,
                                     priority_only=True, genes_to_highlight=genes_to_highlight,
                                     highlight_color=highlight_color, max_genes_per_line=max_genes_per_line)
-            # Add node size
+
             newline = "<br/>"
+            # If node string ends with newlines, remove them
+            par = " " + newline + " " + newline
+            l = list(str_merged_labels)
+            if l[-len(par):] == list(par):
+                str_merged_labels = ''.join(l[:-len(par)])
+
+            # Add node size
             if node_sizes is not None:
                 node_size = node_sizes[node_id]
                 str_merged_labels = str_merged_labels + " " + newline + " " + newline
@@ -252,7 +259,11 @@ def plot_tree_graphviz(tree_graphviz_path, output_path):
         print(f"subprocess out: {cmd_output}")
         print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
 
-def plot_heatmap(gene_cn_df, is_imputed=None, output_path=None):
+def plot_heatmap(gene_cn_df, output_path=None):
+    if 'is_imputed' in gene_cn_df.columns:
+        is_imputed = gene_cn_df['is_imputed']
+        gene_cn_df = gene_cn_df.drop(columns=['is_imputed'])
+
     if np.all(~np.isnan(gene_cn_df)):
         annot = np.array(gene_cn_df.astype(int).astype(str))
     else:

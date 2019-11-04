@@ -16,14 +16,11 @@ def get_bin_gene_region_df(bin_size, gene_coordinates, chr_stops, region_stops, 
     """
 
     bin_gene_region_df = pd.DataFrame(index=range(chr_stops.iloc[-1].values[0]+1))
-    bin_gene_region_df["gene"] = None
-    bin_gene_region_df["chr"] = None
+
     bin_gene_region_df["region"] = None
-    bin_gene_region_df["is_priority"] = None
-    if priority_genes is not None:
-        bin_gene_region_df["gene"] = [list() for _ in range(bin_gene_region_df.shape[0])]
-        bin_gene_region_df["chr"] = [list() for _ in range(bin_gene_region_df.shape[0])]
-        bin_gene_region_df["is_priority"] = [list() for _ in range(bin_gene_region_df.shape[0])]
+    bin_gene_region_df["gene"] = [list() for _ in range(bin_gene_region_df.shape[0])]
+    bin_gene_region_df["chr"] = [list() for _ in range(bin_gene_region_df.shape[0])]
+    bin_gene_region_df["is_priority"] = [list() for _ in range(bin_gene_region_df.shape[0])]
 
     # for each gene
     for index, row in tqdm(gene_coordinates.iterrows(), total=gene_coordinates.shape[0]):
@@ -133,13 +130,14 @@ def get_region_with_gene(gene, bin_gene_region_df, all=False):
     bins_with_gene = bin_gene_region_df[bin_gene_region_df['gene'].apply(lambda x: gene in x)].index.values
 
     region = np.array(bin_gene_region_df.loc[bins_with_gene,'region'].values)
+    region = np.array([x for x in region if x is not None])
 
-    if len(region[region!=None]) > 0:
+    if len(region[~np.isnan(region)]) > 0:
         # Get first non-None value
-        region = region[region!=None][0] if not all else region
+        region = region[~np.isnan(region)][0] if not all else region
         region = region.astype(int)
     else:
-        region = None
+        region = np.nan
 
     return region
 
@@ -159,9 +157,11 @@ def get_surrounding_regions(gene, bin_gene_region_df):
     right_bin = bins[-1]
 
     left_regions = bin_gene_region_df['region'].values[:left_bin]
+    left_regions = np.array([x for x in left_regions if x is not None])
     left_region = left_regions[~np.isnan(left_regions)][-1]
 
     right_regions = bin_gene_region_df['region'].values[right_bin+1:]
+    right_regions = np.array([x for x in right_regions if x is not None])
     right_region = right_regions[~np.isnan(right_regions)][0]
 
     return (int(left_region), int(right_region))
@@ -178,29 +178,44 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
     cluster_ids = range(n_subclones)
     gene_cn_df = pd.DataFrame(index=cluster_ids)
 
-    # for each gene
-    for gene in tqdm(gene_list):
-        gene_cn_per_cluster = []
-        for c_id in cluster_ids:
-            median_cn = np.nanmedian(
-                bin_gene_region_df['cnv_{}'.format(c_id)][bin_gene_region_df['gene']==gene].values
-            )
+    df = bin_gene_region_df.copy(deep=True)
+    df['gene'] = df['gene'].astype(str).apply(lambda x: x.split(',')).apply(lambda x: set(x))
 
+    is_imputed = np.empty(len(gene_list))
+
+    # for each gene
+    i = -1
+    for gene in tqdm(gene_list):
+        i += 1
+        gene_cn_per_cluster = []
+        is_imputed[i] = False
+
+        for c_id in cluster_ids:
+            bins = df[df['gene'].apply(lambda x: gene in x)].index.values
+            median_cn = np.nanmedian(
+                bin_gene_region_df['cnv_{}'.format(c_id)][bins].values
+            )
             # If NaN, impute with median value of regions surrounding it
             if np.isnan(median_cn) and impute:
-                # Get regions surrounding gene
-                left_region, right_region = get_surrounding_regions(gene, bin_gene_region_df)
+                if len(bins) > 0:
+                    # Get regions surrounding gene
+                    left_region, right_region = get_surrounding_regions(gene, bin_gene_region_df)
 
-                # get CNV values of region surronding gene
-                left_cn = bin_gene_region_df['cnv_{}'.format(c_id)][bin_gene_region_df['region']==left_region].iloc[0]
-                right_cn = bin_gene_region_df['cnv_{}'.format(c_id)][bin_gene_region_df['region']==right_region].iloc[0]
+                    # get CNV values of region surronding gene
+                    left_cn = bin_gene_region_df['cnv_{}'.format(c_id)][bin_gene_region_df['region']==left_region].iloc[0]
+                    right_cn = bin_gene_region_df['cnv_{}'.format(c_id)][bin_gene_region_df['region']==right_region].iloc[0]
 
-                median_cn = np.nanmedian([left_cn, right_cn])
+                    median_cn = np.nanmedian([left_cn, right_cn])
 
-            if median_cn > 2:
-                median_cn = int(np.floor(median_cn))
-            elif median_cn < 2:
-                median_cn = int(np.ceil(median_cn))
+                    is_imputed[i] = True
+                else:
+                    print(f'Gene {gene} does not exist.')
+
+            if not np.isnan(median_cn):
+                if median_cn > 2:
+                    median_cn = int(np.floor(median_cn))
+                elif median_cn < 2:
+                    median_cn = int(np.ceil(median_cn))
 
             gene_cn_per_cluster.append(median_cn)
 
@@ -208,6 +223,9 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
 
     print("Transposing the dataframe...")
     gene_cn_df = gene_cn_df.T
+    if impute:
+        gene_cn_df['is_imputed'] = is_imputed.tolist()
+    # gene_cn_df = gene_cn_df.rename(columns = {'two':'new_name'})
     print("Sorting the genes...")
     gene_cn_df.sort_index(inplace=True)
 

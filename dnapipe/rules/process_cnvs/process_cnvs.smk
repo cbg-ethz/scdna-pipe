@@ -1,4 +1,4 @@
-from process_cnvs import *
+from dnapipe.rules.process_cnvs.process_cnvs import *
 
 rule create_bin_gene_region_df:
     input:
@@ -7,7 +7,8 @@ rule create_bin_gene_region_df:
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         region_stops_path = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
         inferred_cnvs_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
-        priority_genes_path = priority_genes_path
+        general_main_gene_list_path = general_main_gene_list_path,
+        disease_genes_path = disease_genes_path
     params:
         bin_size = bin_size
     output:
@@ -20,12 +21,17 @@ rule create_bin_gene_region_df:
         excluded_bins = pd.read_csv(input.excluded_bins_path, header=None)
         region_stops = pd.read_csv(input.region_stops_path, header=None)
         region_stops.columns = ["bin"]
-        priority_genes = pd.read_csv(input.priority_genes_path, sep="\t", header=None)
-        priority_genes.columns = ["gene"]
-        priority_genes = priority_genes.gene.values.tolist()
         inferred_cnvs = np.loadtxt(input.inferred_cnvs_path, delimiter=',')
 
-        df = get_bin_gene_region_df(params.bin_size, genes, chr_stops, region_stops, excluded_bins, cnvs=inferred_cnvs, priority_genes=priority_genes)
+        general_main_gene_list = pd.read_csv(input.general_main_gene_list_path, sep="\t", header=None)
+        general_main_gene_list.columns = ["gene"]
+        general_main_gene_list = general_main_gene_list.gene.values.tolist()
+        disease_genes_list = pd.read_csv(input.disease_genes_path, sep="\t", header=None)
+        disease_genes_list.columns = ["gene"]
+        disease_genes_list = disease_genes_list.gene.values.tolist()
+        merged_lists = list(set(general_main_gene_list + disease_genes_list))
+
+        df = get_bin_gene_region_df(params.bin_size, genes, chr_stops, region_stops, excluded_bins, cnvs=inferred_cnvs, priority_genes=merged_lists)
         df.to_csv(output.bin_gene_region_df)
 
 rule create_cn_cluster_h5:

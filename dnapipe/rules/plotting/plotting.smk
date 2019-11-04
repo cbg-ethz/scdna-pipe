@@ -1,4 +1,4 @@
-from plotting import *
+from dnapipe.rules.plotting.plotting import *
 
 rule visualise_trees:
     params:
@@ -62,8 +62,9 @@ rule plot_cluster_cnvs:
         output_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix)
         plot_cluster_cnvs(cnvs_arr, chr_stops, output_path=output_path, add_offsets=add_offsets, s=params.s)
 
-rule plot_heatmap:
+rule plot_heatmaps:
     input:
+        general_gene_lists_path = os.path.join(gene_lists_path, 'general'),
         disease_genes_path = disease_genes_path,
         bin_gene_region_df_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__bin_gene_region_df.csv"
     output:
@@ -72,40 +73,37 @@ rule plot_heatmap:
     benchmark:
         "benchmark/plot_heatmap.tsv"
     run:
+        bin_gene_region_df = pd.read_csv(input.bin_gene_region_df_path, index_col=0, low_memory=False)
+
+        # General lists
+        for dirpath,_,filenames in os.walk(input.general_gene_lists_path):
+           for f in filenames:
+               print(f'Creating heatmap for {f}')
+               gene_list_path = os.path.abspath(os.path.join(dirpath, f))
+               genes_list = pd.read_csv(gene_list_path, sep="\t", header=None)
+               genes_list.columns = ["gene"]
+               genes_list = genes_list.gene.values.tolist()
+
+               gene_cn_df_imputed = get_gene_cn_df(genes_list, bin_gene_region_df, impute=True)
+
+               gene_list_name = os.path.splitext(f)[0]
+               output_png_file_name = os.path.splitext(output.heatmap_cnvs)[0] + '_' + gene_list_name + '.png'
+               plot_heatmap(gene_cn_df_imputed, output_path=output_png_file_name)
+
+               output_csv_file_name = os.path.splitext(output.gene_cn_df)[0] + '_' + gene_list_name + '.csv'
+               gene_cn_df_imputed.to_csv(
+                   output_csv_file_name
+               )
+
+        # Disease specific
         disease_genes_list = pd.read_csv(disease_genes_path, sep="\t", header=None)
         disease_genes_list.columns = ["gene"]
         disease_genes_list = disease_genes_list.gene.values.tolist()
-        bin_gene_region_df = pd.read_csv(input.bin_gene_region_df_path, index_col=0, low_memory=False)
 
         gene_cn_df_imputed = get_gene_cn_df(disease_genes_list, bin_gene_region_df, impute=True)
-        gene_cn_df = get_gene_cn_df(disease_genes_list, bin_gene_region_df, impute=False)
 
-        is_imputed = np.array(np.isnan(gene_cn_df))
-
-        plot_heatmap(gene_cn_df_imputed, is_imputed=is_imputed, output_path=output.heatmap_cnvs)
+        plot_heatmap(gene_cn_df_imputed, output_path=output.heatmap_cnvs)
 
         gene_cn_df_imputed.to_csv(
             output.gene_cn_df
         )
-
-rule create_cluster_plots_list:
-    params:
-        analysis_prefix = analysis_prefix,
-        analysis_path = analysis_path
-    input:
-        secondary_analysis_done = "secondary_analysis_done.txt"
-    output:
-        cluster_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_profile_files.txt"
-    shell:
-        "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cluster_profile_..?\.png' > {params.analysis_prefix}__cluster_profile_files.txt"
-
-rule create_heatmap_plots_list:
-    params:
-        analysis_prefix = analysis_prefix,
-        analysis_path = analysis_path
-    input:
-        secondary_analysis_done = "secondary_analysis_done.txt"
-    output:
-        heatmap_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_genes_clusters_files.txt"
-    shell:
-        "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cn_genes_clusters_chr..?_heatmap\.png' > {params.analysis_prefix}__cn_genes_clusters_files.txt"
