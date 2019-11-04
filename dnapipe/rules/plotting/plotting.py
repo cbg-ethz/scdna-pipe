@@ -11,6 +11,7 @@ from tqdm import tqdm
 import os
 import re
 import subprocess
+sns.set()
 
 def convert_event_region_to_gene(region_event_str, bin_gene_region_df, priority_only=False, genes_to_highlight=None, highlight_color='red', genes_only=False):
     """
@@ -310,10 +311,12 @@ def plot_heatmap(gene_cn_df, output_path=None):
     else:
         plt.show()
 
-def plot_profile(cnv_arr, chr_stops, id=None, add_offsets=True, ymax=5, s=1, cmap=None, colors_idx=None, chr_mean_pos=None, figsize=(14, 4), yticksize=11, output_path=None):
+def plot_profile(cnv_arr, chr_stops, subclone_ids=None, offset_sizes=0.1, ymax=5, s=1, cmap=None, colors_idx=None, chr_mean_pos=None, figsize=(14, 4), yticksize=11, ncol=None, output_path=None):
     """
     Plots CNV profiles
     :param cnv_arr: (n_subclones, n_bins) array of CNVs
+    :param chr_stops: (chr, pos) DataFrame with final bin of each chromosome
+    (optional) :param subclone_ids: list of string identifiers for each clone
     :return: axis
     """
     if len(cnv_arr.shape) == 1:
@@ -330,21 +333,28 @@ def plot_profile(cnv_arr, chr_stops, id=None, add_offsets=True, ymax=5, s=1, cma
     n_subclones = cnv_arr.shape[0]
     n_bins = cnv_arr.shape[1]
 
+    if subclone_ids is not None:
+        if not (isinstance(subclone_ids, list)):
+            subclone_ids = [subclone_ids]
+        assert(len(subclone_ids)==n_subclones)
+    else:
+        subclone_ids = np.arange(n_subclones).astype(str).tolist()
+
     if cmap is None:
         cmap = matplotlib.cm.get_cmap("Dark2")
     if colors_idx is None:
         colors_idx = np.arange(n_subclones)
 
     offsets = [0.] * n_subclones
-    if n_subclones > 1 and add_offsets:
-        offset = 0.1
+    if n_subclones > 1:
+        offset = offset_sizes
         offsets = [offset*c for c in range(n_subclones)]
         offsets = offsets - np.mean(offsets)
 
     fig = plt.figure(figsize=figsize)
 
     for c in range(n_subclones):
-        plt.scatter(range(n_bins), cnv_arr[c].astype(int) + offsets[c], s=s, label='subclone {}'.format(c),
+        plt.scatter(range(n_bins), cnv_arr[c].astype(int) + offsets[c], s=s, label='subclone {}'.format(subclone_ids[c]),
                                 c=np.array(cmap(colors_idx[c])).reshape(1, -1), alpha=1)
         plt.ylim([0-0.2, ymax])
         plt.xlim([0-0.01*n_bins, n_bins+0.01*n_bins])
@@ -368,13 +378,14 @@ def plot_profile(cnv_arr, chr_stops, id=None, add_offsets=True, ymax=5, s=1, cma
         tick.label1.set_horizontalalignment('center')
 
     if n_subclones > 1:
-        lgnd = plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower center",borderaxespad=0, ncol=n_subclones)
+        if ncol is None:
+            ncol = n_subclones
+        lgnd = plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower center",borderaxespad=0, ncol=ncol)
         for c in range(n_subclones):
             lgnd.legendHandles[c]._sizes = [40]
             lgnd.legendHandles[c].set_alpha(1)
     else:
-        if id is not None:
-            plt.title('Subclone {}'.format(id))
+        plt.title('Subclone {}'.format(subclone_ids[0]))
 
     if output_path is not None:
         print("Creating {}...".format(output_path))
@@ -383,11 +394,18 @@ def plot_profile(cnv_arr, chr_stops, id=None, add_offsets=True, ymax=5, s=1, cma
     else:
         plt.show()
 
-def plot_cluster_cnvs(cnvs_arr, chr_stops, add_offsets=True, s=1, output_path=None):
+def plot_cluster_cnvs(cnvs_arr, chr_stops, subclone_ids=None, offset_sizes=0., s=1, ncol=None, output_path=None):
     if len(cnvs_arr.shape) == 1:
         cnvs_arr = cnvs_arr.reshape(1, -1)
 
     n_subclones = cnvs_arr.shape[0]
+
+    if subclone_ids is not None:
+        if not (isinstance(subclone_ids, list)):
+            subclone_ids = [subclone_ids]
+        assert(len(subclone_ids)==n_subclones)
+    else:
+        subclone_ids = np.arange(n_subclones).astype(str).tolist()
 
     ymax = np.nanmax(cnvs_arr) + 1
 
@@ -402,10 +420,10 @@ def plot_cluster_cnvs(cnvs_arr, chr_stops, add_offsets=True, s=1, output_path=No
 
     # Plot each profile separately
     for c in range(n_subclones):
-        cluster_path = output_path + '__cluster_profile_' + str(c) + '.png'
-        plot_profile(cnvs_arr[c], chr_stops, id=c, s=s, ymax=ymax, colors_idx=[c], chr_mean_pos=chr_mean_pos, figsize=(14, 4), output_path=cluster_path)
+        cluster_path = output_path + '__cluster_profile_' + str(c) + '.png' if output_path is not None else None
+        plot_profile(cnvs_arr[c], chr_stops, subclone_ids=subclone_ids[c], s=s, ymax=ymax, colors_idx=[c], chr_mean_pos=chr_mean_pos, figsize=(14, 4), output_path=cluster_path)
 
     # Plot all profiles overlapping
-    overlapping_path = output_path + '__cluster_profile_overlapping.png'
-    plot_profile(cnvs_arr, chr_stops, s=s, ymax=ymax, add_offsets=add_offsets, colors_idx=np.arange(n_subclones),
-                chr_mean_pos=chr_mean_pos, figsize=(14, 8), yticksize=13, output_path=overlapping_path)
+    overlapping_path = output_path + '__cluster_profile_overlapping.png' if output_path is not None else None
+    plot_profile(cnvs_arr, chr_stops, subclone_ids=subclone_ids, s=s, ymax=ymax, offset_sizes=offset_sizes, colors_idx=np.arange(n_subclones),
+                chr_mean_pos=chr_mean_pos, figsize=(14, 8), yticksize=13, ncol=ncol, output_path=overlapping_path)
