@@ -2,6 +2,7 @@
   "sample_name": "MEKOBAB_S2",
   "sequencing_prefix": "MEKOBAB-T_scD_250c-r1v1.0_r1v1.0-AH7LNYBGXC",
   "analysis_prefix": "MEKOBAB-T_scD_Ar1v1.9",
+  "disease": "melanoma",
   "ref_genome_version": "GRCh37",
   "ref_genome_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/data/refdata-GRCh37-1.0.0_dna",
   "fastqs_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MEKOBAB-T/singlecell_dna/openbis",
@@ -22,11 +23,9 @@
   },
   "secondary_analysis": {
     "h5_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MEKOBAB-T/singlecell_dna/analysis/cellranger/MEKOBAB/outs/cnv_data.h5",
-    "gene_coordinates_path": "/cluster/home/pedrof/dna-pipeline/required_files/genes_of_interest/emsembl_hg19_genes_simplified.tsv",
-    "bins_to_remove": "/cluster/home/pedrof/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv",
-    "priority_genes_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/all_important_genes.txt",
-    "disease_genes_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/melanoma_genes.txt",
-    "roche_genes_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/roche_gene_list.txt",
+    "bins_to_remove": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv",
+    "genes_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/",
+    "general_main_gene_list": "dna_long_gene_list.txt"
   },
   "plotting": {
     "profiles": {
@@ -62,7 +61,8 @@
       "n_iters": 500000,
       "n_nodes": 0,
       "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,1,0.01],
-      "n_reps": 10
+      "n_reps": 10,
+      "alpha": 0.
     },
     "learn_nu_cluster_trees":
     {
