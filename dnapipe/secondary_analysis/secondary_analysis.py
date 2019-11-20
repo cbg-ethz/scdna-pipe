@@ -70,8 +70,13 @@ class SecondaryAnalysis:
                 idx
             ]  # -1 because it is a size info
 
+        bin_chr_indicator = []
+        for idx, chr in enumerate(ordered_chromosomes):
+            bin_chr_indicator.append([chr]*chr_lengths[idx])
+        bin_chr_indicator = np.array([item for sublist in chr_indicator for item in sublist])
+
         bin_size = h5f["constants"]["bin_size"][()]
-        normalized_counts = merge_chromosomes(h5f)
+        normalized_counts = merge_chromosomes(h5f, sort=True)
         n_bins = normalized_counts.shape[1]
         bin_ids = [x for x in range(0, n_bins)]
         bin_df = pd.DataFrame(bin_ids, columns=["bin_ids"])
@@ -98,6 +103,12 @@ class SecondaryAnalysis:
 
         df_chr_stops.to_csv(
             os.path.join(output_path, self.sample_name) + "__chr_stops.tsv", sep="\t"
+        )
+        
+        np.savetxt(
+            os.path.join(output_path, self.sample_name) + "__bin_chr_indicator.txt", sep="\t"
+            bin_chr_indicator,
+            delimiter=",",
         )
 
         print("Output written to: " + output_path)
