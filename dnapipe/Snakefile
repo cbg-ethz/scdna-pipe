@@ -74,7 +74,7 @@ derived_file_names = [
             "Summary.txt"
         ]
 
-tree_outputs = ["cluster_tree", "full_tree"]]
+tree_outputs = ["cluster_tree", "full_tree"]
 
 sa = SecondaryAnalysis(
     sample_name=analysis_prefix,
