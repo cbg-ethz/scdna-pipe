@@ -2,6 +2,7 @@ import numpy as np
 import h5py
 import re
 
+
 def merge_chromosomes(h5, key="normalized_counts"):
 
     n_cells = h5["cell_barcodes"][:].shape[0]
@@ -15,6 +16,7 @@ def merge_chromosomes(h5, key="normalized_counts"):
 
     cell_all_chrs = np.concatenate(cnv_matrices, axis=1)
     return cell_all_chrs
+
 
 def get_tree_scores(tree_paths):
     """
@@ -33,6 +35,7 @@ def get_tree_scores(tree_paths):
                 tree_scores.append(float(score))
 
     return tree_scores
+
 
 def rename_fastq(s_name):
     """
