@@ -125,6 +125,7 @@ rule extract_genomic_info:
         os.path.join(cellranger_path, cr_sample_name) + "/outs/cnv_data.h5"
     output:
         chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
+        bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
         bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv"
     benchmark:
         "benchmark/extract_genomic_info.tsv"
