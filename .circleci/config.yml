@@ -66,12 +66,3 @@ jobs:
             pip install pytest-ordering
             echo $PWD
   
-      - run:
-          name: run tests
-          command: |
-            echo $PWD
-            source ~/.bashrc
-            cd /home/circleci/repo/pipeline/test
-            pytest ./
-            echo $PWD
-
