@@ -6,7 +6,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## About
-Reproducible Python data analysis pipeline. Performs single-cell copy number variation calling by learning the underlying tumour evolution history by state-of-the art phylogenetic tree reconstruction method: SCICoNE.The pipeline is built using Python, Conda environment management system and the Snakemake workflow management system. The pipeline starts from the raw sequencing files and a settings file for parameter configurations. After running the data analysis, pipeline produces report and figures to inform the treatment decision of the cancer patient.
+Reproducible Python pipeline for genomic data analysis. Performs single-cell copy number variation calling by learning the underlying tumour evolution history by state-of-the-art phylogenetic tree reconstruction method: SCICoNE. The pipeline is built using Python, Conda environment management system and the Snakemake workflow management system. The pipeline starts from the raw sequencing files and a settings file for the parameter configurations. After the analysis, it produces a report and multiple figures to inform the treatment decision of the cancer patient.
 
 
 ## Installing
