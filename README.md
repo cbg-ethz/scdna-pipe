@@ -10,7 +10,6 @@ Reproducible Python data analysis pipeline. Performs single-cell copy number var
 
 
 ## Installing
-----------
 1. Clone the repository
 2. Install and update using `pip`:
   ```bash
