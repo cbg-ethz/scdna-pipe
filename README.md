@@ -16,6 +16,14 @@ Reproducible Python data analysis pipeline. Performs single-cell copy number var
   pip install -e .
   ```
 
+## Running
+1. Prepare the configuration file according to your analysis
+2. Run `snakemake` with:
+  ```bash
+  snakemake --configfile your_config_file 
+  ```
+3. (Optional) Refer to https://snakemake.readthedocs.io to customise your `snakemake` for your environment
+
 ## Authors
 
 * **Mustafa Anıl Tuncel**  [:octocat:](https://github.com/anilbey)
