@@ -11,4 +11,5 @@ setup(
     author_email="tuncel.manil@gmail.com",
     packages=find_packages(),
     install_requires=requirements,
+    dependency_links=['git+git://github.com/anilbey/PhenoGraph.git@7ef72746688217b2feed2f3f8226da2f304c532c#egg=Phenograph']
 )

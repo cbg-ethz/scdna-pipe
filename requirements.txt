@@ -2,7 +2,6 @@ numpy
 scipy
 h5py
 pandas
-git+git://github.com/anilbey/PhenoGraph.git@7ef72746688217b2feed2f3f8226da2f304c532c#egg=Phenograph
 snakemake
 scikit-learn
 biopython
