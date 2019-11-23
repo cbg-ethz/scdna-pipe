@@ -24,6 +24,11 @@ Reproducible Python data analysis pipeline. Performs single-cell copy number var
   ```
 3. (Optional) Refer to https://snakemake.readthedocs.io to customise your `snakemake` for your environment
 
+## Contributing
+
+You are very welcome to contribute! You can start with the existing issues or create new issues.
+Make sure to follow the CI checks. Use the [pre-commit hook](https://github.com/anilbey/dna-pipeline/blob/master/.pre-commit-config.yaml) defined in the project to meet the code style. If you are adding new functionality, add the corresponding test as well in order to keep the code coverage high.
+
 ## Authors
 
 * **Mustafa Anıl Tuncel**  [:octocat:](https://github.com/anilbey)
