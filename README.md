@@ -16,3 +16,14 @@ Reproducible Python data analysis pipeline. Performs single-cell copy number var
   ```bash
   pip install -e .
   ```
+
+## Authors
+
+* **Mustafa Anıl Tuncel**  [:octocat:](https://github.com/anilbey)
+* **Pedro Ferreira** [:octocat:](https://github.com/pedrofale)
+
+See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+
+## License
+
+This project is licensed under the Apache License - see the [LICENSE](LICENSE) file for details
