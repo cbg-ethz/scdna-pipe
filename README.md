@@ -1,5 +1,4 @@
 # DNA-Pipe 
-[![Project Status](http://www.repostatus.org/badges/latest/wip.svg)](http://www.repostatus.org/#wip)
 [![CircleCI](https://circleci.com/gh/anilbey/dna-pipeline.svg?style=svg&circle-token=7d59442470c38d05f7d1661a97da237d482684ef)](https://circleci.com/gh/anilbey/dna-pipeline)
 [![License](http://img.shields.io/:license-Apache%202-green.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 [![Python Version](https://img.shields.io/badge/python-3-blue.svg)](https://img.shields.io/badge/python-3-blue.svg)
@@ -7,19 +6,11 @@
 
 Installing
 ----------
-1. Open your terminal in your preferred directory and clone this repository
-```bash
-$ git clone https://github.com/anilbey/dna-pipeline
-```
+1. Clone the repository
 2. Install and update using `pip`:
   ```bash
   pip install -e .
   ```
-
-    
-
-
-
 
 Single cell dna data analysis workflow
 
