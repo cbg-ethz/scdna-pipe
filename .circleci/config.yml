@@ -62,4 +62,3 @@ jobs:
             pip install -r requirements.txt
             pip install pytest-ordering
             echo $PWD
-  

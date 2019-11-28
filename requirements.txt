@@ -1,10 +1,11 @@
-numpy >= 1.16.1
-scipy >= 1.0.1
-h5py >= 2.7.1
-pandas >= 0.23.0
-snakemake >= 4.8.0
-scikit-learn >= 0.20.1
+numpy
+scipy
+h5py
+pandas
+snakemake
+scikit-learn
 biopython
 tqdm
 seaborn
 black
+pre-commit
