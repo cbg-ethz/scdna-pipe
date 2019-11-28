@@ -106,12 +106,6 @@ class SecondaryAnalysis:
         )
 
         np.savetxt(
-            os.path.join(output_path, self.sample_name) + "__bin_chr_indicator.txt", sep="\t"
-            bin_chr_indicator,
-            delimiter=",",
-        )
-
-        np.savetxt(
             os.path.join(output_path, self.sample_name) + "__bin_chr_indicator.txt",
             bin_chr_indicator,
             delimiter=",",
