@@ -1,6 +1,41 @@
 import numpy as np
 import pandas as pd
+from scipy.cluster.hierarchy import ward, leaves_list
+from scipy.spatial.distance import pdist
 from tqdm import tqdm
+
+def cluster_clones(inferred_cnvs, normalised_bins, normalised_regions):
+    # label cells according to their clone
+    labels = np.empty(inferred_cnvs.shape[0])
+    unique_cnvs, cluster_sizes, idx = np.unique(inferred_cnvs, return_counts=True, return_index=True, axis=0)
+
+    # Sort clones by distance to diploid profile
+    dist_to_diploid = []
+    diploid_profile = np.ones([unique_cnvs.shape[1]]) * 2
+    for c_id in range(unique_cnvs.shape[0]):
+        dist_to_diploid.append(np.linalg.norm(unique_cnvs[c_id]-diploid_profile))
+    order = np.argsort(dist_to_diploid)
+    unique_cnvs = unique_cnvs[order]
+    cluster_sizes = cluster_sizes[order]
+
+    for c_id in range(unique_cnvs.shape[0]):
+        cells = np.where(np.all(inferred_cnvs==unique_cnvs[c_id], axis=1))[0]
+        labels[cells] = c_id
+
+    # Sort cells by sorted clone index
+    cell_order = np.argsort(labels)
+    labels = labels[cell_order]
+    inferred_cnvs = inferred_cnvs[cell_order]
+    normalised_bins = normalised_bins[cell_order]
+    normalised_regions = normalised_regions[cell_order]
+
+    # Within each clone, sort the cells's normalised regions via hierarchical clustering
+    for c_id in range(unique_cnvs.shape[0]):
+        Z = ward(pdist(normalised_regions[np.where(labels==c_id)[0]]))
+        hclust_index = leaves_list(Z)
+        normalised_bins[np.where(labels==c_id)[0]] = normalised_bins[np.where(labels==c_id)[0]][hclust_index]
+
+    return inferred_cnvs, normalised_bins, labels
 
 def get_bin_gene_region_df(bin_size, gene_coordinates, chr_stops, region_stops, bin_is_excluded, cnvs=None, priority_genes=None):
     """
@@ -21,22 +56,25 @@ def get_bin_gene_region_df(bin_size, gene_coordinates, chr_stops, region_stops, 
     bin_gene_region_df["gene"] = [list() for _ in range(bin_gene_region_df.shape[0])]
     bin_gene_region_df["chr"] = [list() for _ in range(bin_gene_region_df.shape[0])]
     bin_gene_region_df["is_priority"] = [list() for _ in range(bin_gene_region_df.shape[0])]
+    bin_gene_region_df["biotype"] = [list() for _ in range(bin_gene_region_df.shape[0])]
 
     # for each gene
     for index, row in tqdm(gene_coordinates.iterrows(), total=gene_coordinates.shape[0]):
-        start_bin = int(row["Gene start (bp)"] / bin_size)
-        stop_bin = int(row["Gene end (bp)"] / bin_size)
-        chromosome = str(row["Chromosome/scaffold name"])
+        start_bin = int(row["start"] / bin_size)
+        stop_bin = int(row["end"] / bin_size)
+        chromosome = str(row["contig"])
+        biotype = str(row["biotype"])
 
         if chromosome != '1': # coordinates are given by chromosome
             chr_start = chr_stops.iloc[np.where(chr_stops.index==chromosome)[0][0]-1].values[0] + 1
             start_bin = start_bin + chr_start
             stop_bin = stop_bin + chr_start
 
-        gene_name = row["Gene name"]
+        gene_name = row["gene_name"]
         for bin in range(start_bin, stop_bin+1):
             bin_gene_region_df.loc[bin, "gene"].append(gene_name)
             bin_gene_region_df.loc[bin, "chr"].append(chromosome)
+            bin_gene_region_df.loc[bin, "biotype"].append(biotype)
 
         if priority_genes is not None:
             if gene_name in priority_genes:
@@ -55,6 +93,7 @@ def get_bin_gene_region_df(bin_size, gene_coordinates, chr_stops, region_stops, 
     bin_gene_region_df['gene'] = [','.join(map(str, l)) for l in bin_gene_region_df['gene']]
     bin_gene_region_df['chr'] = [','.join(map(str, l)) for l in bin_gene_region_df['chr']]
     bin_gene_region_df['is_priority'] = [','.join(map(str, l)) for l in bin_gene_region_df['is_priority']]
+    bin_gene_region_df['biotype'] = [','.join(map(str, l)) for l in bin_gene_region_df['biotype']]
 
     # Indicate original_bin-filtered_bin correspondence
     bin_gene_region_df['filtered_bin'] = None
@@ -181,6 +220,8 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
     df = bin_gene_region_df.copy(deep=True)
     df['gene'] = df['gene'].astype(str).apply(lambda x: x.split(',')).apply(lambda x: set(x))
 
+    gene_list = list(dict.fromkeys(gene_list)) # remove duplicates
+
     is_imputed = np.empty(len(gene_list))
 
     # for each gene
@@ -189,6 +230,7 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
         i += 1
         gene_cn_per_cluster = []
         is_imputed[i] = False
+        gene_exists = True
 
         for c_id in cluster_ids:
             bins = df[df['gene'].apply(lambda x: gene in x)].index.values
@@ -209,7 +251,9 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
 
                     is_imputed[i] = True
                 else:
-                    print(f'Gene {gene} does not exist.')
+                    gene_exists = False
+                    is_imputed[i] = np.nan
+                    print(f'Gene {gene} not found.')
 
             if not np.isnan(median_cn):
                 if median_cn > 2:
@@ -219,12 +263,13 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
 
             gene_cn_per_cluster.append(median_cn)
 
-        gene_cn_df[gene] = gene_cn_per_cluster
+        if gene_exists:
+            gene_cn_df[gene] = gene_cn_per_cluster
 
     print("Transposing the dataframe...")
     gene_cn_df = gene_cn_df.T
     if impute:
-        gene_cn_df['is_imputed'] = is_imputed.tolist()
+        gene_cn_df['is_imputed'] = is_imputed[~np.isnan(is_imputed)].tolist()
     # gene_cn_df = gene_cn_df.rename(columns = {'two':'new_name'})
     print("Sorting the genes...")
     gene_cn_df.sort_index(inplace=True)

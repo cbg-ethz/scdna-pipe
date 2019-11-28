@@ -36,63 +36,6 @@ rule detect_breakpoints:
         os.rename(params.posfix+"_segmented_regions.txt", output.segmented_regions)
         os.rename(params.posfix+"_segmented_region_sizes.txt", output.segmented_region_sizes)
 
-rule plot_breakpoints:
-    input:
-        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
-        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
-        segmented_regions = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt"
-    output:
-        normalised_bins_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins.png",
-        normalised_bins_clustered_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered.png",
-        normalised_bins_clustered_bps_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered_bps.png"
-    benchmark:
-        "benchmark/plot_breakpoints.tsv"
-    run:
-        from scipy.cluster.hierarchy import ward, leaves_list
-        from scipy.spatial.distance import pdist
-
-        print("loading the normalised bins...")
-        normalised_bins = np.loadtxt(input.normalised_bins, delimiter=',')
-        print(f"shape of normalised bins: {normalised_bins.shape}")
-
-        print("loading the normalised regions...")
-        normalised_regions = np.loadtxt(input.normalised_regions, delimiter=',')
-        print(f"shape of normalised regions: {normalised_regions.shape}")
-
-        bps = np.loadtxt(input.segmented_regions)
-        print(f"number of breakpoints: {len(bps)}")
-
-        mean_normalised_bins = normalised_bins.mean()
-        mean_normalised_regions = normalised_regions.mean()
-
-        Z = ward(pdist(normalised_regions))
-        hclust_index = leaves_list(Z)
-        cmap = sns.diverging_palette(220, 10, as_cmap=True)
-
-        print("plotting the heatmap ...")
-        plt.figure(figsize=(24, 8))
-        ax = sns.heatmap(normalised_bins, vmax=2, cmap=cmap)
-        plt.savefig(output.normalised_bins_heatmap)
-        plt.close()
-
-        print("plotting the clustered heatmap ...")
-        plt.figure(figsize=(24, 8))
-        ax = sns.heatmap(normalised_bins[hclust_index], vmax=2, cmap=cmap)
-        plt.savefig(output.normalised_bins_clustered_heatmap)
-        plt.close()
-
-        print("plotting the clustered heatmap with breakpoints ...")
-        plt.figure(figsize=(24, 8))
-        ax = sns.heatmap(normalised_bins[hclust_index], vmax=2, cmap=cmap)
-        ax = ax.vlines(bps, *ax.get_xlim(), colors='b', linestyles='dashed')
-        plt.savefig(output.normalised_bins_clustered_bps_heatmap)
-        plt.close()
-
-
 rule segment_regions:
     input:
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",

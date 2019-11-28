@@ -1,3 +1,6 @@
+from scgenpy import *
+from scgenpy.preprocessing.utils import *
+
 import glob
 import os
 import h5py
@@ -8,19 +11,20 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from pathlib import Path
-from secondary_analysis import SecondaryAnalysis
-from secondary_analysis.utils import *
 from collections import Counter
 import re
 import warnings
-sns.set()
+sns.set_style("ticks")
 
 bin_size = config['bin_size']
 fastqs_path = config['fastqs_path']
 moved_fastqs_path = os.path.join(fastqs_path, "merged", "tricked")
 analysis_path = config['analysis_path']
 
-to_upload_path = os.path.join(analysis_path, '..', 'to_upload')
+analysis_prefix = config['analysis_prefix']
+seq_prefix = config["sequencing_prefix"]
+
+to_upload_path = os.path.join(analysis_path, '..', 'to_upload', analysis_prefix)
 sym_raw_path = os.path.join(to_upload_path, "raw")
 sym_derived_path = os.path.join(to_upload_path, "derived")
 cellranger_path = os.path.join(analysis_path, "cellranger")
@@ -31,12 +35,9 @@ sample_name = config['sample_name']
 cr_sample_name = sample_name[:-3] # e.g. MHELAVELA_S2 becomes MHELAVELA
 h5_path = config['secondary_analysis']['h5_path']
 gene_lists_path = config['secondary_analysis']['genes_path']
-gene_coordinates_path = os.path.join(gene_lists_path, 'emsembl_hg19_genes_simplified.tsv')
+gene_coordinates_path = os.path.join(gene_lists_path, 'ensembl_hg19_annotations.tsv')
 disease_genes_path = os.path.join(gene_lists_path, 'disease_specific', f"{config['disease']}_genes.txt")
 general_main_gene_list_path = os.path.join(gene_lists_path, 'general', f"{config['secondary_analysis']['general_main_gene_list']}")
-
-analysis_prefix = config['analysis_prefix']
-seq_prefix = config["sequencing_prefix"]
 
 try:
     tree_rep = config["inference"]["cluster_trees"]["n_reps"]
@@ -57,19 +58,21 @@ derived_file_names = [
             "segmented_counts.csv",
             "normalised_bins.csv",
             "normalised_regions.csv",
-            "normalised_bins_clustered.png",
-            "normalised_bins_clustered_bps.png",
             "clusters_phenograph_assignment.tsv",
             "clustering_score.txt",
             "avg_counts.csv",
             "cluster_tree.txt",
             "cluster_tree_inferred_cnvs.csv",
+            "cluster_tree_sorted_normalised_counts_bins.png",
+            "cluster_tree_sorted_cnvs_bins.png",
             "unique_cluster_tree_cnvs.csv",
             "inferred_cnvs.csv",
             "tree_cluster_sizes.txt",
+            "cluster_tree_genes.png",
             "cluster_profile_files.txt",
             "cluster_profile_overlapping.png",
             "cn_gene_df.csv",
+            "cn_gene_df_roche_gene_list.csv",
             "heatmap_cnvs.png",
             "Summary.txt"
         ]
@@ -85,8 +88,8 @@ sa = SecondaryAnalysis(
 # import rules
 include: os.path.join(workflow.basedir, "rules", "tree_learning.smk")
 include: os.path.join(workflow.basedir, "rules", "breakpoint_detection.smk")
-include: os.path.join(workflow.basedir, "rules", "process_cnvs", "process_cnvs.smk")
-include: os.path.join(workflow.basedir, "rules", "plotting", "plotting.smk")
+include: os.path.join(workflow.basedir, "rules", "process_cnvs.smk")
+include: os.path.join(workflow.basedir, "rules", "plotting.smk")
 
 onstart:
     print(f"Workflow main directory: {workflow.basedir}")
@@ -97,13 +100,7 @@ rule all:
         raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
         derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
         robustness_results = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_name}_robustness.txt", tree_name=tree_outputs),
-
-        cluster_tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.graphviz",
-        cluster_tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.png",
-
-        cluster_tree_genes_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.graphviz",
-        cluster_tree_genes_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
-
+        bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
         cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
     run:
         print("echo rule all")
@@ -171,13 +168,13 @@ rule rename_fastqs:
         "rename_fastqs_done.txt"
     run:
         merged_fastqs_path = fastqs_path + "/merged/"
-	print(merged_fastqs_path)
-	fastqs_dir = merged_fastqs_path
-	for filename in os.listdir(fastqs_dir):
+    	print(merged_fastqs_path)
+    	fastqs_dir = merged_fastqs_path
+    	for filename in os.listdir(fastqs_dir):
     	    if filename.startswith("MERGED_BSSE") and filename.endswith('.gz'):
     	        print("old name: " + filename)
                 print("new name: " + rename_fastq(filename))
-                os.rename(fastqs_dir+filename, fastqs_dir+rename_fastq(filename))
+                os.rename(fastqs_dir+filename, fastqs_dir+rename_fastq(filename, sample_name=sample_name))
         Path('rename_fastqs_done.txt').touch()
 
 rule trick_fastqs:
@@ -352,21 +349,21 @@ rule create_derived_symlinks:
         "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
-        normalised_bins_clustered_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered.png",
-        normalised_bins_clustered_bps_heatmap = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered_bps.png",
         clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
         clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
         avg_counts = os.path.join(analysis_path,\
                 "clustering", analysis_prefix) + "_avg_counts.csv",
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
         cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
+        cluster_tree_sorted_normalised_counts_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",
+        cluster_tree_sorted_cnvs_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins.png",
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
         inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
         tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
+        cluster_tree_genes_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
         overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
+        gene_cn_df_roche_gene_list = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df_roche_gene_list.csv",
         heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png",
         cr_alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
         cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
@@ -401,8 +398,8 @@ rule create_derived_symlinks:
         create_symlink(input.normalised_bins, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins.csv"))
         create_symlink(input.normalised_regions, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_regions.csv"))
 
-        create_symlink(input.normalised_bins_clustered_heatmap, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins_clustered.png"))
-        create_symlink(input.normalised_bins_clustered_bps_heatmap, os.path.join(sym_derived_path, f"{analysis_prefix}__normalised_bins_clustered_bps.png"))
+        create_symlink(input.cluster_tree_sorted_normalised_counts_bins, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_sorted_normalised_counts_bins.png"))
+        create_symlink(input.cluster_tree_sorted_cnvs_bins, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_sorted_cnvs_bins.png"))
 
         create_symlink(input.clustering_score, os.path.join(sym_derived_path, f"{analysis_prefix}__clustering_score.txt"))
         create_symlink(input.clusters_phenograph_assignment, os.path.join(sym_derived_path, f"{analysis_prefix}__clusters_phenograph_assignment.tsv"))
@@ -412,6 +409,7 @@ rule create_derived_symlinks:
         create_symlink(input.cluster_tree_inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_inferred_cnvs.csv"))
         create_symlink(input.unique_cnv_profiles, os.path.join(sym_derived_path, f"{analysis_prefix}__unique_cluster_tree_cnvs.csv"))
         create_symlink(input.inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__inferred_cnvs.csv"))
+        create_symlink(input.cluster_tree_genes_png, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_genes.png"))
 
         create_symlink(input.tree_cluster_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__tree_cluster_sizes.txt"))
         create_symlink(input.overlapping_cluster_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_overlapping.png"))
@@ -425,19 +423,53 @@ rule create_derived_symlinks:
                 file.write(f"{f_name}\n")
 
         create_symlink(input.gene_cn_df, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df.csv"))
+        create_symlink(input.gene_cn_df_roche_gene_list, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df_roche_gene_list.csv"))
         create_symlink(input.heatmap_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__heatmap_cnvs.png"))
 
         # write the summary txt
         cn_gene_df = pd.read_csv(input.gene_cn_df, index_col=0)
+        if 'is_imputed' in cn_gene_df.columns:
+            cn_gene_df = cn_gene_df.drop(columns=['is_imputed'])
         n_clusters = len(cn_gene_df.columns)
 
+        segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
+        n_cells = segmented_counts.shape[0]
+
         amplified_genes = cn_gene_df[(cn_gene_df > params.ploidy).any(axis='columns')].index.values.tolist()
+        n_amplified_genes = len(amplified_genes)
+        amplified_genes = ', '.join(amplified_genes)
         deleted_genes = cn_gene_df[(cn_gene_df < params.ploidy).any(axis='columns')].index.values.tolist()
+        n_deleted_genes = len(deleted_genes)
+        deleted_genes = ', '.join(deleted_genes)
 
         open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w").close()
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w") as summary_file:
-            summary_file.write(f"There are {n_clusters} clones detected with copy number gains in {amplified_genes}"
-            f" and copy number deletions in {deleted_genes} among the pre-selected genes.")
+            warning_str = ""
+            if n_cells  > 2 and n_cells < 20:
+                warning_str = f"Warning: only {n_cells} cells detected. These results may only be used to confirm results from other technologies.\n"
+            if n_cells <=2:
+                warning_str = f"Only {n_cells} cell(s) detected. No analysis performed.\n"
+
+            summary_file.write(warning_str)
+
+            if n_cells > 2:
+                if n_clusters > 1:
+                    verb = 'are'
+                    clones = 'clones'
+                else:
+                    verb = 'is'
+                    clones = 'clone'
+                if n_amplified_genes > 0:
+                    amp_str = f"copy number gains in {amplified_genes}"
+                else:
+                    amp_str = f"no copy number gains"
+                if n_deleted_genes > 0:
+                    del_str = f"copy number deletions in {deleted_genes}"
+                else:
+                    del_str = f"no copy number deletions"
+
+                summary_file.write(f"There {verb} {n_clusters} {clones} detected with {amp_str}"
+                f" and {del_str} among the pre-selected genes.")
 
 rule create_derived_checksum:
     params:

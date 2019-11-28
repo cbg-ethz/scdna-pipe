@@ -1,4 +1,4 @@
-from dnapipe.rules.process_cnvs.process_cnvs import *
+from scgenpy.process_cnvs.process_cnvs import *
 
 rule create_bin_gene_region_df:
     input:
@@ -44,7 +44,7 @@ rule create_cn_cluster_h5:
         "benchmark/create_cn_cluster_h5"
     run:
         all_genes = pd.read_csv(input.gene_coordinates_path, sep="\t", index_col=0)
-        all_genes_list = all_genes['Gene name'].values.tolist()
+        all_genes_list = all_genes['gene_name'].values.tolist()
 
         bin_gene_region_df = pd.read_csv(input.bin_gene_region_df_path, index_col=0, low_memory=False)
 

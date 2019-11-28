@@ -29,7 +29,7 @@
   },
   "plotting": {
     "profiles": {
-      "add_offsets": "True",
+      "offset_sizes": 0.1,
       "s": 5
     },
     "trees": {
@@ -71,10 +71,11 @@
     },
     "full_trees":
     {
-      "n_iters": 200000,
+      "n_iters": 1,
       "n_nodes": 0,
       "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,0,0.01],
-      "n_reps": 10
+      "n_reps": 10,
+      "cluster_fraction": 1
     },
     "seed": 41
   }

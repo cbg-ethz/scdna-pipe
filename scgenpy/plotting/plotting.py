@@ -1,4 +1,4 @@
-from dnapipe.rules.process_cnvs.process_cnvs import *
+from scgenpy.process_cnvs.process_cnvs import *
 
 import numpy as np
 import pandas as pd
@@ -6,12 +6,198 @@ import seaborn as sns
 import matplotlib
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.patches import Rectangle, Polygon
 from tqdm import tqdm
 import os
 import re
 import subprocess
-sns.set()
+sns.set_style("ticks", {"axes.grid": True})
+
+def plot_bins(bins, chr_stops_dict=None, cbar_title='', annotations=None, bps=None, cluster=False, figsize=(14, 4), vlines=True, clone_cmap=None, vmax=2, title='', output_path=None, dpi=300):
+    if cluster:
+        if annotations is not None:
+            # Within each clone, sort the cells's normalised regions via hierarchical clustering
+            for c_id in range(np.unique(annotations)):
+                Z = ward(pdist(bins[np.where(annotations==c_id)[0]]))
+                hclust_index = leaves_list(Z)
+                bins[np.where(annotations==c_id)[0]] = bins[np.where(annotations==c_id)[0]][hclust_index]
+        else:
+            Z = ward(pdist(bins))
+            hclust_index = leaves_list(Z)
+            bins = bins[hclust_index]
+
+    if annotations is not None:
+        ticks = dict()
+        annotations = np.array(annotations).ravel()
+        for c_id in np.unique(annotations):
+            # Get last pos
+            ticks[c_id] = np.where(annotations==c_id)[0][-1]
+
+    if clone_cmap is None:
+        clone_cmap = matplotlib.cm.get_cmap("Dark2")
+        subset_colors = clone_cmap(np.arange(0, len(np.unique(annotations)), 1))
+        clone_cmap = matplotlib.colors.ListedColormap(subset_colors)
+
+    fig = plt.figure(figsize=figsize, dpi=dpi)
+    if annotations is not None:
+        gs = GridSpec(1, 2, wspace=0.05, width_ratios=[1, 40])
+        ax1 = fig.add_subplot(gs[0])
+        bounds = [0] + list(ticks.values())
+        norm = matplotlib.colors.BoundaryNorm(bounds, clone_cmap.N)
+        cb = matplotlib.colorbar.ColorbarBase(ax1, cmap=clone_cmap,
+                                        norm=norm,
+                                        boundaries=bounds,
+                                        spacing='proportional',
+                                        orientation='vertical')
+        cb.outline.set_visible(False)
+        cb.ax.set_ylabel('Clones')
+        ax1.yaxis.set_label_position('left')
+        for j, lab in enumerate(ticks.keys()):
+            cb.ax.text(.5, ((bounds[j+1] + bounds[j])/2)/bounds[-1], int(lab), ha='center', va='center', rotation=90, color='w')
+        cb.set_ticks([])
+
+        ax2 = fig.add_subplot(gs[1])
+    else:
+        ax2 = plt.gca()
+        
+    if len(np.unique(bins)) < 6:
+        vmax = 4
+        cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
+    else:
+        cmap = sns.diverging_palette(220, 10, as_cmap=True)
+    im = plt.pcolormesh(bins, cmap=cmap, vmax=vmax, vmin=0, clip_on=False)
+    plt.ylabel('Cells')
+    plt.yticks([])
+
+    if bps is not None:
+        ax2.vlines(bps, *ax2.get_ylim(), colors='b', linestyles='dashed')
+
+    plt.xlabel('Bins')
+    if chr_stops_dict is not None:
+        plt.xlabel('Chromosomes')
+        chr_stops_chrs = list(chr_stops_dict.keys())
+        chr_stops_bins = list(chr_stops_dict.values())
+
+        chr_means = []
+        chr_means.append(chr_stops_bins[0]/2)
+        for c in range(1, len(chr_stops_bins)):
+            aux = (chr_stops_bins[c] + chr_stops_bins[c-1])/2
+            chr_means.append(aux)
+
+        if vlines:
+            ax2.vlines(chr_stops_bins[:-1], *ax2.get_ylim(), ls='--')
+            plt.xticks(chr_means, chr_stops_chrs, rotation=0)
+        else:
+            xticks = [0]+chr_stops_bins
+            xticks_labels = chr_stops_chrs
+            ax2.xaxis.set_major_locator(ticker.FixedLocator(xticks)) # locate major ticks
+            ax2.xaxis.set_minor_locator(ticker.FixedLocator(chr_means)) # locate minor ticks
+
+            ax2.xaxis.set_major_formatter(ticker.NullFormatter()) # hide major tick labels
+            ax2.xaxis.set_minor_formatter(ticker.FixedFormatter(xticks_labels)) # show minor labels
+
+            for tick in ax2.xaxis.get_minor_ticks():
+                tick.tick1line.set_markersize(0)
+                tick.tick2line.set_markersize(0)
+                tick.label1.set_horizontalalignment('center')
+
+    axins = inset_axes(ax2,
+                   width="2%",  # width = 5% of parent_bbox width
+                   height="85%",
+                   loc='lower left',
+                   bbox_to_anchor=(1.05, 0., 1, 1),
+                   bbox_transform=ax2.transAxes,
+                   borderpad=0,
+                   )
+    cb = plt.colorbar(im, cax=axins)
+    if len(np.unique(bins)) < 6:
+        im.set_clim(vmin=0, vmax=4)
+        cb.set_ticks([0.4, 1.2, 2, 2.8, 3.6])
+        cb.set_ticklabels(['0', '1', '2', '3', '4+'])
+    else:
+        if vmax is not None:
+            im.set_clim(vmin=0, vmax=vmax)
+        cb.set_ticks([0, 1, 2])
+        cb.set_ticklabels(['0', '1', '2+'])
+    cb.outline.set_visible(False)
+    cb.ax.set_title(cbar_title, y=1.01)
+
+    sns.despine(left=True, right=True, top=True, bottom=True)
+
+    if output_path is not None:
+        print("Creating {}...".format(output_path))
+        plt.savefig(output_path, bbox_inches='tight')
+        plt.close()
+        print('Done.')
+    else:
+        plt.show()
+
+def _plot_bins(bins, chr_stops_dict, bps=None, cluster=False, figsize=(14, 4), vlines=True, cmap=None, vmax=2, title='Normalised counts per filtered bin', output_path=None):
+    chr_stops_chrs = list(chr_stops_dict.keys())
+    chr_stops_bins = list(chr_stops_dict.values())
+
+    if cluster:
+        Z = ward(pdist(bins))
+        hclust_index = leaves_list(Z)
+        bins = bins[hclust_index]
+
+    if cmap is None:
+        cmap = sns.diverging_palette(220, 10, as_cmap=True)
+        if len(np.unique(bins)) < 6:
+            cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
+            vmax = 4
+
+    chr_means = []
+    chr_means.append(chr_stops_bins[0]/2)
+    for c in range(1, len(chr_stops_bins)):
+        aux = (chr_stops_bins[c] + chr_stops_bins[c-1])/2
+        chr_means.append(aux)
+
+    fig = plt.figure(figsize=figsize, dpi=300)
+    im = plt.pcolormesh(bins, cmap=cmap, vmax=vmax, vmin=0, clip_on=False)
+    plt.xlabel('chromosomes')
+    plt.ylabel('cells')
+    cb = fig.colorbar(im)
+    if len(np.unique(bins)) < 6:
+        if vmax is not None:
+            im.set_clim(vmin=0, vmax=vmax)
+        cb.set_ticks([0.4, 1.2, 2, 2.8, 3.6])
+        cb.set_ticklabels(['0', '1', '2', '3', '4+'])
+    cb.outline.set_visible(False)
+    sns.despine(left=True, bottom=True, right=True, top=True)
+    plt.title(title)
+
+    ax = plt.gca()
+    if bps is not None:
+        ax.vlines(bps, *ax.get_ylim(), colors='b', linestyles='dashed')
+
+    if vlines:
+        ax.vlines(chr_stops_bins[:-1], *ax.get_ylim(), ls='--')
+        plt.xticks(chr_means, chr_stops_chrs, rotation=0)
+    else:
+        xticks = [0]+chr_stops_bins
+        xticks_labels = chr_stops_chrs
+        ax.xaxis.set_major_locator(ticker.FixedLocator(xticks)) # locate major ticks
+        ax.xaxis.set_minor_locator(ticker.FixedLocator(chr_means)) # locate minor ticks
+
+        ax.xaxis.set_major_formatter(ticker.NullFormatter()) # hide major tick labels
+        ax.xaxis.set_minor_formatter(ticker.FixedFormatter(xticks_labels)) # show minor labels
+
+        for tick in ax.xaxis.get_minor_ticks():
+            tick.tick1line.set_markersize(0)
+            tick.tick2line.set_markersize(0)
+            tick.label1.set_horizontalalignment('center')
+
+    if output_path is not None:
+        print("Creating {}...".format(output_path))
+        plt.savefig(output_path, bbox_inches='tight')
+        plt.close()
+        print('Done.')
+    else:
+        plt.show()
 
 def convert_event_region_to_gene(region_event_str, bin_gene_region_df, priority_only=False, genes_to_highlight=None, highlight_color='red', genes_only=False):
     """
@@ -120,7 +306,7 @@ def convert_node_regions_to_genes(node_str, bin_gene_region_df, priority_only=Fa
         num_events, num_amplifications, num_deletions
         num_events_str = "{}+, {}-".format(num_amplifications, num_deletions)
 
-        node_str = "<font point-size='30'>" + "(" + num_events_str + ")" + "</font>" + newline + " " + newline
+        node_str = "<i> </i><font point-size='30'>" + "(" + num_events_str + ")" + "</font><i> </i>" + newline + " " + newline
 
         i = 0
         for key in str_dict:
@@ -133,6 +319,7 @@ def convert_node_regions_to_genes(node_str, bin_gene_region_df, priority_only=Fa
                     color = 'red'
                 node_str = node_str + "<font color='{}' point-size='26'><b>".format(color) + key + "</b></font>"
                 node_str = node_str + '[' + ','.join(f"{x}"+newline if (i+1)%max_genes_per_line == 0 else str(x) for i, x in enumerate(str_dict[key])) + ']'
+                node_str = "<i> </i>" + node_str + "<i> </i>"
                 if i < len(str_dict.keys()):
                     node_str = node_str + " " + newline + " " + newline
 
@@ -211,7 +398,7 @@ def tree_to_graphviz(tree_path, node_sizes=None, gene_labels=False, bin_gene_reg
             else:
                 merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
 
-            str_merged_labels = " ".join(f"{x}<br/>" if i%10 == 0 and i>0 else str(x) for i, x in enumerate(merged_labels))
+            str_merged_labels = "<i> </i>" + " ".join(f"{x}<i> </i><br/>" if i%10 == 0 and i>0 else str(x) for i, x in enumerate(merged_labels)) + "<i> </i>"
             if gene_labels and bin_gene_region_df is not None:
                 node_str = " ".join(merged_labels) # "+1R75 +1R218:219 +1R221:223"
                 str_merged_labels = convert_node_regions_to_genes(node_str, bin_gene_region_df,
@@ -219,18 +406,35 @@ def tree_to_graphviz(tree_path, node_sizes=None, gene_labels=False, bin_gene_reg
                                     highlight_color=highlight_color, max_genes_per_line=max_genes_per_line)
 
             newline = "<br/>"
-            # If node string ends with newlines, remove them
-            par = " " + newline + " " + newline
-            l = list(str_merged_labels)
-            if l[-len(par):] == list(par):
-                str_merged_labels = ''.join(l[:-len(par)])
+            endline = "<i> </i>"
+
+            # If there are newlines followed by endlines, switch
+            str_merged_labels=str_merged_labels.replace(newline+endline, endline+newline)
+
+            # Remove whatever comes after the last endline position
+            new_end_pos = [m.start() for m in re.finditer(endline, str_merged_labels)][-1] + len(endline)-1
+            if len(str_merged_labels) > new_end_pos+1:
+                str_merged_labels = str_merged_labels[:new_end_pos+1]
+
+            # Replace multiple endlines with one
+            while endline*2 in str_merged_labels:
+                str_merged_labels=str_merged_labels.replace(endline*2,endline)
+
+            # # If node string ends with newlines, remove them
+            # par = " " + newline + " " + newline
+            # l = list(str_merged_labels)
+            # if l[-len(par):] == list(par):
+            #     str_merged_labels = ''.join(l[:-len(par)])
 
             # Add node size
             if node_sizes is not None:
-                node_size = node_sizes[node_id]
+                try:
+                    node_size = node_sizes[node_id]
+                except:
+                    node_size = 0
                 str_merged_labels = str_merged_labels + " " + newline + " " + newline
                 str_merged_labels = str_merged_labels + "<font point-size='26'>" + str(int(node_size)) + " cell"
-                if int(node_size) > 1:
+                if int(node_size) > 1 or int(node_size)==0:
                     str_merged_labels = str_merged_labels + "s"
                 str_merged_labels = str_merged_labels + "</font>"
 
@@ -273,8 +477,8 @@ def plot_heatmap(gene_cn_df, output_path=None):
     annot = annot.astype(str)
 
     figure_width = gene_cn_df.shape[0] / 2 + 1.5
-    plt.figure(figsize=(8, figure_width))
-    cmap = sns.color_palette("RdBu_r", 5)
+    plt.figure(figsize=(8, figure_width), dpi=300)
+    cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
     heatmap = sns.heatmap(
         gene_cn_df,
         annot=annot,
@@ -300,11 +504,10 @@ def plot_heatmap(gene_cn_df, output_path=None):
     # ax = heatmap.ax_heatmap
     if is_imputed is not None:
         for i in range(is_imputed.shape[0]):
-            if is_imputed[i,0]:
-                for j in range(is_imputed.shape[1]):
-                    # heatmap.add_patch(Rectangle((j, is_imputed.shape[0]-1-i), closed=True, fill=False, edgecolor='gray', lw=3))
-                    box = np.array([[0, is_imputed.shape[0]-1-i], [is_imputed.shape[1], is_imputed.shape[0]-1-i], [is_imputed.shape[1], is_imputed.shape[0]-1-i+1], [0, is_imputed.shape[0]-1-i+1]])
-                    heatmap.add_patch(Polygon(box, closed=True, fill=False, edgecolor='gray', lw=1.5, ls='--', clip_on=False))
+            if is_imputed.iloc[i]:
+                # heatmap.add_patch(Rectangle((j, is_imputed.shape[0]-1-i), closed=True, fill=False, edgecolor='gray', lw=3))
+                box = np.array([[0, i], [gene_cn_df.shape[1], i], [gene_cn_df.shape[1], i+1], [0, i+1]])
+                heatmap.add_patch(Polygon(box, closed=True, fill=False, edgecolor='gray', lw=1.5, ls='--', clip_on=False))
 
     if output_path is not None:
         plt.savefig(output_path, bbox_inches='tight')
@@ -351,7 +554,7 @@ def plot_profile(cnv_arr, chr_stops, subclone_ids=None, offset_sizes=0.1, ymax=5
         offsets = [offset*c for c in range(n_subclones)]
         offsets = offsets - np.mean(offsets)
 
-    fig = plt.figure(figsize=figsize)
+    fig = plt.figure(figsize=figsize, dpi=300)
 
     for c in range(n_subclones):
         plt.scatter(range(n_bins), cnv_arr[c].astype(int) + offsets[c], s=s, label='subclone {}'.format(subclone_ids[c]),
@@ -394,7 +597,7 @@ def plot_profile(cnv_arr, chr_stops, subclone_ids=None, offset_sizes=0.1, ymax=5
     else:
         plt.show()
 
-def plot_cluster_cnvs(cnvs_arr, chr_stops, subclone_ids=None, offset_sizes=0., s=1, ncol=None, output_path=None):
+def plot_cluster_cnvs(cnvs_arr, chr_stops, subclone_ids=None, offset_sizes=0., s=1, ymax=None, ncol=None, output_path=None):
     if len(cnvs_arr.shape) == 1:
         cnvs_arr = cnvs_arr.reshape(1, -1)
 
@@ -407,7 +610,8 @@ def plot_cluster_cnvs(cnvs_arr, chr_stops, subclone_ids=None, offset_sizes=0., s
     else:
         subclone_ids = np.arange(n_subclones).astype(str).tolist()
 
-    ymax = np.nanmax(cnvs_arr) + 1
+    if ymax is None:
+        ymax = np.nanmax(cnvs_arr) + 1
 
     # Customize minor tick labels
     chr_mean_pos = []

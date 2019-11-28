@@ -73,7 +73,7 @@ class SecondaryAnalysis:
         bin_chr_indicator = []
         for idx, chr in enumerate(ordered_chromosomes):
             bin_chr_indicator.append([chr]*chr_lengths[idx])
-        bin_chr_indicator = np.array([item for sublist in chr_indicator for item in sublist])
+        bin_chr_indicator = [item for sublist in bin_chr_indicator for item in sublist]
 
         bin_size = h5f["constants"]["bin_size"][()]
         normalized_counts = merge_chromosomes(h5f, sort=True)
@@ -106,9 +106,10 @@ class SecondaryAnalysis:
         )
 
         np.savetxt(
-            os.path.join(output_path, self.sample_name) + "__bin_chr_indicator.txt", sep="\t",
+            os.path.join(output_path, self.sample_name) + "__bin_chr_indicator.txt",
             bin_chr_indicator,
             delimiter=",",
+            fmt="%s"
         )
 
         print("Output written to: " + output_path)
@@ -126,7 +127,11 @@ class SecondaryAnalysis:
         n_cells = h5f["cell_barcodes"].value.shape[0]
         all_chromosomes = list(h5f["normalized_counts"].keys())
 
-        normalized_counts = merge_chromosomes(h5f)
+        number_chromosomes = sorted([int(x) for x in sorted(all_chromosomes)[:-2]])
+        ordered_chromosomes = [str(x) for x in number_chromosomes] + sorted(all_chromosomes)[-2:]
+        all_chromosomes = ordered_chromosomes
+
+        normalized_counts = merge_chromosomes(h5f, sort=True)
 
         bin_size = h5f["constants"]["bin_size"][()]
         n_bins = normalized_counts.shape[1]
@@ -206,7 +211,7 @@ class SecondaryAnalysis:
         n_cells = normalised_regions.shape[0]
 
         print(f"n_cells: {str(n_cells)}")
-        n_neighbours = int(n_cells / 10)
+        n_neighbours = max(int(n_cells / 10), 2) # avoid errors
         print(f"n_neighbours to be used: {str(n_neighbours)}")
         communities, graph, Q = phenograph.cluster(
             data=normalised_regions, k=n_neighbours, n_jobs=n_jobs, jaccard=True

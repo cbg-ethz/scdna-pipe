@@ -1,9 +1,5 @@
-
-# the default case for cluster_fraction variable
-try:
-    cf = config["inference"]["full_trees"]["cluster_fraction"]
-except KeyError:
-    cf = 1.0
+alpha = config["inference"]["cluster_trees"]["alpha"]
+cf = config["inference"]["full_trees"]["cluster_fraction"]
 
 rule clustering:
     input:
@@ -32,7 +28,6 @@ rule create_averaged_region_matrix:
     run:
         print("loading the segmented counts...")
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
-        print("normalising the regions...")
 
         phenograph_assignments = pd.read_csv(input.clusters_phenograph_assignment, sep='\t')
         communities = phenograph_assignments.cluster.values
@@ -40,20 +35,12 @@ rule create_averaged_region_matrix:
         community_dict = dict((Counter(communities)))
         community_ids = sorted(list(community_dict))
 
-        cluster_sizes = [v for (k,v) in sorted(community_dict.items())]
-        print(f"cluster sizes: {cluster_sizes}")
+        # Compute average counts of each cluster
+        avg_segmented_counts = np.empty(segmented_counts.shape)
+        for id in community_ids:
+            avg_segmented_counts[np.where(communities==id)[0]] = np.mean(segmented_counts[np.where(communities==id)[0], :], axis=0)
 
-        cells_by_cluster = []
-        for cluster in community_ids:
-            cells_by_cluster.append(segmented_counts[communities == cluster])
-
-        avg_clusters = [m.mean(0) for m in cells_by_cluster]
-        avg_clusters_df = pd.DataFrame(avg_clusters)
-        print(f"shape of average clusters: {avg_clusters_df.shape}")
-
-        replicated_df = pd.DataFrame(np.repeat(avg_clusters_df.values,cluster_sizes,axis=0))
-
-        np.savetxt(output.avg_counts, replicated_df.values, delimiter=",")
+        np.savetxt(output.avg_counts, avg_segmented_counts, delimiter=",")
 
 rule learn_empty_tree:
     params:
@@ -80,6 +67,10 @@ rule learn_empty_tree:
     run:
         input_shape = np.loadtxt(input.segmented_counts_shape)
         (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
+
+        # cluster_sizes = np.loadtxt(input.cluster_sizes, delimiter=',')
+        # cluster_sizes = cluster_sizes.reshape(-1, 1)
+        # n_cells = cluster_sizes.shape[0]
 
         move_probs_str = ",".join(str(p) for p in params.move_probs)
 
@@ -137,6 +128,10 @@ rule learn_cluster_trees:
         input_shape = np.loadtxt(input.segmented_counts_shape)
         (n_cells, n_regions) = [int(input_shape[i]) for i in range(2)]
 
+        # cluster_sizes = np.loadtxt(input.cluster_sizes, delimiter=',')
+        # cluster_sizes = cluster_sizes.reshape(-1, 1)
+        # n_cells = cluster_sizes.shape[0]
+
         move_probs_str = ",".join(str(p) for p in params.move_probs)
 
         with open(input.empty_tree) as file:
@@ -148,7 +143,7 @@ rule learn_cluster_trees:
             cmd_output = subprocess.run([params.binary, f"--d_matrix_file={input.avg_counts}", f"--n_regions={n_regions}",\
                 f"--n_cells={n_cells}", f"--ploidy={params.ploidy}", f"--verbosity={params.verbosity}", f"--postfix={params.posfix}",\
                 f"--copy_number_limit={params.copy_number_limit}", f"--n_iters={params.n_iters}", f"--n_nodes={params.n_nodes}",\
-                f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}",
+                f"--move_probs={move_probs_str}", f"--seed={wildcards.tree_rep}", f"--region_sizes_file={input.segmented_region_sizes}", f"--nu={nu}",\
                 f"--alpha={params.alpha}"])
         except subprocess.SubprocessError as e:
             print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
@@ -299,15 +294,26 @@ rule pick_best_tree:
 
 rule cell_assignment:
     input:
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv"
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
+        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
+        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv"
     output:
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
-        tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv"
+        tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
+        clustered_cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_cluster_tree_inferred_cnvs.csv",
+        clustered_normalised_regions = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_regions.csv",
+        clustered_normalised_bins = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_bins.csv",
+        clustered_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_labels.csv"
     benchmark:
         "benchmark/cell_assignments.tsv"
     run:
         inferred_cnvs = np.loadtxt(input.cluster_tree_inferred_cnvs, delimiter=',') # cell-wise profiles
+        normalised_bins = np.loadtxt(input.normalised_bins, delimiter=',')
+        normalised_regions = np.loadtxt(input.normalised_regions, delimiter=',')
+
         unique_cnvs, tree_cluster_sizes = np.unique(inferred_cnvs, axis=0, return_counts=True) # clone-wise profiles
+        if len(unique_cnvs.shape) == 1: # if only one cluster
+            unique_cnvs = unique_cnvs.reshape(1, -1)
 
         # Sort clones by distance to diploid profile
         dist_to_diploid = []
@@ -317,6 +323,17 @@ rule cell_assignment:
         order = np.argsort(dist_to_diploid)
         unique_cnvs = unique_cnvs[order]
         tree_cluster_sizes = tree_cluster_sizes[order]
+
+        for c_id in range(unique_cnvs.shape[0]):
+            cells = np.where(np.all(inferred_cnvs==unique_cnvs[c_id], axis=1))[0]
+            labels[cells] = c_id
+
+        # Sort cells by sorted clone index
+        cell_order = np.argsort(labels)
+        clustered_labels = labels[cell_order]
+        inferred_cnvs = inferred_cnvs[cell_order]
+        normalised_bins = normalised_bins[cell_order]
+        normalised_regions = normalised_regions[cell_order]
 
         print("saving the unique cnv profiles...")
         np.savetxt(
@@ -329,6 +346,34 @@ rule cell_assignment:
         np.savetxt(
             output.tree_cluster_sizes,
             tree_cluster_sizes,
+            delimiter=",",
+            fmt='%d'
+        )
+        print("saving the sorted cnv profiles...")
+        np.savetxt(
+            output.clustered_cluster_tree_inferred_cnvs,
+            clustered_cluster_tree_inferred_cnvs,
+            delimiter=",",
+            fmt='%d'
+        )
+        print("saving the sorted normalised bins...")
+        np.savetxt(
+            output.clustered_normalised_bins,
+            clustered_normalised_bins,
+            delimiter=",",
+            fmt='%d'
+        )
+        print("saving the sorted normalised regions...")
+        np.savetxt(
+            output.clustered_normalised_regions,
+            clustered_normalised_regions,
+            delimiter=",",
+            fmt='%d'
+        )
+        print("saving the sorted cell labels...")
+        np.savetxt(
+            output.clustered_labels,
+            clustered_labels,
             delimiter=",",
             fmt='%d'
         )
