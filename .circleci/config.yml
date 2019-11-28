@@ -27,7 +27,6 @@ jobs:
           name: install miniconda
           command: |
             # download miniconda and install the dependencies
-
             echo $PWD
             cd /home/circleci
             echo 'export MINICONDA=$HOME/miniconda' >> ~/.bashrc
@@ -43,7 +42,6 @@ jobs:
             echo 'source activate testenv' >> ~/.bashrc
             source ~/.bashrc
             echo $PWD
-
       - run:
           name: check code style with black
           command: |
@@ -51,7 +49,6 @@ jobs:
             pip install black
             black --check /home/circleci/repo/pipeline
             black --check /home/circleci/repo/scripts
-
       - run:
           name: install python  requirements
           command: |
@@ -66,12 +63,3 @@ jobs:
             pip install pytest-ordering
             echo $PWD
   
-      - run:
-          name: run tests
-          command: |
-            echo $PWD
-            source ~/.bashrc
-            cd /home/circleci/repo/pipeline/test
-            pytest ./
-            echo $PWD
-
