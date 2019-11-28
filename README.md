@@ -8,6 +8,7 @@
 ## About
 Reproducible Python pipeline for genomic data analysis. Performs single-cell copy number variation calling by learning the underlying tumour evolution history by state-of-the-art phylogenetic tree reconstruction method: SCICoNE. The pipeline is built using Python, Conda environment management system and the Snakemake workflow management system. The pipeline starts from the raw sequencing files and a settings file for the parameter configurations. After the analysis, it produces a report and multiple figures to inform the treatment decision of the cancer patient.
 
+The pipeline makes use of `scgenpy`, a package that exposes functions for preprocessing, postprocessing and plotting data, allowing you to interact with data outside the pipeline context.
 
 ## Installing
 1. Clone the repository
@@ -20,7 +21,7 @@ Reproducible Python pipeline for genomic data analysis. Performs single-cell cop
 1. Prepare the configuration file according to your analysis
 2. Run `snakemake` with:
   ```bash
-  snakemake --configfile your_config_file 
+  snakemake --configfile your_config_file
   ```
 3. (Optional) Refer to https://snakemake.readthedocs.io to customise your `snakemake` for your environment
 
