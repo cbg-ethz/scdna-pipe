@@ -324,6 +324,7 @@ rule cell_assignment:
         unique_cnvs = unique_cnvs[order]
         tree_cluster_sizes = tree_cluster_sizes[order]
 
+        labels = np.empty(inferred_cnvs.shape[0])
         for c_id in range(unique_cnvs.shape[0]):
             cells = np.where(np.all(inferred_cnvs==unique_cnvs[c_id], axis=1))[0]
             labels[cells] = c_id
@@ -352,28 +353,28 @@ rule cell_assignment:
         print("saving the sorted cnv profiles...")
         np.savetxt(
             output.clustered_cluster_tree_inferred_cnvs,
-            clustered_cluster_tree_inferred_cnvs,
+            inferred_cnvs,
             delimiter=",",
             fmt='%d'
         )
         print("saving the sorted normalised bins...")
         np.savetxt(
             output.clustered_normalised_bins,
-            clustered_normalised_bins,
+            normalised_bins,
             delimiter=",",
             fmt='%d'
         )
         print("saving the sorted normalised regions...")
         np.savetxt(
             output.clustered_normalised_regions,
-            clustered_normalised_regions,
+            normalised_regions,
             delimiter=",",
             fmt='%d'
         )
         print("saving the sorted cell labels...")
         np.savetxt(
             output.clustered_labels,
-            clustered_labels,
+            labels,
             delimiter=",",
             fmt='%d'
         )

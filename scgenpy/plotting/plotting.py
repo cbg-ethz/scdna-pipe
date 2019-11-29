@@ -268,15 +268,8 @@ def convert_event_region_to_gene(
     return gene_event_str
 
 
-def convert_node_regions_to_genes(
-    node_str,
-    bin_gene_region_df,
-    priority_only=False,
-    genes_to_highlight=None,
-    highlight_color="red",
-    max_genes_per_line=10,
-):
-    """
+def convert_node_regions_to_genes(node_str, bin_gene_region_df, priority_only=False, genes_to_highlight=None, highlight_color='red', max_genes_per_line=10):
+        """
             Returns a string indicating gene events and total number of
             amplifications and deletions in node
             Examples:
@@ -290,25 +283,47 @@ def convert_node_regions_to_genes(
                 genes that should be displayed in a different color
             :return: str
         """
-    region_event_strs = node_str.split(" ")
-    num_events = len(region_event_strs)
+        region_event_strs = node_str.split(' ')
+        num_events = len(region_event_strs)
 
-    num_amplifications = 0
+        num_amplifications = 0
 
-    str_dict = dict()
-    possible_events = ["+4", "+3", "+2", "+1", "-1", "-2", "-3", "+4"]
-    for event in possible_events:
-        str_dict[event] = []
+        str_dict = dict()
+        possible_events = ['+4', '+3', '+2', '+1', '-1', '-2', '-3', '+4']
+        for event in possible_events:
+            str_dict[event] = []
 
-    for region_event_str in region_event_strs:
-        # Get event (-2, -1, +1, +2, etc)
-        event_str = region_event_str[:2]
-        region_str = region_event_str[3:]
-        if ":" in region_str:  # multiple regions: "-1R656:658"
-            aux = [int(region) for region in region_str.split(":")]
-            region_list = np.arange(aux[0], aux[1] + 1)
-        else:
-            region_list = [int(region_str)]
+        for region_event_str in region_event_strs:
+            # Get event (-2, -1, +1, +2, etc)
+            event_str = region_event_str[:2]
+            region_str = region_event_str[3:]
+            if ":" in region_str: # multiple regions: "-1R656:658"
+                aux = [int(region) for region in region_str.split(":")]
+                region_list = np.arange(aux[0], aux[1]+1)
+            else:
+                region_list = [int(region_str)]
+
+            gene_list = []
+            for region in region_list:
+                genes_in_region = get_genes_in_region(region, bin_gene_region_df, priority_only=priority_only)
+                gene_list.append(genes_in_region)
+
+            gene_list = [item for sublist in gene_list for item in sublist]
+
+            str_dict[event_str].append(gene_list)
+
+            if region_event_str[0]=='+':
+                num_amplifications += 1
+
+        for key in str_dict:
+            str_dict[key] = [item for sublist in str_dict[key] for item in sublist]
+
+        node_str = ''
+        newline = '<br/>'
+
+        num_deletions = num_events - num_amplifications
+        num_events, num_amplifications, num_deletions
+        num_events_str = "{}+, {}-".format(num_amplifications, num_deletions)
 
         node_str = "<i> </i><font point-size='30'>" + "(" + num_events_str + ")" + "</font><i> </i>" + newline + " " + newline
 
@@ -327,90 +342,27 @@ def convert_node_regions_to_genes(
                 if i < len(str_dict.keys()):
                     node_str = node_str + " " + newline + " " + newline
 
-        str_dict[event_str].append(gene_list)
+        # If newline followed by ']', replace with newline after ']'
+        node_str = node_str.replace(newline+"]", "]"+newline)
 
-        if region_event_str[0] == "+":
-            num_amplifications += 1
+        # If newline followed by ',', replace with newline after ','
+        node_str = node_str.replace(newline+",", ","+newline)
 
-    for key in str_dict:
-        str_dict[key] = [item for sublist in str_dict[key] for item in sublist]
+        # If newline followed by newline, remove one
+        for m in re.finditer(newline, node_str):
+            index = m.start()
+            if node_str[index+len(newline):index+2*len(newline)] == newline:
+                node_str = "".join((node_str[:index+len(newline)], "", node_str[index+2*len(newline):]))
 
-    node_str = ""
-    newline = "<br/>"
+        # highlight genes
+        if genes_to_highlight is not None:
+            for gene in genes_to_highlight:
+                node_str = node_str.replace(gene, "<font color=" + "\'" + highlight_color + "\'" + ">" + gene + "</font>")
 
-    num_deletions = num_events - num_amplifications
-    num_events, num_amplifications, num_deletions
-    num_events_str = "{}+, {}-".format(num_amplifications, num_deletions)
+        if node_str == "":
+            node_str = num_events_str
 
-    node_str = (
-        "<font point-size='30'>"
-        + "("
-        + num_events_str
-        + ")"
-        + "</font>"
-        + newline
-        + " "
-        + newline
-    )
-
-    i = 0
-    for key in str_dict:
-        i += 1
-        if len(str_dict[key]) != 0:
-            # Show only one occurence of each gene
-            str_dict[key] = np.unique(np.array(str_dict[key])).tolist()
-            color = "blue"
-            if key[0] == "+":
-                color = "red"
-            node_str = (
-                node_str
-                + "<font color='{}' point-size='26'><b>".format(color)
-                + key
-                + "</b></font>"
-            )
-            node_str = (
-                node_str
-                + "["
-                + ",".join(
-                    f"{x}" + newline if (i + 1) % max_genes_per_line == 0 else str(x)
-                    for i, x in enumerate(str_dict[key])
-                )
-                + "]"
-            )
-            if i < len(str_dict.keys()):
-                node_str = node_str + " " + newline + " " + newline
-
-    # If newline followed by ']', replace with newline after ']'
-    node_str = node_str.replace(newline + "]", "]" + newline)
-
-    # If newline followed by ',', replace with newline after ','
-    node_str = node_str.replace(newline + ",", "," + newline)
-
-    # If newline followed by newline, remove one
-    for m in re.finditer(newline, node_str):
-        index = m.start()
-        if node_str[index + len(newline) : index + 2 * len(newline)] == newline:
-            node_str = "".join(
-                (
-                    node_str[: index + len(newline)],
-                    "",
-                    node_str[index + 2 * len(newline) :],
-                )
-            )
-
-    # highlight genes
-    if genes_to_highlight is not None:
-        for gene in genes_to_highlight:
-            node_str = node_str.replace(
-                gene,
-                "<font color=" + "'" + highlight_color + "'" + ">" + gene + "</font>",
-            )
-
-    if node_str == "":
-        node_str = num_events_str
-
-    return node_str
-
+        return node_str
 
 def tree_to_graphviz(
     tree_path,
