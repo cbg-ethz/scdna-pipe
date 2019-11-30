@@ -54,6 +54,7 @@ def get_bin_gene_region_df(bin_size, gene_coordinates, chr_stops, region_stops, 
 
     bin_gene_region_df["region"] = None
     bin_gene_region_df["gene"] = [list() for _ in range(bin_gene_region_df.shape[0])]
+    bin_gene_region_df["gene_id"] = [list() for _ in range(bin_gene_region_df.shape[0])]
     bin_gene_region_df["chr"] = [list() for _ in range(bin_gene_region_df.shape[0])]
     bin_gene_region_df["is_priority"] = [list() for _ in range(bin_gene_region_df.shape[0])]
     bin_gene_region_df["biotype"] = [list() for _ in range(bin_gene_region_df.shape[0])]
@@ -75,14 +76,16 @@ def get_bin_gene_region_df(bin_size, gene_coordinates, chr_stops, region_stops, 
             start_bin = start_bin + chr_start
             stop_bin = stop_bin + chr_start
 
-        gene_name = row["gene_name"]
+        gene = row["gene"]
+        gene_id = row["gene_id"]
         for bin in range(start_bin, stop_bin+1):
-            bin_gene_region_df.loc[bin, "gene"].append(gene_name)
+            bin_gene_region_df.loc[bin, "gene"].append(gene)
+            bin_gene_region_df.loc[bin, "gene_id"].append(gene_id)
             bin_gene_region_df.loc[bin, "chr"].append(chromosome)
             bin_gene_region_df.loc[bin, "biotype"].append(biotype)
 
         if priority_genes is not None:
-            if gene_name in priority_genes:
+            if gene in priority_genes:
                 for bin in range(start_bin, stop_bin + 1):
                     bin_gene_region_df.loc[bin, "is_priority"].append(True)
                 print(bin_gene_region_df.loc[start_bin : stop_bin + 1, "gene"])
@@ -96,6 +99,7 @@ def get_bin_gene_region_df(bin_size, gene_coordinates, chr_stops, region_stops, 
 
     # Turn columns of lists into columns of strings with comma-separated values
     bin_gene_region_df['gene'] = [','.join(map(str, l)) for l in bin_gene_region_df['gene']]
+    bin_gene_region_df['gene_id'] = [','.join(map(str, l)) for l in bin_gene_region_df['gene_id']]
     bin_gene_region_df['chr'] = [','.join(map(str, l)) for l in bin_gene_region_df['chr']]
     bin_gene_region_df['is_priority'] = [','.join(map(str, l)) for l in bin_gene_region_df['is_priority']]
     bin_gene_region_df['biotype'] = [','.join(map(str, l)) for l in bin_gene_region_df['biotype']]
