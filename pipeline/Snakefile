@@ -183,8 +183,7 @@ rule trick_fastqs:
         scripts_dir = scripts_dir,
         r1 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz",
         r2 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R2_001.fastq.gz",
-        mem = config["tricking_fastqs"]["mem"],
-        time = config["tricking_fastqs"]["time"]
+        insert_length = config["tricking_fastqs"]["insert_length"]
     input:
         rules.rename_fastqs.output
     output:
@@ -197,7 +196,7 @@ rule trick_fastqs:
         else \
         mkdir {params.fastqs_path}/merged/tricked;\
         fi ;\
-        python {params.scripts_dir}/cellranger_dna_trick.py -r1 {params.r1}  -r2 {params.r2} -o {params.fastqs_path}/merged/tricked/"
+        python {params.scripts_dir}/cellranger_dna_trick.py -r1 {params.r1}  -r2 {params.r2} -l {params.insert_length} -o {params.fastqs_path}/merged/tricked/"
 
 rule move_fastqs:
     params:
