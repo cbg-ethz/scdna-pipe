@@ -143,13 +143,14 @@ rule add_filtered_bins_back:
 rule merge_files:
     params:
         fastqs_path = fastqs_path,
-	scripts_dir = scripts_dir
+        n_lanes = config['n_lanes'],
+	    scripts_dir = scripts_dir
     input:
         raw_fastqs = expand('{sample}', sample=raw_fastqs)
     output:
         done = "merge_files_done.txt"
     shell:
-        "sh {params.scripts_dir}/merge_10x_gzip_files.sh {params.fastqs_path}; \
+        "sh {params.scripts_dir}/merge_10x_gzip_files.sh {params.fastqs_path} {params.n_lanes}; \
 	if [ -d {params.fastqs_path}/merged ] ; \
 	then \
 	    echo merged directory exists;\

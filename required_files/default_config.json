@@ -10,6 +10,7 @@
   "scripts_dir": "/cluster/work/bewi/members/pedrof/dna-pipeline/scripts/",
   "10x_artifacts": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts",
   "bin_size": 20000,
+  "n_lanes": 2,
   "tricking_fastqs": {
     "insert_length": 91,
     "mem": "1000",
