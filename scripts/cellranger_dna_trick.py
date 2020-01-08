@@ -31,7 +31,7 @@ r1_fastq = args.read1
 new_fastq_path = args.output + "/"
 
 # Read insert length: eg 58 for NextSeq, 91 for NovaSeq
-insert_length = int(args.l)
+insert_length = int(args.ilength)
 sequence_length = insert_length - 16
 
 with gzip.open(new_fastq_path + r1_fastq.split("/")[-1], "wb") as new_r1_fastq:
