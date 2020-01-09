@@ -30,7 +30,8 @@ sym_derived_path = os.path.join(to_upload_path, "derived")
 cellranger_path = os.path.join(analysis_path, "cellranger")
 scripts_dir = config['scripts_dir']+'/'
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
-fastq_lanes = ["L001","L002","L003","L004"]
+n_lanes = config['n_lanes']
+fastq_lanes = [f"L00{i}" for i in range(1, n_lanes+1)]
 sample_name = config['sample_name']
 cr_sample_name = sample_name[:-3] # e.g. MHELAVELA_S2 becomes MHELAVELA
 h5_path = config['secondary_analysis']['h5_path']
@@ -143,7 +144,7 @@ rule add_filtered_bins_back:
 rule merge_files:
     params:
         fastqs_path = fastqs_path,
-        n_lanes = config['n_lanes'],
+        n_lanes = n_lanes,
 	    scripts_dir = scripts_dir
     input:
         raw_fastqs = expand('{sample}', sample=raw_fastqs)
@@ -151,15 +152,15 @@ rule merge_files:
         done = "merge_files_done.txt"
     shell:
         "sh {params.scripts_dir}/merge_10x_gzip_files.sh {params.fastqs_path} {params.n_lanes}; \
-	if [ -d {params.fastqs_path}/merged ] ; \
-	then \
-	    echo merged directory exists;\
-	else \
-	    mkdir {params.fastqs_path}/merged;\
-	fi ; \
-        mv {params.fastqs_path}/MERGED_BSSE* {params.fastqs_path}/merged;\
-        chmod 775 {params.fastqs_path}/merged/*;\
-	touch merge_files_done.txt"
+    	if [ -d {params.fastqs_path}/merged ] ; \
+    	then \
+    	    echo merged directory exists;\
+    	else \
+    	    mkdir {params.fastqs_path}/merged;\
+    	fi ; \
+            mv {params.fastqs_path}/MERGED_BSSE* {params.fastqs_path}/merged;\
+            chmod 775 {params.fastqs_path}/merged/*;\
+    	touch merge_files_done.txt"
 
 
 rule rename_fastqs:
