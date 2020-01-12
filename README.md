@@ -1,6 +1,6 @@
 # Single-cell DNA Analysis <img src="figures/logo.png" align="right" width="160">
 
-[![CircleCI](https://circleci.com/gh/anilbey/dna-pipeline.svg?style=svg&circle-token=7d59442470c38d05f7d1661a97da237d482684ef)](https://circleci.com/gh/anilbey/dna-pipeline)
+[![CircleCI](https://circleci.com/gh/cbg-ethz/scdna-pipe.svg?style=svg&circle-token=60921152e3353ae7cd6d5e13d14158bcbde57973)](https://circleci.com/gh/cbg-ethz/scdna-pipe)
 [![License](http://img.shields.io/:license-Apache%202-green.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 [![Python Version](https://img.shields.io/badge/python-3-blue.svg)](https://img.shields.io/badge/python-3-blue.svg)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
