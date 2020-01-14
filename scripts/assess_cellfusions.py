@@ -179,22 +179,21 @@ if n_subclones > 1:
 # Plot clusters
 fig = plt.figure(figsize=(10, 4))
 for c in range(n_subclones):
-<<<<<<< HEAD
     plt.scatter(range(cnvs_arr.shape[1]), cnvs_arr[c] + offsets[c], label='{} ({} cells)'.format(c, tree_cluster_sizes[c]), s=1)
 plt.legend(bbox_to_anchor=[1, 1], markerscale=5.)
 # plt.savefig(f'/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/cell_fusions/figure.png')
-=======
-    plt.scatter(
-        range(cnvs_arr.shape[1]),
-        cnvs_arr[c] + offsets[c],
-        label="{} ({} cells)".format(c, tree_cluster_sizes[c]),
-        s=1,
-    )
+
+plt.scatter(
+    range(cnvs_arr.shape[1]),
+    cnvs_arr[c] + offsets[c],
+    label="{} ({} cells)".format(c, tree_cluster_sizes[c]),
+    s=1,
+)
 plt.legend(bbox_to_anchor=[1, 1], markerscale=5.0)
 plt.savefig(
     f"/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/cell_fusions/figure.png"
 )
->>>>>>> 6a2c4ab33564c95cbb7e0a0005bcef0b36d7f336
+
 plt.show()
 
 sample_name = 'MADIBUG-T'
