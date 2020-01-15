@@ -53,7 +53,7 @@ def add_genome_str(is_male, bin_gene_region_df):
 
 
 string = add_genome_str(True, bin_gene_region_df)
-print(string) # add this event vector to fusion nodes in txt file of tree
+print(string)  # add this event vector to fusion nodes in txt file of tree
 
 # Fusion nodes have ID > 1000
 assignments_path = f"/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/cell_fusions/_cell_node_ids.tsv"
@@ -179,8 +179,13 @@ if n_subclones > 1:
 # Plot clusters
 fig = plt.figure(figsize=(10, 4))
 for c in range(n_subclones):
-    plt.scatter(range(cnvs_arr.shape[1]), cnvs_arr[c] + offsets[c], label='{} ({} cells)'.format(c, tree_cluster_sizes[c]), s=1)
-plt.legend(bbox_to_anchor=[1, 1], markerscale=5.)
+    plt.scatter(
+        range(cnvs_arr.shape[1]),
+        cnvs_arr[c] + offsets[c],
+        label="{} ({} cells)".format(c, tree_cluster_sizes[c]),
+        s=1,
+    )
+plt.legend(bbox_to_anchor=[1, 1], markerscale=5.0)
 # plt.savefig(f'/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/cell_fusions/figure.png')
 
 plt.scatter(
@@ -196,43 +201,80 @@ plt.savefig(
 
 plt.show()
 
-sample_name = 'MADIBUG-T'
+sample_name = "MADIBUG-T"
 # Create heatmap
-sample_names = ['MYNESYB-T', 'MOTAMUH-T', 'MEKOBAB-T', 'MOVAZYQ-T', 'MOQAVIJ-T', 'MODUDOL-T', 'MOBUBOT-T', 'MISYPUP-T', 'MEXUXEH-T', 'MEVIXYV-T', 'MEHYLOB-T', 'MANOFYB-T', 'MAJOFIJ-T', 'MAHACEB-T', 'MADIBUG-T']
+sample_names = [
+    "MYNESYB-T",
+    "MOTAMUH-T",
+    "MEKOBAB-T",
+    "MOVAZYQ-T",
+    "MOQAVIJ-T",
+    "MODUDOL-T",
+    "MOBUBOT-T",
+    "MISYPUP-T",
+    "MEXUXEH-T",
+    "MEVIXYV-T",
+    "MEHYLOB-T",
+    "MANOFYB-T",
+    "MAJOFIJ-T",
+    "MAHACEB-T",
+    "MADIBUG-T",
+]
 
 for sample_name in sample_names:
     # Generate strings to be added to tree file
     bin_size = 20000
-    gene_coordinates_path = f'/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/emsembl_hg19_genes_simplified.tsv'
-    chr_stops_path = f'/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/genomic_coordinates/{sample_name}_scD_Ar1v1.9__chr_stops.tsv'
-    bin_mask_path = f'/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/filtering/{sample_name}_scD_Ar1v1.9__excluded_bins.csv'
-    region_stops_path = f'/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/breakpoint_detection/{sample_name}_scD_Ar1v1.9_segmented_regions.txt'
-    inferred_cnvs_path = f'/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/inferred_cnvs/{sample_name}_scD_Ar1v1.9__inferred_cnvs.csv'
-    inferred_cnvs = np.loadtxt(inferred_cnvs_path, delimiter=',')
+    gene_coordinates_path = f"/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/emsembl_hg19_genes_simplified.tsv"
+    chr_stops_path = f"/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/genomic_coordinates/{sample_name}_scD_Ar1v1.9__chr_stops.tsv"
+    bin_mask_path = f"/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/filtering/{sample_name}_scD_Ar1v1.9__excluded_bins.csv"
+    region_stops_path = f"/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/breakpoint_detection/{sample_name}_scD_Ar1v1.9_segmented_regions.txt"
+    inferred_cnvs_path = f"/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/inferred_cnvs/{sample_name}_scD_Ar1v1.9__inferred_cnvs.csv"
+    inferred_cnvs = np.loadtxt(inferred_cnvs_path, delimiter=",")
     region_stops = pd.read_csv(region_stops_path, header=None)
     region_stops.columns = ["bin"]
     chr_stops = pd.read_csv(chr_stops_path, sep="\t", index_col=1)
     bin_mask = pd.read_csv(bin_mask_path, header=None)
     all_genes = pd.read_csv(gene_coordinates_path, sep="\t", index_col=0)
 
-    bin_gene_region_df = dnapipe.process_cnvs.get_bin_gene_region_df(bin_size, all_genes, chr_stops, region_stops, bin_mask, cnvs=inferred_cnvs, priority_genes=None)
+    bin_gene_region_df = dnapipe.process_cnvs.get_bin_gene_region_df(
+        bin_size,
+        all_genes,
+        chr_stops,
+        region_stops,
+        bin_mask,
+        cnvs=inferred_cnvs,
+        priority_genes=None,
+    )
 
-    dnapipe.process_cnvs.get_region_with_gene('HLA-A', bin_gene_region_df)
+    dnapipe.process_cnvs.get_region_with_gene("HLA-A", bin_gene_region_df)
 
-    roche_gene_list = pd.read_csv(f'/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/general/roche_gene_list.txt', sep="\t", header=None)
+    roche_gene_list = pd.read_csv(
+        f"/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/general/roche_gene_list.txt",
+        sep="\t",
+        header=None,
+    )
     roche_gene_list.columns = ["gene"]
     roche_gene_list = roche_gene_list.gene.values.tolist()
 
     gene_cn_df = get_gene_cn_df(roche_gene_list, bin_gene_region_df, impute=True)
 
-    tree_cluster_sizes_path = f'/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/tree_learning/{sample_name}_scD_Ar1v1.9__tree_cluster_sizes.csv'
-    tree_cluster_sizes = pd.read_csv(tree_cluster_sizes_path, header=None)[0].values.tolist()
-    gene_cn_df.columns = [f'subclone {i} ({tree_cluster_sizes[i]} cells)' for i, name in enumerate(gene_cn_df.columns.astype(str).values.tolist()[:-1])] + ['is_imputed']
+    tree_cluster_sizes_path = f"/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/{sample_name}/singlecell_dna/analysis/tree_learning/{sample_name}_scD_Ar1v1.9__tree_cluster_sizes.csv"
+    tree_cluster_sizes = pd.read_csv(tree_cluster_sizes_path, header=None)[
+        0
+    ].values.tolist()
+    gene_cn_df.columns = [
+        f"subclone {i} ({tree_cluster_sizes[i]} cells)"
+        for i, name in enumerate(gene_cn_df.columns.astype(str).values.tolist()[:-1])
+    ] + ["is_imputed"]
 
-    gene_cn_df.to_csv(f'/cluster/work/bewi/members/pedrof/for_petra/{sample_name}_cnvs.csv')
+    gene_cn_df.to_csv(
+        f"/cluster/work/bewi/members/pedrof/for_petra/{sample_name}_cnvs.csv"
+    )
 
-dnapipe.process_cnvs.get_region_with_gene('HLA-C', bin_gene_region_df)
+dnapipe.process_cnvs.get_region_with_gene("HLA-C", bin_gene_region_df)
 bin_gene_region_df.iloc[:50]
+
+
 def get_surrounding_regions(gene, bin_gene_region_df):
     """
         Finds the regions to the left and to the right of a gene's bins
@@ -242,21 +284,29 @@ def get_surrounding_regions(gene, bin_gene_region_df):
         :return: Tuple containing (left_region, right_region)
     """
     bin_gene_region_df = bin_gene_region_df.copy(deep=True)
-    bin_gene_region_df['gene'] = bin_gene_region_df['gene'].astype(str).apply(lambda x: x.split(',')).apply(lambda x: set(x))
-    bins = bin_gene_region_df[bin_gene_region_df['gene'].apply(lambda x: gene in x)].index.values
+    bin_gene_region_df["gene"] = (
+        bin_gene_region_df["gene"]
+        .astype(str)
+        .apply(lambda x: x.split(","))
+        .apply(lambda x: set(x))
+    )
+    bins = bin_gene_region_df[
+        bin_gene_region_df["gene"].apply(lambda x: gene in x)
+    ].index.values
 
     left_bin = bins[0]
     right_bin = bins[-1]
 
-    left_regions = bin_gene_region_df['region'].values[:left_bin]
+    left_regions = bin_gene_region_df["region"].values[:left_bin]
     left_regions = np.array([x for x in left_regions if x is not None])
     left_region = left_regions[~np.isnan(left_regions)][-1]
 
-    right_regions = bin_gene_region_df['region'].values[right_bin+1:]
+    right_regions = bin_gene_region_df["region"].values[right_bin + 1 :]
     right_regions = np.array([x for x in right_regions if x is not None])
     right_region = right_regions[~np.isnan(right_regions)][0]
 
     return (int(left_region), int(right_region))
+
 
 def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
     """
@@ -266,12 +316,16 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
         :param impute: replace NaN values with median of left and rightmost regions
         :return: CN dataframe of genes by subclone
     """
-    n_subclones = np.count_nonzero(['cnv' in column for column in bin_gene_region_df.columns])
+    n_subclones = np.count_nonzero(
+        ["cnv" in column for column in bin_gene_region_df.columns]
+    )
     cluster_ids = range(n_subclones)
     gene_cn_df = pd.DataFrame(index=cluster_ids)
 
     df = bin_gene_region_df.copy(deep=True)
-    df['gene'] = df['gene'].astype(str).apply(lambda x: x.split(',')).apply(lambda x: set(x))
+    df["gene"] = (
+        df["gene"].astype(str).apply(lambda x: x.split(",")).apply(lambda x: set(x))
+    )
 
     is_imputed = np.empty(len(gene_list))
 
@@ -283,25 +337,31 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
         is_imputed[i] = False
 
         for c_id in cluster_ids:
-            bins = df[df['gene'].apply(lambda x: gene in x)].index.values
+            bins = df[df["gene"].apply(lambda x: gene in x)].index.values
             median_cn = np.nanmedian(
-                bin_gene_region_df['cnv_{}'.format(c_id)][bins].values
+                bin_gene_region_df["cnv_{}".format(c_id)][bins].values
             )
             # If NaN, impute with median value of regions surrounding it
             if np.isnan(median_cn) and impute:
                 if len(bins) > 0:
                     # Get regions surrounding gene
-                    left_region, right_region = get_surrounding_regions(gene, bin_gene_region_df)
+                    left_region, right_region = get_surrounding_regions(
+                        gene, bin_gene_region_df
+                    )
 
                     # get CNV values of region surronding gene
-                    left_cn = bin_gene_region_df['cnv_{}'.format(c_id)][bin_gene_region_df['region']==left_region].iloc[0]
-                    right_cn = bin_gene_region_df['cnv_{}'.format(c_id)][bin_gene_region_df['region']==right_region].iloc[0]
+                    left_cn = bin_gene_region_df["cnv_{}".format(c_id)][
+                        bin_gene_region_df["region"] == left_region
+                    ].iloc[0]
+                    right_cn = bin_gene_region_df["cnv_{}".format(c_id)][
+                        bin_gene_region_df["region"] == right_region
+                    ].iloc[0]
 
                     median_cn = np.nanmedian([left_cn, right_cn])
 
                     is_imputed[i] = True
                 else:
-                    print(f'Gene {gene} does not exist.')
+                    print(f"Gene {gene} does not exist.")
 
             if not np.isnan(median_cn):
                 if median_cn > 2:
@@ -316,12 +376,13 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
     print("Transposing the dataframe...")
     gene_cn_df = gene_cn_df.T
     if impute:
-        gene_cn_df['is_imputed'] = is_imputed.tolist()
+        gene_cn_df["is_imputed"] = is_imputed.tolist()
     # gene_cn_df = gene_cn_df.rename(columns = {'two':'new_name'})
     print("Sorting the genes...")
     gene_cn_df.sort_index(inplace=True)
 
     return gene_cn_df
+
 
 gene_cn_df = get_gene_cn_df(roche_gene_list, bin_gene_region_df, impute=False)
 
