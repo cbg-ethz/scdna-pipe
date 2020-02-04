@@ -7,37 +7,38 @@
 -   LeonhardMed (where the results are uploaded) - contact person: [vipin.sreedharan@nexus.ethz.ch](mailto:vipin.sreedharan@nexus.ethz.ch)
 -   This also gives access to [tu-pro.ch](http://tu-pro.ch)
 -   Here you need to be added to the group INFK-Raetsch-tp-beerenwinkellab
-	   	login: ssh -J <NETHZ_USERNAME>@jump.leomed.ethz.ch:22 <NETHZ_USERNAME>@login.leomed.ethz.ch
+```
+login: ssh -J <NETHZ_USERNAME>@jump.leomed.ethz.ch:22 <NETHZ_USERNAME>@login.leomed.ethz.ch
+```
 -   Invite to Slack TumorProfiler workspace
     
 
 ## Folder structure explained
-
 ```
 |-- /cluster
-    |-- work
-	    |-- bewi
-		    |-- ngs
-			    |-- projects
-				    |-- tumorProfiler
-					    |-- code
-						    |-- bulkRNA/ ← [git: cbg-ethz/single-cell-					
-						    |-- tumor-profiler] ← [git: cbg-ethz/single-cell-tumor-profiler]
-					    |-- data ← ref genome, drug list, etc
-					    |-- analysis					    
-						    |-- trial_melanoma or trial_ovarian
-							    |-- MADEGOD-T ← directory name: sample id + suffix
-								    |-- singlecell_rna
-								    |-- singlecell_dna
-								    |-- analysis  
-									|-- fastqs ← ???
-									|-- final_sftp
-									|-- metadata
-									|-- openbis ← fastq.gz files
-									|-- snake_analysis_files
-										|-- config.json
-									|-- snake_temp
-```  
+  |-- work
+    |-- bewi
+	  |-- ngs
+	    |-- projects
+		  |-- tumorProfiler
+		    |-- code
+			  |-- bulkRNA/ ← [git: cbg-ethz/single-cell-tumor-profiler]				
+			  |-- dna_pipeline ← [git: cbg-ethz/single-cell-tumor-profiler]
+			    |-- data ← ref genome, drug list, etc
+				  |-- analysis					    
+				    |-- trial_melanoma or trial_ovarian
+				      |-- MADEGOD-T ← directory name: sample id + suffix
+					    |-- singlecell_rna
+					    |-- singlecell_dna
+						  |-- analysis  
+						  |-- fastqs ← ??? empty
+						  |-- final_sftp
+						  |-- metadata
+						  |-- openbis ← fastq.gz files
+						  |-- snake_analysis_files
+						    |-- config.json
+						  |-- snake_temp ← ??? empty
+```   
 
 ## How to run the pipeline
 
