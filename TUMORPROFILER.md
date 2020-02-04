@@ -22,7 +22,7 @@ login: ssh -J <NETHZ_USERNAME>@jump.leomed.ethz.ch:22 <NETHZ_USERNAME>@login.leo
 	    |-- projects
 		  |-- tumorProfiler
 		    |-- code
-			  |-- bulkRNA/ ← [git: cbg-ethz/single-cell-tumor-profiler]				
+			  |-- bulkRNA ← [git: cbg-ethz/single-cell-tumor-profiler]				
 			  |-- dna_pipeline ← [git: cbg-ethz/single-cell-tumor-profiler]
 			    |-- data ← ref genome, drug list, etc
 				  |-- analysis					    
@@ -44,8 +44,8 @@ login: ssh -J <NETHZ_USERNAME>@jump.leomed.ethz.ch:22 <NETHZ_USERNAME>@login.leo
 
   
 
-1.  **Register the sc-dna stage on** [**LabKey**](https://tp-labkey.ethz.ch/labkey/Tumor%20Profiler%20-%20Melanoma/project-begin.view):  Overview → scDNA → fill in form
-<code> First Sequencing Run ID, SOP version, Run Number → Submit </code>
+1.  **Register the sc-dna stage on** [**LabKey**](https://tp-labkey.ethz.ch/labkey/Tumor%20Profiler%20-%20Melanoma/project-begin.view):  
+<code> Overview → scDNA → fill in form: First Sequencing Run ID, SOP version, Run Number → Submit </code>
  
 2.  **Setup the directory structure:**
 ```
