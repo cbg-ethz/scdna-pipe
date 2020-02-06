@@ -78,7 +78,7 @@ $ module load python/3.6.0 graphviz hdf5/1.8.12 gcc/6.2.0 eth_proxy
 $ module load /cluster/work/bewi/modules/cellranger-dna/1.1.0/cellranger-dna-1.1.0/cellranger-dna.modulefile
 
 $ cd path-to/singlecell_dna/snake_analysis_files/
-$ bsub -J MADEGOD -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/pipeline/Snakefile --configfile ./config.json -j 48 -p -k
+$ bsub -J OHAMUME -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-novaseq/pipeline/Snakefile --configfile ./config.json -j 48 -p -k
 ```
 
 6.  **Write the results to the to_upload folder**
