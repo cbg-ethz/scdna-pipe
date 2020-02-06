@@ -55,6 +55,9 @@ $ cp /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/exampleFolder <sampl
 $ mkdir /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/<sample_name>/singlecell_dna/to_upload
 ```
 ---> or run the script in [scripts/setup_directory_structure.sh](https://github.com/cbg-ethz/scdna-pipe/blob/master/scripts/setup_directory_structure.sh "setup_directory_structure.sh")
+```
+ ./setup_directory_structure.sh /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/ MADEGOD
+```
 
 3.  **Download the sequencing data from OpenBIS** to .../singlecell_dna/openbis
 ```   
