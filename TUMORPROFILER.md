@@ -69,7 +69,7 @@ $ `mget *.gz` to get the fastqs
 4.  **Create config.json** in .../singlecell_dna/snake_analysis_files/.
 ---> change sequencing_prefix to Sequencing Run ID from LabKey and sample name or run [script/create_dnapipeline_config.py](https://github.com/cbg-ethz/scdna-pipe/blob/master/scripts/create_dnapipeline_config.py "create_dnapipeline_config.py")
 ```
-$ python create_dnapipeline_config.py -s OKEKIDE-T_scD_250c-r1v1.0_r1v1.0-HK5HMDRXX -t ovarian --is_novaseq -o /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_ovarian/OKEKIDE-T/singlecell_dna/snake_analysis_files/config.json
+$ python create_dnapipeline_config.py -s OKEKIDE-T_scD_250c-r1v1.0_r1v1.0-AHK5HMDRXX -t ovarian --is_novaseq -o /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_ovarian/OKEKIDE-T/singlecell_dna/snake_analysis_files/config.json
 ```
 
 5.  **Run the pipeline**
