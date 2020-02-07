@@ -27,13 +27,18 @@ parser.add_argument(
     required=True,
     help="cancer type, e.g. melanoma")
 parser.add_argument(
+    "-n",
+    "--is_novaseq",
+    default=True,
+    help='True when the data was sequenced with NovaSeq (default). When False, we expect data sequenced with NextSeq.')
+parser.add_argument(
     "-v",
     "--pipeline_version",
     type=str,
     default='v1.12',
     help='Version of the DNA pipeline')
 parser.add_argument("-a", "--analysis_path", type=str,
-                    default='/cluster/work/bewi/ngs/projects/tumorProfiler/analysis', help='Path to the analisys directory.')
+                    default='/cluster/work/bewi/ngs/projects/tumorProfiler/analysis', help='Path to the analisys directory, where the results and intermediate files will be stored.')
 parser.add_argument("-p", "--project_path", type=str,
                     default='/cluster/work/bewi/ngs/projects/tumorProfiler/', help='Project path, where all the code and tools are set up.')
 parser.add_argument("-o", "--out", type=str,
@@ -59,11 +64,11 @@ if not (pattern_1 and pattern_2 and pattern_3):
 sample_name = pattern_1.group(1)
 sample_annotation = pattern_2.group(1)
 
-# Prepare the folder structure: analysis
 singlecell_dna_path = os.path.join(
     args.analysis_path, "trial_" + args.cancer_type, sample_name + "-T", "singlecell_dna/")
 analysis_path = os.path.join(singlecell_dna_path, "analysis")
-code_path = os.path.join(args.project_path, "code/dna-pipeline/sc-dna/bin")
+dna_pipeline_code_path = os.path.join(args.project_path, "code/dna-pipeline-novaseq")
+sc_dna_code_path = os.path.join(dna_pipeline_code_path, "sc-dna/bin")
 
 # Build the json config
 config = {}
@@ -79,10 +84,21 @@ config['ref_genome_path'] = os.path.join(
     args.project_path, "data/refdata-GRCh37-1.0.0_dna")
 config['fastqs_path'] = os.path.join(singlecell_dna_path, "openbis")
 config['analysis_path'] = os.path.join(analysis_path)
-config['scripts_dir'] = "/cluster/work/bewi/members/pedrof/dna-pipeline/scripts/"
-config['10x_artifacts'] = "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts"
+config['scripts_dir'] = os.path.join(dna_pipeline_code_path, "scripts/")
+config['10x_artifacts'] = os.path.join(dna_pipeline_code_path, "required_files/10x_artifacts")
 config['bin_size'] = 20000
-config['tricking_fastqs'] = {"mem": 1000, "time": 1438}
+
+# By default we expect data sequenced with NovaSeq.
+config['n_lanes'] = 2
+insert_length = 91
+if not args.is_novaseq:
+    config['n_lanes'] = 4
+    insert_length = 58
+config['tricking_fastqs'] = {
+    "insert_length": insert_length,
+    "mem": 1000,
+    "time": 1438}
+
 config['cellranger_dna'] = {
     "local_cores": 48,
     "local_mem": 192,
@@ -90,8 +106,8 @@ config['cellranger_dna'] = {
     "mem": 4096,
     "time": 1438}
 config['secondary_analysis'] = {"h5_path": os.path.join(analysis_path, "cellranger", sample_name, "outs/cnv_data.h5"),
-                                "bins_to_remove": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv",
-                                "genes_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/",
+                                "bins_to_remove": os.path.join(dna_pipeline_code_path, "required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv"),
+                                "genes_path": os.path.join(dna_pipeline_code_path, "required_files/genes_of_interest/"),
                                 "general_main_gene_list": "dna_long_gene_list.txt"}
 
 config['plotting'] = {"profiles": {
@@ -107,12 +123,12 @@ config['breakpoint_detection'] = {"window_size": 50,
                                   "verbosity": 1,
                                   "threshold": 2,
                                   "bp_limit": 200,
-                                  "bin": os.path.join(code_path, "breakpoint_detection")
+                                  "bin": os.path.join(sc_dna_code_path, "breakpoint_detection")
                                   }
 config['inference'] = {"ploidy": 2,
                        "verbosity": 1,
                        "copy_number_limit": 2,
-                       "bin": os.path.join(code_path, "inference"),
+                       "bin": os.path.join(sc_dna_code_path, "inference"),
                        "robustness_thr": 0.3,
                        "learn_nu":
                        {

@@ -17,7 +17,7 @@ echo "Usage: ./setup_directory_structure.sh base_path sample_id"
 
 if [ $# -ne 2 ]
 then
-  echo "Please provide 2 argumens."
+  echo "Please provide 2 arguments."
   exit 1
 fi
 
