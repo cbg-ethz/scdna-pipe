@@ -40,3 +40,8 @@ echo -n "Copy folder structure... "
 cp -R /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/exampleFolder/* ${sample_id_dir}/.
 CheckSuccess
 echo
+
+echo -n "Change permissions... "
+chmod -R 770 ${sample_id_dir}
+CheckSuccess
+echo
