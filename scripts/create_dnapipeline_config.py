@@ -2,7 +2,7 @@
 Script to generate the config.json file used for running the TuPro DNA pipeline.
 
 Usage:
-python create_dnapipeline_config.py -s MADEGOD-T_scD_250c-r1v1.0_r1v1.0-AHNY5VBGXC -o config_MADEGOD.json -t melanoma
+python create_dnapipeline_config.py -f BSSE_QGF_131049_HNY5VBGXC_1_MADEGOD_T_scD_250c_r1v1_0_SI-GA-E9_S2_L001_I1_001 -o config_MADEGOD.json -t melanoma
 """
 
 import argparse
@@ -15,11 +15,11 @@ import sys
 parser = argparse.ArgumentParser(
     description='Generate the json config for the setup of the dna pipeline')
 parser.add_argument(
-    "-s",
-    "--labkey_sample_name",
+    "-f",
+    "--openbis_fastq_filename",
     type=str,
     required=True,
-    help="Name of one scD sample as reported in LabKey, e.g., MADEGOD-T_scD_250c-r1v1.0_r1v1.0-AHNY5VBGXC")
+    help="Filename of one of the openBIS fastq files, with or without extension, e.g., BSSE_QGF_131049_HNY5VBGXC_1_MADEGOD_T_scD_250c_r1v1_0_SI-GA-E9_S2_L001_I1_001")
 parser.add_argument(
     "-t",
     "--cancer_type",
@@ -53,16 +53,17 @@ if not re.match(r'v\d+\.\d+', args.pipeline_version):
         '\" does not have the expected pattern.')
 
 # Parse the input
-pattern_1 = re.search('^(.+)-T_', args.labkey_sample_name)
-pattern_2 = re.search('-([^-]+)$', args.labkey_sample_name)
-pattern_3 = re.search('scD_250c-r1v1.0', args.labkey_sample_name)
+pattern_1 = re.search('_([^_]+)_T_', args.openbis_fastq_filename)
+pattern_2 = re.search('^BSSE_QGF_[0-9]+_(.+)_', args.openbis_fastq_filename)
+pattern_3 = re.search('_S([0-9]+)_L001_.._001$', args.openbis_fastq_filename)
 if not (pattern_1 and pattern_2 and pattern_3):
     sys.exit(
-        'Argument \"--labkey_sample_name ' +
-        args.labkey_sample_name +
+        'Argument \"--openbis_fastq_filename ' +
+        args.openbis_fastq_filename +
         '\" does not have the expected pattern.')
 sample_name = pattern_1.group(1)
 sample_annotation = pattern_2.group(1)
+sample_number = pattern_3.group(1)
 
 singlecell_dna_path = os.path.join(
     args.analysis_path, "trial_" + args.cancer_type, sample_name + "-T", "singlecell_dna/")
@@ -73,7 +74,7 @@ sc_dna_code_path = os.path.join(dna_pipeline_code_path, "sc-dna/bin")
 # Build the json config
 config = {}
 
-config['sample_name'] = sample_name + "_S2"
+config['sample_name'] = sample_name + "_S" + sample_number
 config['sequencing_prefix'] = sample_name + \
     "-T_scD_250c-r1v1.0_r1v1.0-" + sample_annotation
 config['analysis_prefix'] = sample_name + \
