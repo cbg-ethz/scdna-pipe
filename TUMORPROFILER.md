@@ -45,7 +45,7 @@ login: ssh -J <NETHZ_USERNAME>@jump.leomed.ethz.ch:22 <NETHZ_USERNAME>@login.leo
   
 
 1.  **Register the sc-dna stage on** [**LabKey**](https://tp-labkey.ethz.ch/labkey/Tumor%20Profiler%20-%20Melanoma/project-begin.view):  
-<code> Overview → scDNA → fill in form: First Sequencing Run ID, SOP version, Run Number → Submit </code>
+<code> Overview → scDNA → fill in form in "Register scDNA Analysis" section: First Sequencing Run ID, SOP version, Run Number → Submit </code>
  
 2.  **Setup the directory structure:**
 ```
