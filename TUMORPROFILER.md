@@ -42,8 +42,8 @@ login: ssh -J <NETHZ_USERNAME>@jump.leomed.ethz.ch:22 <NETHZ_USERNAME>@login.leo
 
 ## Rules run by the pipeline (in order)
 
-merge_files (merge_10x_gzip_files.sh)
-rename_fastqs
+merge_files (merge_10x_gzip_files.sh) . 
+rename_fastqs . 
 trick_fastqs (cellranger_dna_trick.py) 
 move_fastqs
 run_cellranger
