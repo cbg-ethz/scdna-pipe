@@ -42,45 +42,45 @@ login: ssh -J <NETHZ_USERNAME>@jump.leomed.ethz.ch:22 <NETHZ_USERNAME>@login.leo
 
 ## Rules run by the pipeline (in order)
 
-merge_files (merge_10x_gzip_files.sh) . 
-rename_fastqs . 
-trick_fastqs (cellranger_dna_trick.py) 
-move_fastqs
-run_cellranger
-create_raw_symlinks
-copy_cellranger_outputs
-extract_genomic_info
-remove_tenx_artifacts
-create_raw_symlinks
-create_raw_files_list
-create_raw_checksum
---- breakpoints detection
-detect_breakpoints (sc-dna/bin)
-segment_regions (sc-dna/bin)
-normalise_counts
----- tree learning
-clustering (secondary_analisys.apply_phenograph)
-create_averaged_region_matrix
-learn_empty_tree
-learn_cluster_trees
-pick_best_tree
-cluster_tree_robustness
-learn_nu_on_cluster_tree
----- plotting
-plot_cnv_matrix
-cell_assignment
-plot_cluster_cnvs
-plot_cnv_matrix
-full_tree_robustness
----- process cnvs
-create_bin_gene_region_df
-create_cn_cluster_h5
----- process cnvs
-visualise_trees
-plot_heatmaps
-create_derived_symlinks
-create_derived_checksum
-all
+merge_files (merge_10x_gzip_files.sh)<br/>
+rename_fastqs<br/>
+trick_fastqs (cellranger_dna_trick.py)<br/>
+move_fastqs<br/>
+run_cellranger<br/>
+create_raw_symlinks<br/>
+copy_cellranger_outputs<br/>
+extract_genomic_info<br/>
+remove_tenx_artifacts<br/>
+create_raw_symlinks<br/>
+create_raw_files_list<br/>
+create_raw_checksum<br/>
+--- breakpoints detection<br/>
+detect_breakpoints (sc-dna/bin)<br/>
+segment_regions (sc-dna/bin)<br/>
+normalise_counts<br/>
+---- tree learning<br/>
+clustering (secondary_analisys.apply_phenograph)<br/>
+create_averaged_region_matrix<br/>
+learn_empty_tree<br/>
+learn_cluster_trees<br/>
+pick_best_tree<br/>
+cluster_tree_robustness<br/>
+learn_nu_on_cluster_tree<br/>
+---- plotting<br/>
+plot_cnv_matrix<br/>
+cell_assignment<br/>
+plot_cluster_cnvs<br/>
+plot_cnv_matrix<br/>
+full_tree_robustness<br/>
+---- process cnvs<br/>
+create_bin_gene_region_df<br/>
+create_cn_cluster_h5<br/>
+---- process cnvs<br/>
+visualise_trees<br/>
+plot_heatmaps<br/>
+create_derived_symlinks<br/>
+create_derived_checksum<br/>
+all<br/>
 
 ## How to run the pipeline
 
