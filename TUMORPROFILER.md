@@ -40,9 +40,49 @@ login: ssh -J <NETHZ_USERNAME>@jump.leomed.ethz.ch:22 <NETHZ_USERNAME>@login.leo
 						  |-- snake_temp ← ??? empty
 ```   
 
-## How to run the pipeline
+## Rules run by the pipeline (in order)
 
-  
+merge_files (merge_10x_gzip_files.sh)
+rename_fastqs
+trick_fastqs (cellranger_dna_trick.py) 
+move_fastqs
+run_cellranger
+create_raw_symlinks
+copy_cellranger_outputs
+extract_genomic_info
+remove_tenx_artifacts
+create_raw_symlinks
+create_raw_files_list
+create_raw_checksum
+--- breakpoints detection
+detect_breakpoints (sc-dna/bin)
+segment_regions (sc-dna/bin)
+normalise_counts
+---- tree learning
+clustering (secondary_analisys.apply_phenograph)
+create_averaged_region_matrix
+learn_empty_tree
+learn_cluster_trees
+pick_best_tree
+cluster_tree_robustness
+learn_nu_on_cluster_tree
+---- plotting
+plot_cnv_matrix
+cell_assignment
+plot_cluster_cnvs
+plot_cnv_matrix
+full_tree_robustness
+---- process cnvs
+create_bin_gene_region_df
+create_cn_cluster_h5
+---- process cnvs
+visualise_trees
+plot_heatmaps
+create_derived_symlinks
+create_derived_checksum
+all
+
+## How to run the pipeline
 
 1.  **Register the sc-dna stage on** [**LabKey**](https://tp-labkey.ethz.ch/labkey/Tumor%20Profiler%20-%20Melanoma/project-begin.view):  
 <code> Overview → scDNA → fill in form in "Register scDNA Analysis" section: First Sequencing Run ID, SOP version, Run Number → Submit </code>
