@@ -137,5 +137,6 @@ $ get pwd ← target_path
 $ scp derived/ raw/ <NETHZ_USERNAME>@login.leomed.ethz.ch:target_path
 -- go to target_path on LeoMed
 $ touch done.txt (or `done_failed.txt` if failed w/ description)
+$ chmod 2770 -R target_path
 $ bash /cluster/work/tumorp/data-drop/check_data_format.sh target_path
 ```
