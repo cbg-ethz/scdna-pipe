@@ -129,7 +129,7 @@ $ bsub -J OHAMUME -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s 
    
 8.  **Upload the results to LeonhardMed**
 ```    
-$ ssh -J <NETHZ_USERNAME>@jump.leomed.ethz.ch:22 <NETHZ_USERNAME>@login.leomed.ethz.ch
+$ ssh leomed
 $ cd /cluster/work/tumorp/data-drop/scDNA/report
 $ mkdir <sample_name>
 $ get pwd ← target_path
