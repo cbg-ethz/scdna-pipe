@@ -1,6 +1,5 @@
 """
 Script to generate the config.json file used for running the TuPro DNA pipeline.
-
 Usage:
 python create_dnapipeline_config.py -f BSSE_QGF_131049_HNY5VBGXC_1_MADEGOD_T_scD_250c_r1v1_0_SI-GA-E9_S2_L001_I1_001 -o config_MADEGOD.json -t melanoma
 """
@@ -29,7 +28,7 @@ parser.add_argument(
 parser.add_argument(
     "-n",
     "--is_novaseq",
-    default=True,
+    action='store_true',
     help='True when the data was sequenced with NovaSeq (default). When False, we expect data sequenced with NextSeq.')
 parser.add_argument(
     "-v",
@@ -55,7 +54,7 @@ if not re.match(r'v\d+\.\d+', args.pipeline_version):
 # Parse the input
 pattern_1 = re.search('_([^_]+)_T_', args.openbis_fastq_filename)
 pattern_2 = re.search('^BSSE_QGF_[0-9]+_(.+)_', args.openbis_fastq_filename)
-pattern_3 = re.search('_S([0-9]+)_L001_.._001$', args.openbis_fastq_filename)
+pattern_3 = re.search('_S([0-9]+)_L00[0-9]_.._001$', args.openbis_fastq_filename)
 if not (pattern_1 and pattern_2 and pattern_3):
     sys.exit(
         'Argument \"--openbis_fastq_filename ' +
@@ -93,8 +92,8 @@ config['bin_size'] = 20000
 config['n_lanes'] = 2
 insert_length = 91
 if not args.is_novaseq:
-    config['n_lanes'] = 4
-    insert_length = 58
+  config['n_lanes'] = 4
+  insert_length = 58
 config['tricking_fastqs'] = {
     "insert_length": insert_length,
     "mem": 1000,
