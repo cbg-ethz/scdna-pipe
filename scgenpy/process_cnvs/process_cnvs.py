@@ -76,7 +76,7 @@ def get_bin_gene_region_df(bin_size, gene_coordinates, chr_stops, region_stops, 
             start_bin = start_bin + chr_start
             stop_bin = stop_bin + chr_start
 
-        gene = row["gene"]
+        gene = row["gene_name"]
         gene_id = row["gene_id"]
         for bin in range(start_bin, stop_bin+1):
             bin_gene_region_df.loc[bin, "gene"].append(gene)
