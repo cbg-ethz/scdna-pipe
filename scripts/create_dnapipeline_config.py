@@ -34,7 +34,7 @@ parser.add_argument(
     "-v",
     "--pipeline_version",
     type=str,
-    default='v1.12',
+    default='v1.13',
     help='Version of the DNA pipeline')
 parser.add_argument("-a", "--analysis_path", type=str,
                     default='/cluster/work/bewi/ngs/projects/tumorProfiler/analysis', help='Path to the analisys directory, where the results and intermediate files will be stored.')
@@ -115,7 +115,7 @@ config['plotting'] = {"profiles": {
     "s": 5
 },
     "trees": {
-    "highlight_color": "yellow",
+    "highlight_color": "chocolate",
     "max_genes_per_line": 6
 }
 }
