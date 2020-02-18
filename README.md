@@ -16,6 +16,7 @@ The pipeline makes use of `scgenpy`, a package that exposes functions for prepro
   ```bash
   pip install -e .
   ```
+3. Install SCICoNE.
 
 ## Running
 1. Prepare the configuration file according to your analysis

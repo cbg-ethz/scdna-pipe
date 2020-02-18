@@ -1,4 +1,4 @@
-# Get Started with Tumor Profiler 
+# Get Started with Tumor Profiler
 
 ## Access needed
 
@@ -11,7 +11,7 @@
 login: ssh -J <NETHZ_USERNAME>@jump.leomed.ethz.ch:22 <NETHZ_USERNAME>@login.leomed.ethz.ch
 ```
 -   Invite to Slack TumorProfiler workspace
-    
+
 
 ## Folder structure explained
 ```
@@ -86,7 +86,7 @@ all<br/>
 
 1.  **Register the sc-dna stage on** [**LabKey**](https://tp-labkey.ethz.ch/labkey/Tumor%20Profiler%20-%20Melanoma/project-begin.view):  
 <code> Overview → scDNA → fill in form in "Register scDNA Analysis" section: First Sequencing Run ID, SOP version, Run Number → Submit </code>
- 
+
 2.  **Setup the directory structure:**
 ```
 $ cd /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/
@@ -116,6 +116,8 @@ $ python create_dnapipeline_config.py -f BSSE_QGF_131049_HNY5VBGXC_1_MADEGOD_T_s
 ```    
 $ module load python/3.6.0 graphviz hdf5/1.8.12 gcc/6.2.0 eth_proxy
 $ module load /cluster/work/bewi/modules/cellranger-dna/1.1.0/cellranger-dna-1.1.0/cellranger-dna.modulefile
+$ cd /cluster/work/bewi/ngs/tumorProfiler/code/sc-dna/pyscicone
+$ pip install -e .
 
 $ cd path-to/singlecell_dna/snake_analysis_files/
 $ bsub -J OHAMUME -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline-novaseq/pipeline/Snakefile --configfile ./config.json -j 48 -p -k
@@ -126,7 +128,7 @@ $ bsub -J OHAMUME -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s 
 * check derived/summary.txt
 
 7.  **Send the results to the team (via email / drive)**
-   
+
 8.  **Upload the results to LeonhardMed**
 ```    
 $ ssh leomed
