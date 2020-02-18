@@ -9,7 +9,7 @@ rule plot_cnv_matrix:
         segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
-        inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv"
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
     output:
         inferred_cnvs_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_cnvs_bins.png",
         sorted_normalised_counts_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",
@@ -137,9 +137,9 @@ rule visualise_trees:
         cluster_tree_genes_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png"
     run:
         # Node sizes
-        cell_node_assignments = pd.read_csv(input.cell_node_assignments, sep='\t', index_col=0, header=None)
-        keys, values = [arr.tolist() for arr in np.unique(cell_node_assignments[1].values, return_counts=True)]
-        node_sizes = dict(zip(np.array(keys).astype(str).tolist(), values))
+        cell_node_assignments = np.loadtxt(input.cell_node_assignments, delimiter='\t')
+        keys, values = [arr.tolist() for arr in np.unique(cell_node_assignments[:,1], return_counts=True)]
+        node_sizes = dict(zip(np.array(keys).astype(int).astype(str).tolist(), values))
 
         # Tree with region labels
         regions_tree = tree_to_graphviz(input.cluster_tree, node_sizes=node_sizes)

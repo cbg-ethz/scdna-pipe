@@ -15,6 +15,7 @@ import gzip
 parser = argparse.ArgumentParser()
 parser.add_argument("-r1", "--read1", required=True, help="read 1 fastq")
 parser.add_argument("-r2", "--read2", required=True, help="read 2 fastq")
+parser.add_argument("-l", "--ilength", required=True, help="insert length")
 parser.add_argument("-o", "--output", required=True, help="output fastqs path")
 
 args = parser.parse_args()
@@ -29,6 +30,9 @@ r1_fastq = args.read1
 # new fastq path
 new_fastq_path = args.output + "/"
 
+# Read insert length: eg 58 for NextSeq, 91 for NovaSeq
+insert_length = int(args.ilength)
+sequence_length = insert_length - 16
 
 with gzip.open(new_fastq_path + r1_fastq.split("/")[-1], "wb") as new_r1_fastq:
 
@@ -45,9 +49,9 @@ with gzip.open(new_fastq_path + r1_fastq.split("/")[-1], "wb") as new_r1_fastq:
                 read1 = read1[0:16]
                 if i % 4 == 1:  # the sequence
                     read2_seq = Seq(read2)
-                    read1 += str(read2_seq.reverse_complement())[0:42]
+                    read1 += str(read2_seq.reverse_complement())[0:sequence_length]
                 if i % 4 == 3:
-                    read1 += read2[::-1][0:42]
+                    read1 += read2[::-1][0:sequence_length]
             new_r1_fastq.write(read1.encode())
             new_r1_fastq.write("\n".encode())
             i += 1
