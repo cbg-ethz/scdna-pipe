@@ -64,9 +64,6 @@ sample_name = pattern_1.group(1)
 sample_annotation = pattern_2.group(1)
 sample_number = pattern_3.group(1)
 
-print(sample_name)
-print(sample_annotation)
-
 singlecell_dna_path = os.path.join(
     args.analysis_path, "trial_" + args.cancer_type, sample_name + "-T", "singlecell_dna/")
 analysis_path = os.path.join(singlecell_dna_path, "analysis")
