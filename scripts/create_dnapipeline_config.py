@@ -52,8 +52,8 @@ if not re.match(r'v\d+\.\d+', args.pipeline_version):
         '\" does not have the expected pattern.')
 
 # Parse the input
-pattern_1 = re.search('_([^_]+)_T_', args.openbis_fastq_filename)
-pattern_2 = re.search('^BSSE_QGF_[0-9]+_(.+)_', args.openbis_fastq_filename)
+pattern_1 = re.search('_([^_]+)_T_scD', args.openbis_fastq_filename)
+pattern_2 = re.search('^BSSE_QGF_[0-9]+_([^_]+)_', args.openbis_fastq_filename)
 pattern_3 = re.search('_S([0-9]+)_L00[0-9]_.._001$', args.openbis_fastq_filename)
 if not (pattern_1 and pattern_2 and pattern_3):
     sys.exit(
@@ -63,6 +63,9 @@ if not (pattern_1 and pattern_2 and pattern_3):
 sample_name = pattern_1.group(1)
 sample_annotation = pattern_2.group(1)
 sample_number = pattern_3.group(1)
+
+print(sample_name)
+print(sample_annotation)
 
 singlecell_dna_path = os.path.join(
     args.analysis_path, "trial_" + args.cancer_type, sample_name + "-T", "singlecell_dna/")
