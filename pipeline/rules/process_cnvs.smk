@@ -26,10 +26,16 @@ rule create_bin_gene_region_df:
         general_main_gene_list = pd.read_csv(input.general_main_gene_list_path, sep="\t", header=None)
         general_main_gene_list.columns = ["gene"]
         general_main_gene_list = general_main_gene_list.gene.values.tolist()
-        disease_genes_list = pd.read_csv(input.disease_genes_path, sep="\t", header=None)
-        disease_genes_list.columns = ["gene"]
-        disease_genes_list = disease_genes_list.gene.values.tolist()
-        merged_lists = list(set(general_main_gene_list + disease_genes_list))
+
+        merged_lists = general_main_gene_list
+        try:
+            disease_genes_path = os.path.join(gene_lists_path, 'disease_specific', f"{config['disease']}_genes.txt")
+            disease_genes_list = pd.read_csv(input.disease_genes_path, sep="\t", header=None)
+            disease_genes_list.columns = ["gene"]
+            disease_genes_list = disease_genes_list.gene.values.tolist()
+            merged_lists = list(set(general_main_gene_list + disease_genes_list))
+        except KeyError:
+            pass
 
         df = get_bin_gene_region_df(params.bin_size, genes, chr_stops, region_stops, excluded_bins, cnvs=inferred_cnvs, priority_genes=merged_lists)
         df.to_csv(output.bin_gene_region_df)

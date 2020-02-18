@@ -42,7 +42,7 @@ class SecondaryAnalysis:
             if not os.path.exists(path):
                 os.makedirs(path)
 
-    def extract_genomic_info(self):
+    def extract_genomic_info(self, gender):
         """
         Outputs the chromosome stops and bin start stop positions
         :return:
@@ -72,7 +72,7 @@ class SecondaryAnalysis:
 
         bin_chr_indicator = []
         for idx, chr in enumerate(ordered_chromosomes):
-            bin_chr_indicator.append([chr]*chr_lengths[idx])
+            bin_chr_indicator.append([chr] * chr_lengths[idx])
         bin_chr_indicator = [item for sublist in bin_chr_indicator for item in sublist]
 
         bin_size = h5f["constants"]["bin_size"][()]
@@ -87,11 +87,19 @@ class SecondaryAnalysis:
 
         chr_stops_arr = np.array(chr_stop_positions)
 
-        df_chr_stops = pd.DataFrame(columns=["chr"])
+        df_chr_stops = pd.DataFrame(columns=["chr", "neutral_state"])
         for idx, val in enumerate(chr_stops_arr):
             if val != None:
-                # print((idx,val))
-                df_chr_stops.loc[idx] = val
+                if "X" in val:
+                    if gender == "male":
+                        df_chr_stops.loc[idx] = [val, 1]
+                elif "Y" in val:
+                    if gender == "female":
+                        df_chr_stops.loc[idx] = [val, 0]
+                    elif gender == "male":
+                        df_chr_stops.loc[idx] = [val, 1]
+                else:
+                    df_chr_stops.loc[idx] = [val, 2]
 
         output_path = os.path.join(self.output_path, "genomic_coordinates")
 
@@ -109,7 +117,7 @@ class SecondaryAnalysis:
             os.path.join(output_path, self.sample_name) + "__bin_chr_indicator.txt",
             bin_chr_indicator,
             delimiter=",",
-            fmt="%s"
+            fmt="%s",
         )
 
         print("Output written to: " + output_path)
@@ -128,7 +136,9 @@ class SecondaryAnalysis:
         all_chromosomes = list(h5f["normalized_counts"].keys())
 
         number_chromosomes = sorted([int(x) for x in sorted(all_chromosomes)[:-2]])
-        ordered_chromosomes = [str(x) for x in number_chromosomes] + sorted(all_chromosomes)[-2:]
+        ordered_chromosomes = [str(x) for x in number_chromosomes] + sorted(
+            all_chromosomes
+        )[-2:]
         all_chromosomes = ordered_chromosomes
 
         normalized_counts = merge_chromosomes(h5f, sort=True)
@@ -211,7 +221,7 @@ class SecondaryAnalysis:
         n_cells = normalised_regions.shape[0]
 
         print(f"n_cells: {str(n_cells)}")
-        n_neighbours = max(int(n_cells / 10), 2) # avoid errors
+        n_neighbours = max(int(n_cells / 10), 2)  # avoid errors
         print(f"n_neighbours to be used: {str(n_neighbours)}")
         communities, graph, Q = phenograph.cluster(
             data=normalised_regions, k=n_neighbours, n_jobs=n_jobs, jaccard=True

@@ -1,6 +1,8 @@
 from scgenpy import *
 from scgenpy.preprocessing.utils import *
 
+from scicone import SCICoNE, Tree
+
 import glob
 import os
 import h5py
@@ -30,8 +32,7 @@ sym_derived_path = os.path.join(to_upload_path, "derived")
 cellranger_path = os.path.join(analysis_path, "cellranger")
 scripts_dir = config['scripts_dir']+'/'
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
-n_lanes = config['n_lanes']
-fastq_lanes = [f"L00{i}" for i in range(1, n_lanes+1)]
+fastq_lanes = ["L001","L002","L003","L004"]
 sample_name = config['sample_name']
 cr_sample_name = sample_name[:-3] # e.g. MHELAVELA_S2 becomes MHELAVELA
 h5_path = config['secondary_analysis']['h5_path']
@@ -59,16 +60,13 @@ derived_file_names = [
             "segmented_counts.csv",
             "normalised_bins.csv",
             "normalised_regions.csv",
-            "clusters_phenograph_assignment.tsv",
             "clustering_score.txt",
-            "avg_counts.csv",
             "cluster_tree.txt",
-            "cluster_tree_inferred_cnvs.csv",
             "cluster_tree_sorted_normalised_counts_bins.png",
             "cluster_tree_sorted_cnvs_bins.png",
             "unique_cluster_tree_cnvs.csv",
             "inferred_cnvs.csv",
-            "tree_cluster_sizes.txt",
+            "cluster_tree_tree_node_sizes.csv",
             "cluster_tree_genes.png",
             "cluster_profile_files.txt",
             "cluster_profile_overlapping.png",
@@ -78,7 +76,7 @@ derived_file_names = [
             "Summary.txt"
         ]
 
-tree_outputs = ["cluster_tree", "full_tree"]
+tree_outputs = ["cluster_tree"]
 
 sa = SecondaryAnalysis(
     sample_name=analysis_prefix,
@@ -100,7 +98,7 @@ rule all:
         # checksums
         raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
         derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
-        robustness_results = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_name}_robustness.txt", tree_name=tree_outputs),
+        robustness_results = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}_robustness.txt", tree_name=tree_outputs),
         bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
         cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
     run:
@@ -119,6 +117,8 @@ rule remove_tenx_artifacts:
         sa.remove_tenx_genomics_artifacts(bins=params.bins)
 
 rule extract_genomic_info:
+    params:
+        gender = config['gender']
     input:
         os.path.join(cellranger_path, cr_sample_name) + "/outs/cnv_data.h5"
     output:
@@ -128,11 +128,11 @@ rule extract_genomic_info:
     benchmark:
         "benchmark/extract_genomic_info.tsv"
     run:
-        sa.extract_genomic_info()
+        sa.extract_genomic_info(params.gender)
 
 rule add_filtered_bins_back:
     input:
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv", # use cluster tree results
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv"
     output:
         inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
@@ -144,23 +144,22 @@ rule add_filtered_bins_back:
 rule merge_files:
     params:
         fastqs_path = fastqs_path,
-        n_lanes = n_lanes,
-	    scripts_dir = scripts_dir
+	scripts_dir = scripts_dir
     input:
         raw_fastqs = expand('{sample}', sample=raw_fastqs)
     output:
         done = "merge_files_done.txt"
     shell:
-        "sh {params.scripts_dir}/merge_10x_gzip_files.sh {params.fastqs_path} {params.n_lanes}; \
-    	if [ -d {params.fastqs_path}/merged ] ; \
-    	then \
-    	    echo merged directory exists;\
-    	else \
-    	    mkdir {params.fastqs_path}/merged;\
-    	fi ; \
-            mv {params.fastqs_path}/MERGED_BSSE* {params.fastqs_path}/merged;\
-            chmod 775 {params.fastqs_path}/merged/*;\
-    	touch merge_files_done.txt"
+        "sh {params.scripts_dir}/merge_10x_gzip_files.sh {params.fastqs_path}; \
+	if [ -d {params.fastqs_path}/merged ] ; \
+	then \
+	    echo merged directory exists;\
+	else \
+	    mkdir {params.fastqs_path}/merged;\
+	fi ; \
+        mv {params.fastqs_path}/MERGED_BSSE* {params.fastqs_path}/merged;\
+        chmod 775 {params.fastqs_path}/merged/*;\
+	touch merge_files_done.txt"
 
 
 rule rename_fastqs:
@@ -185,7 +184,8 @@ rule trick_fastqs:
         scripts_dir = scripts_dir,
         r1 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz",
         r2 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R2_001.fastq.gz",
-        insert_length = config["tricking_fastqs"]["insert_length"]
+        mem = config["tricking_fastqs"]["mem"],
+        time = config["tricking_fastqs"]["time"]
     input:
         rules.rename_fastqs.output
     output:
@@ -198,7 +198,7 @@ rule trick_fastqs:
         else \
         mkdir {params.fastqs_path}/merged/tricked;\
         fi ;\
-        python {params.scripts_dir}/cellranger_dna_trick.py -r1 {params.r1}  -r2 {params.r2} -l {params.insert_length} -o {params.fastqs_path}/merged/tricked/"
+        python {params.scripts_dir}/cellranger_dna_trick.py -r1 {params.r1}  -r2 {params.r2} -o {params.fastqs_path}/merged/tricked/"
 
 rule move_fastqs:
     params:
@@ -350,17 +350,14 @@ rule create_derived_symlinks:
         "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
-        clustering_score = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clustering_score.txt",
-        clusters_phenograph_assignment = os.path.join(analysis_path, "clustering", analysis_prefix) + "__clusters_phenograph_assignment.tsv",
-        avg_counts = os.path.join(analysis_path,\
-                "clustering", analysis_prefix) + "_avg_counts.csv",
+        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score.txt",
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cnvs.csv",
+        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv",
         cluster_tree_sorted_normalised_counts_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",
         cluster_tree_sorted_cnvs_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins.png",
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
         inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
-        tree_cluster_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_cluster_sizes.csv",
+        cluster_tree_tree_node_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_tree_node_sizes.csv",
         cluster_tree_genes_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
         overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
