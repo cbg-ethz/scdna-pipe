@@ -357,7 +357,7 @@ def convert_node_regions_to_genes(node_str, bin_gene_region_df, priority_only=Fa
         # highlight genes
         if genes_to_highlight is not None:
             for gene in genes_to_highlight:
-                node_str = node_str.replace(gene, "<font color=" + "\'" + highlight_color + "\'" + ">" + gene + "</font>")
+                node_str = node_str.replace(gene, "<b><font color=" + "\'" + highlight_color + "\'" + ">" + gene + "</font></b>")
 
         if node_str == "":
             node_str = num_events_str
