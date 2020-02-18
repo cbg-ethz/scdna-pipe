@@ -1,18 +1,19 @@
 {
-  "sample_name": "ODIDUKU_S2",
-  "sequencing_prefix": "ODIDUKU-T_scD_250c-r1v1.0_r1v1.0-AHTFMFBGXC",
-  "analysis_prefix": "ODIDUKU-T_scD_Ar1v1.12",
-  "disease": "ovarian",
+  "sample_name": "MADEGOD_S2",
+  "gender": "female",
+  "sequencing_prefix": "MADEGOD-T_scD_250c-r1v1.0_r1v1.0-AHNY5VBGXC",
+  "analysis_prefix": "MADEGOD-T_scD_Ar1v1.13",
+  "disease": "melanoma",
   "ref_genome_version": "GRCh37",
   "ref_genome_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/data/refdata-GRCh37-1.0.0_dna",
-  "fastqs_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_ovarian/ODIDUKU-T/singlecell_dna/openbis",
-  "analysis_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_ovarian/ODIDUKU-T/singlecell_dna/analysis",
+  "fastqs_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MADEGOD-T/singlecell_dna/openbis",
+  "analysis_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MADEGOD-T/singlecell_dna/analysis",
   "scripts_dir": "/cluster/work/bewi/members/pedrof/dna-pipeline/scripts/",
   "10x_artifacts": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts",
   "bin_size": 20000,
-  "n_lanes": 2,
+  "n_lanes": 4,
   "tricking_fastqs": {
-    "insert_length": 91,
+    "insert_length": 58,
     "mem": "1000",
     "time": "1438"
   },
@@ -24,7 +25,7 @@
     "time": "1438"
   },
   "secondary_analysis": {
-    "h5_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_ovarian/ODIDUKU-T/singlecell_dna/analysis/cellranger/ODIDUKU/outs/cnv_data.h5",
+    "h5_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MADEGOD-T/singlecell_dna/analysis/cellranger/MADEGOD/outs/cnv_data.h5",
     "bins_to_remove": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv",
     "genes_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/",
     "general_main_gene_list": "dna_long_gene_list.txt"
@@ -40,45 +41,27 @@
     }
   },
   "breakpoint_detection": {
-    "window_size": 50,
+    "window_size": 20,
     "verbosity": 1,
-    "threshold": 2,
-    "bp_limit": 200,
-    "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/breakpoint_detection"
+    "threshold": 3,
+    "bp_limit": 300,
+    "bin": "/cluster/work/bewi/members/pedrof/sc-dna/build/breakpoint_detection"
   },
   "inference": {
     "ploidy": 2,
     "verbosity": 1,
     "copy_number_limit": 2,
-    "bin": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/sc-dna/bin/inference",
-    "robustness_thr": 0.3,
-    "learn_nu":
-    {
-      "n_iters": 2000,
-      "n_nodes": 0,
-      "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1,0]
-    },
+    "bin": "/cluster/work/bewi/members/pedrof/sc-dna/build/sc-dna/bin/inference",
+    "robustness_thr": 0.5,
+    "c_penalise": 10,
+    "seed": 42,
     "cluster_trees":
     {
-      "n_iters": 500000,
-      "n_nodes": 0,
-      "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,1,0.01],
-      "n_reps": 10,
-      "alpha": 0.
-    },
-    "learn_nu_cluster_trees":
-    {
-      "n_iters": 20000,
-      "move_probs": [0,0,0,0,0,0,0,0,0,0,0,1,0]
-    },
-    "full_trees":
-    {
       "n_iters": 1,
+      "n_tries": 1,
       "n_nodes": 0,
-      "move_probs": [0,1,0,1,0,10,0,1,0,1,0.4,0,0.01],
-      "n_reps": 10,
-      "cluster_fraction": 1
-    },
-    "seed": 41
+      "move_probs":[0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.01],
+      "n_reps": 2
+    }
   }
 }
