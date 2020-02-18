@@ -75,7 +75,7 @@ config = {}
 
 config['sample_name'] = sample_name + "_S" + sample_number
 config['sequencing_prefix'] = sample_name + \
-    "-T_scD_250c-r1v1.0_r1v1.0-" + sample_annotation
+    "-T_scD_250c-r1v1.0_r1v1.0-A" + sample_annotation
 config['analysis_prefix'] = sample_name + \
     "-T" + "_scD_Ar1" + args.pipeline_version
 config['disease'] = args.cancer_type
