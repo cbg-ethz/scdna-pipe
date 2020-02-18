@@ -105,7 +105,7 @@ rule cell_assignment:
         )
         print("saving the sorted cnv profiles...")
         np.savetxt(
-            output.clustered_cluster_tree_inferred_cnvs,
+            output.clustered_inferred_cnvs,
             inferred_cnvs,
             delimiter=",",
             fmt='%d'
