@@ -1,6 +1,6 @@
 # Single-cell DNA Analysis <img src="figures/logo.png" align="right" width="160">
 
-[![CircleCI](https://circleci.com/gh/anilbey/dna-pipeline.svg?style=svg&circle-token=7d59442470c38d05f7d1661a97da237d482684ef)](https://circleci.com/gh/anilbey/dna-pipeline)
+[![CircleCI](https://circleci.com/gh/cbg-ethz/scdna-pipe.svg?style=svg&circle-token=60921152e3353ae7cd6d5e13d14158bcbde57973)](https://circleci.com/gh/cbg-ethz/scdna-pipe)
 [![License](http://img.shields.io/:license-Apache%202-green.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 [![Python Version](https://img.shields.io/badge/python-3-blue.svg)](https://img.shields.io/badge/python-3-blue.svg)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -28,7 +28,7 @@ The pipeline makes use of `scgenpy`, a package that exposes functions for prepro
 ## Contributing
 
 You are very welcome to contribute! You can start with the existing issues or create new issues.
-Make sure to follow the CI checks. Use the [pre-commit hook](https://github.com/anilbey/dna-pipeline/blob/master/.pre-commit-config.yaml) defined in the project to meet the code style. If you are adding new functionality, add the corresponding test as well in order to keep the code coverage high.
+Make sure to follow the CI checks. Use the [pre-commit hook](https://github.com/cbg-ethz/scdna-pipe/blob/master/.pre-commit-config.yaml) defined in the project to meet the code style. If you are adding new functionality, add the corresponding test as well in order to keep the code coverage high.
 
 ## Authors
 
