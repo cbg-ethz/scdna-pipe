@@ -55,11 +55,11 @@
     "seed": 42,
     "cluster_trees":
     {
-      "n_iters": 1,
-      "n_tries": 1,
+      "n_iters": 100000,
+      "n_tries": 5,
       "n_nodes": 0,
       "move_probs":[0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.01],
-      "n_reps": 2
+      "n_reps": 10
     }
   },
   "scicone_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scicone/build/",
