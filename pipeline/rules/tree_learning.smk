@@ -77,7 +77,7 @@ rule cell_assignment:
             dist_to_diploid.append(np.linalg.norm(unique_cnvs[c_id]-diploid_profile))
         order = np.argsort(dist_to_diploid)
         unique_cnvs = unique_cnvs[order]
-        tree_cluster_sizes = tree_cluster_sizes[order]
+        tree_node_sizes = tree_node_sizes[order]
 
         labels = np.empty(inferred_cnvs.shape[0])
         for c_id in range(unique_cnvs.shape[0]):
@@ -101,7 +101,7 @@ rule cell_assignment:
         print("saving the tree cluster sizes...")
         np.savetxt(
             output.tree_node_sizes,
-            tree_cluster_sizes,
+            tree_node_sizes,
             delimiter=",",
             fmt='%d'
         )
