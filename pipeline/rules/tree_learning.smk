@@ -5,7 +5,9 @@ rule learn_cluster_tree:
         n_reps = config["inference"]["cluster_trees"]["n_reps"],
         c_penalise = config["inference"]["c_penalise"],
         copy_number_limit = config["inference"]["copy_number_limit"],
-        posfix = ""
+        posfix = "",
+        scicone_path = scicone_path,
+        output_temp_path = output_temp_path
     input:
         segmented_counts = os.path.join(analysis_path,\
                 "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
@@ -25,7 +27,7 @@ rule learn_cluster_tree:
         alpha = 1./segmented_counts.shape[1]
         n_bins = np.sum(segmented_region_sizes)
         n_cells = segmented_counts.shape[0]
-        sci = SCICoNE(binaries_path, output_temp, persistence=False, n_cells=n_cells, n_bins=n_bins, postfix=params.posfix)
+        sci = SCICoNE(params.scicone_path, params.output_temp_path, persistence=False, n_cells=n_cells, n_bins=n_bins, postfix=params.posfix)
 
         # Run cluster trees
         sci.learn_tree(segmented_counts, segmented_region_sizes, n_reps=params.n_reps, cluster=True, full=False, cluster_tree_n_iters=params.cluster_tree_n_iters,

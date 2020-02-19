@@ -35,7 +35,9 @@ rule detect_breakpoints:
         threshold = config["breakpoint_detection"]["threshold"],
         bp_limit = config["breakpoint_detection"]["bp_limit"],
         bp_detection_path = os.path.join(analysis_path, "breakpoint_detection"),
-        postfix = analysis_prefix
+        postfix = analysis_prefix,
+        scicone_path = scicone_path,
+        output_temp_path = output_temp_path
     input:
         d_matrix_file = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
         matrix_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
@@ -73,8 +75,7 @@ rule detect_breakpoints:
         gmn = np.exp(- ((freq+1/(2*params.window_size))/(2*df))**2)
         g = gpl + gmn
 
-        sci = SCICoNE('/cluster/work/bewi/members/pedrof/sc-dna/build',
-                          '/cluster/work/bewi/members/pedrof/sc-dna/scripts/', persistence=True, postfix=params.postfix)
+        sci = SCICoNE(params.scicone_path, params.output_temp_path, persistence=True, postfix=params.postfix)
 
         data = np.loadtxt(input.d_matrix_file, delimiter=',')
         bps = sci.detect_breakpoints(data, window_size=params.window_size, threshold=params.threshold, bp_limit=data.shape[1], compute_sp=False, evaluate_peaks=False)
