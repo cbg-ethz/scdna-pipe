@@ -17,7 +17,7 @@ rule create_bin_gene_region_df:
         "benchmark/create_bin_gene_region_df.tsv"
     run:
         genes = pd.read_csv(input.gene_coordinates_path, sep="\t")
-        chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=1)
+        chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=0)
         excluded_bins = pd.read_csv(input.excluded_bins_path, header=None)
         region_stops = pd.read_csv(input.region_stops_path, header=None)
         region_stops.columns = ["bin"]
