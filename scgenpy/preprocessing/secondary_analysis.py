@@ -91,7 +91,9 @@ class SecondaryAnalysis:
         for idx, val in enumerate(chr_stops_arr):
             if val != None:
                 if "X" in val:
-                    if gender == "male":
+                    if gender == "female":
+                        df_chr_stops.loc[idx] = [val, 2]
+                    elif gender == "male":
                         df_chr_stops.loc[idx] = [val, 1]
                 elif "Y" in val:
                     if gender == "female":
