@@ -121,6 +121,7 @@ $ pip install -e .
 $ cd /cluster/work/bewi/ngs/tumorProfiler/code/dna-pipeline/scdna-pipe/scgenpy
 $ pip install -e .
 
+$ export OMP_NUM_THREADS=24
 $ cd path-to/singlecell_dna/snake_analysis_files/
 $ bsub -J OHAMUME -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/pipeline/Snakefile --configfile ./config.json -j 48 -p -k
 ```
