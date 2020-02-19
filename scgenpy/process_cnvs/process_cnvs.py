@@ -65,7 +65,7 @@ def get_bin_gene_region_df(
         :return: DataFrame of (gene, chr, region, is_priority, filtered_bin, cnv_{})
     """
 
-    bin_gene_region_df = pd.DataFrame(index=range(chr_stops.iloc[-1].values[0] + 1))
+    bin_gene_region_df = pd.DataFrame(index=range(chr_stops.index[-1] + 1))
 
     bin_gene_region_df["region"] = None
     bin_gene_region_df["gene"] = [list() for _ in range(bin_gene_region_df.shape[0])]
@@ -88,7 +88,7 @@ def get_bin_gene_region_df(
         if chromosome != "1":  # coordinates are given by chromosome
             chr_start = (
                 chr_stops.iloc[
-                    np.where(chr_stops.index == chromosome)[0][0] - 1
+                    np.where(chr_stops["chr"] == chromosome)[0][0] - 1
                 ].values[0]
                 + 1
             )
