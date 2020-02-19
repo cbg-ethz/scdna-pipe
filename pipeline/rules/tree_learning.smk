@@ -45,7 +45,7 @@ rule learn_cluster_tree:
             file.write(f"{sci.cluster_tree_robustness_score}\n")
 
         with open(output.clustering_score, "w") as file:
-            f.write(str(sci.clustering_score))
+            file.write(str(sci.clustering_score))
 
 rule cell_assignment:
     input:
