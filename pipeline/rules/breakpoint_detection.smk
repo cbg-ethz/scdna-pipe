@@ -29,7 +29,6 @@ def set_region_neutral_states(all_region_stops, known_region_stops, known_region
 
 rule detect_breakpoints:
     params:
-        binary = config["breakpoint_detection"]["bin"],
         window_size = config["breakpoint_detection"]["window_size"],
         verbosity = config["breakpoint_detection"]["verbosity"],
         threshold = config["breakpoint_detection"]["threshold"],
