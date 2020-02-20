@@ -26,6 +26,12 @@ parser.add_argument(
     required=True,
     help="cancer type, e.g. melanoma")
 parser.add_argument(
+    "-g",
+    "--gender",
+    type=str,
+    required=True,
+    help="gender: male or female")
+parser.add_argument(
     "-n",
     "--is_novaseq",
     action='store_true',
@@ -51,6 +57,9 @@ if not re.match(r'v\d+\.\d+', args.pipeline_version):
         args.pipeline_version +
         '\" does not have the expected pattern.')
 
+if not (args.gender == "male" or args.gender == "female"):
+    sys.exit('Argument \"--gender cannot be parsed.')
+
 # Parse the input
 pattern_1 = re.search('_([^_]+)_T_scD', args.openbis_fastq_filename)
 pattern_2 = re.search('^BSSE_QGF_[0-9]+_([^_]+)_', args.openbis_fastq_filename)
@@ -67,8 +76,8 @@ sample_number = pattern_3.group(1)
 singlecell_dna_path = os.path.join(
     args.analysis_path, "trial_" + args.cancer_type, sample_name + "-T", "singlecell_dna/")
 analysis_path = os.path.join(singlecell_dna_path, "analysis")
-dna_pipeline_code_path = os.path.join(args.project_path, "code/dna-pipeline-novaseq")
-sc_dna_code_path = os.path.join(dna_pipeline_code_path, "sc-dna/bin")
+dna_pipeline_code_path = os.path.join(args.project_path, "code/dna-pipeline")
+scicone_path = os.path.join(dna_pipeline_code_path,  "scicone/build")
 
 # Build the json config
 config = {}
@@ -79,6 +88,7 @@ config['sequencing_prefix'] = sample_name + \
 config['analysis_prefix'] = sample_name + \
     "-T" + "_scD_Ar1" + args.pipeline_version
 config['disease'] = args.cancer_type
+config['gender'] = args.gender
 config['ref_genome_version'] = "GRCh37"
 config['ref_genome_path'] = os.path.join(
     args.project_path, "data/refdata-GRCh37-1.0.0_dna")
@@ -123,12 +133,10 @@ config['breakpoint_detection'] = {"window_size": 50,
                                   "verbosity": 1,
                                   "threshold": 2,
                                   "bp_limit": 200,
-                                  "bin": os.path.join(sc_dna_code_path, "breakpoint_detection")
                                   }
 config['inference'] = {"ploidy": 2,
                        "verbosity": 1,
                        "copy_number_limit": 2,
-                       "bin": os.path.join(sc_dna_code_path, "inference"),
                        "robustness_thr": 0.3,
                        "learn_nu":
                        {
@@ -159,6 +167,8 @@ config['inference'] = {"ploidy": 2,
                        },
                        "seed": 41
                        }
+config['scicone_path'] = scicone_path
+config['output_temp_path'] = os.path.join(dna_pipeline_code_path, "temp") 
 
 with open(args.out, 'w') as outfile:
     outfile.write(json.dumps(config, indent=2, sort_keys=False))
