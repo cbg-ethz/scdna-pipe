@@ -63,7 +63,9 @@ if not (args.gender == "male" or args.gender == "female"):
 # Parse the input
 pattern_1 = re.search('_([^_]+)_T_scD', args.openbis_fastq_filename)
 pattern_2 = re.search('^BSSE_QGF_[0-9]+_([^_]+)_', args.openbis_fastq_filename)
-pattern_3 = re.search('_S([0-9]+)_L00[0-9]_.._001$', args.openbis_fastq_filename)
+pattern_3 = re.search(
+    '_S([0-9]+)_L00[0-9]_.._001$',
+    args.openbis_fastq_filename)
 if not (pattern_1 and pattern_2 and pattern_3):
     sys.exit(
         'Argument \"--openbis_fastq_filename ' +
@@ -76,8 +78,8 @@ sample_number = pattern_3.group(1)
 singlecell_dna_path = os.path.join(
     args.analysis_path, "trial_" + args.cancer_type, sample_name + "-T", "singlecell_dna/")
 analysis_path = os.path.join(singlecell_dna_path, "analysis")
-dna_pipeline_code_path = os.path.join(args.project_path, "code/dna-pipeline")
-scicone_path = os.path.join(dna_pipeline_code_path,  "scicone/build")
+dna_pipeline_code_path = os.path.join(args.project_path, "code/dna-pipeline/scdna-pipe")
+scicone_path = os.path.join(dna_pipeline_code_path, "scicone/build")
 
 # Build the json config
 config = {}
@@ -95,15 +97,17 @@ config['ref_genome_path'] = os.path.join(
 config['fastqs_path'] = os.path.join(singlecell_dna_path, "openbis")
 config['analysis_path'] = os.path.join(analysis_path)
 config['scripts_dir'] = os.path.join(dna_pipeline_code_path, "scripts/")
-config['10x_artifacts'] = os.path.join(dna_pipeline_code_path, "required_files/10x_artifacts")
+config['10x_artifacts'] = os.path.join(
+    dna_pipeline_code_path,
+    "required_files/10x_artifacts")
 config['bin_size'] = 20000
 
 # By default we expect data sequenced with NovaSeq.
 config['n_lanes'] = 2
 insert_length = 91
 if not args.is_novaseq:
-  config['n_lanes'] = 4
-  insert_length = 58
+    config['n_lanes'] = 4
+    insert_length = 58
 config['tricking_fastqs'] = {
     "insert_length": insert_length,
     "mem": 1000,
@@ -129,46 +133,33 @@ config['plotting'] = {"profiles": {
     "max_genes_per_line": 6
 }
 }
-config['breakpoint_detection'] = {"window_size": 50,
-                                  "verbosity": 1,
-                                  "threshold": 2,
-                                  "bp_limit": 200,
-                                  }
-config['inference'] = {"ploidy": 2,
-                       "verbosity": 1,
-                       "copy_number_limit": 2,
-                       "robustness_thr": 0.3,
-                       "learn_nu":
-                       {
-                           "n_iters": 2000,
-                           "n_nodes": 0,
-                           "move_probs": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
-                       },
-                       "cluster_trees":
-                       {
-                           "n_iters": 500000,
-                           "n_nodes": 0,
-                           "move_probs": [0, 1, 0, 1, 0, 10, 0, 1, 0, 1, 0.4, 1, 0.01],
-                           "n_reps": 10,
-                           "alpha": 0.
-                       },
-                       "learn_nu_cluster_trees":
-                       {
-                           "n_iters": 20000,
-                           "move_probs": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
-                       },
-                       "full_trees":
-                       {
-                           "n_iters": 1,
-                           "n_nodes": 0,
-                           "move_probs": [0, 1, 0, 1, 0, 10, 0, 1, 0, 1, 0.4, 0, 0.01],
-                           "n_reps": 10,
-                           "cluster_fraction": 1
-                       },
-                       "seed": 41
-                       }
+
+config['breakpoint_detection'] = {
+    "window_size": 20,
+    "verbosity": 1,
+    "threshold": 3,
+    "bp_limit": 300,
+}
+
+config['inference'] = {
+    "ploidy": 2,
+    "verbosity": 1,
+    "copy_number_limit": 2,
+    "robustness_thr": 0.5,
+    "c_penalise": 10,
+    "seed": 42,
+    "cluster_trees":
+    {
+        "n_iters": 100000,
+        "n_tries": 5,
+        "n_nodes": 0,
+        "move_probs": [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.01],
+        "n_reps": 10
+    }
+}
+
 config['scicone_path'] = scicone_path
-config['output_temp_path'] = os.path.join(dna_pipeline_code_path, "temp") 
+config['output_temp_path'] = os.path.join(dna_pipeline_code_path, "temp")
 
 with open(args.out, 'w') as outfile:
     outfile.write(json.dumps(config, indent=2, sort_keys=False))
