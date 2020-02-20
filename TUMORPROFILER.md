@@ -118,7 +118,7 @@ $ module load python/3.6.0 graphviz hdf5/1.8.12 gcc/6.2.0 eth_proxy
 $ module load /cluster/work/bewi/modules/cellranger-dna/1.1.0/cellranger-dna-1.1.0/cellranger-dna.modulefile
 $ cd /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scicone/pyscicone
 $ pip install -e .
-$ cd /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/scgenpy
+$ cd /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/
 $ pip install -e .
 
 $ export OMP_NUM_THREADS=24
