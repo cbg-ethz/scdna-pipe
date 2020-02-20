@@ -109,9 +109,9 @@ $ `mget *.gz` to get the fastqs
 4.  **Create config.json** in .../singlecell_dna/snake_analysis_files/.
 ---> change sequencing_prefix to Sequencing Run ID from LabKey and sample name or run [script/create_dnapipeline_config.py](https://github.com/cbg-ethz/scdna-pipe/blob/master/scripts/create_dnapipeline_config.py "create_dnapipeline_config.py")
 ```
-$ python create_dnapipeline_config.py -f BSSE_QGF_131049_HNY5VBGXC_1_MADEGOD_T_scD_250c_r1v1_0_SI-GA-E9_S2_L001_I1_001 -t ovarian --is_novaseq -o /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_ovarian/OKEKIDE-T/singlecell_dna/snake_analysis_files/config.json
+$ python create_dnapipeline_config.py -f BSSE_QGF_131049_HNY5VBGXC_1_MADEGOD_T_scD_250c_r1v1_0_SI-GA-E9_S2_L001_I1_001 -t ovarian --is_novaseq --gender male -o /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_ovarian/OKEKIDE-T/singlecell_dna/snake_analysis_files/config.json
 ```
-
+ 
 5.  **Run the pipeline**
 ```    
 $ module load python/3.6.0 graphviz hdf5/1.8.12 gcc/6.2.0 eth_proxy
