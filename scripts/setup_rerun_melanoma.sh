@@ -58,6 +58,6 @@ for fastq_path in /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_m
     python /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/scripts/create_dnapipeline_config.py -f ${filename} -t melanoma -o ${output_file} --gender ${gender}
     # launch the jobs (you have to manually load the modules and set OMP_NUM_THREADS first)
     cd $output_dir
-    bsub -J $sample_id -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/pipeline/Snakefile ./config_v1.13.json -j 48 -p -k
+    bsub -J $sample_id -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/pipeline/Snakefile --configfile ./config_v1.13.json -j 48 -p -k
   fi
 done
