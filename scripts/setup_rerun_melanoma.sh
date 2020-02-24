@@ -1,6 +1,3 @@
-#for f in /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/*; do
-#  path=$f/singlecell_dna/snake_analysis_files/
-#  echo $path
 
 declare -A genders
 genders["BSSE_QGF_131049_HNY5VBGXC_1_MADEGOD_T_scD_250c_r1v1_0_SI-GA-E9_S2_L001_I1_001.fastq.gz"]="female"
@@ -54,10 +51,8 @@ for fastq_path in /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_m
     echo $sample_id
     output_dir=$dirname/singlecell_dna/snake_analysis_files
     output_file=$output_dir/config_v1.13.json
-    # create config
     python /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/scripts/create_dnapipeline_config.py -f ${filename} -t melanoma -o ${output_file} --gender ${gender}
-    # launch the jobs (you have to manually load the modules and set OMP_NUM_THREADS first)
     cd $output_dir
-    bsub -J $sample_id -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/pipeline/Snakefile --configfile ./config_v1.13.json -j 48 -p -k
+    bsub -J $sample_id -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/pipeline/Snakefile --configfile ./config_v1.13.json -j 48 -p -k --rerun-incomplete --unlock
   fi
 done

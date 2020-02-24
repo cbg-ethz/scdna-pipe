@@ -64,7 +64,7 @@ if not (args.gender == "male" or args.gender == "female"):
 pattern_1 = re.search('_([^_]+)_T_scD', args.openbis_fastq_filename)
 pattern_2 = re.search('^BSSE_QGF_[0-9]+_([^_]+)_', args.openbis_fastq_filename)
 pattern_3 = re.search(
-    '_S([0-9]+)_L00[0-9]_.._001$',
+    '_S([0-9]+)_L00[0-9]_.._001',
     args.openbis_fastq_filename)
 if not (pattern_1 and pattern_2 and pattern_3):
     sys.exit(
@@ -78,8 +78,9 @@ sample_number = pattern_3.group(1)
 singlecell_dna_path = os.path.join(
     args.analysis_path, "trial_" + args.cancer_type, sample_name + "-T", "singlecell_dna/")
 analysis_path = os.path.join(singlecell_dna_path, "analysis")
-dna_pipeline_code_path = os.path.join(args.project_path, "code/dna-pipeline/scdna-pipe")
-scicone_path = os.path.join(dna_pipeline_code_path, "scicone/build")
+dna_pipeline_path = os.path.join(args.project_path, "code/dna-pipeline/")
+dna_pipeline_code_path = os.path.join(dna_pipeline_path, "scdna-pipe")
+scicone_path = os.path.join(dna_pipeline_path, "scicone/build")
 
 # Build the json config
 config = {}
