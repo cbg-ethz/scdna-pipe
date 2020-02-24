@@ -136,7 +136,7 @@ config['plotting'] = {"profiles": {
 }
 
 config['breakpoint_detection'] = {
-    "window_size": 20,
+    "window_size": 50,
     "verbosity": 1,
     "threshold": 3,
     "bp_limit": 300,
