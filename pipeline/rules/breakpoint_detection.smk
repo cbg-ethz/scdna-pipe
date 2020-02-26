@@ -77,10 +77,10 @@ rule detect_breakpoints:
         sci = SCICoNE(params.scicone_path, params.output_temp_path, persistence=True, postfix=params.postfix)
 
         data = np.loadtxt(input.d_matrix_file, delimiter=',')
-        bps = sci.detect_breakpoints(data, window_size=params.window_size, threshold=params.threshold, bp_limit=data.shape[1], compute_sp=False, evaluate_peaks=False)
+        bps = sci.detect_breakpoints(data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, compute_sp=False, evaluate_peaks=False)
 
         filtered_lr = filter_lr(bps['lr_vec'].T, H=g)
-        bps = sci.detect_breakpoints(data, window_size=params.window_size, threshold=params.threshold, bp_limit=data.shape[1], lr=filtered_lr, input_breakpoints=chr_stop_bins_filtered)
+        bps = sci.detect_breakpoints(data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, lr=filtered_lr, input_breakpoints=chr_stop_bins_filtered)
 
         os.rename(params.postfix+"bp_segmented_regions.txt", output.segmented_regions)
         os.rename(params.postfix+"bp_segmented_region_sizes.txt", output.segmented_region_sizes)
