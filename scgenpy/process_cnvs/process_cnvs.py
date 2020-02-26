@@ -87,9 +87,7 @@ def get_bin_gene_region_df(
 
         if chromosome != "1":  # coordinates are given by chromosome
             chr_start = (
-                chr_stops.iloc[
-                    np.where(chr_stops["chr"] == chromosome)[0][0] - 1
-                ].values[0]
+                chr_stops.iloc[np.where(chr_stops["chr"] == chromosome)[0][0] - 1].name
                 + 1
             )
             start_bin = start_bin + chr_start
