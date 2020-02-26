@@ -12,6 +12,7 @@ for fastq_path in /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_o
   do
       if [ "$sample_id" == "$item" ]; then
           is_novaseq=true
+          break
       fi
   done
   if $is_novaseq; then
