@@ -1,5 +1,7 @@
 declare -a novaseq=("OKEKIDE-T ODAMILU-T OHAMUHE-T")
 
+export OMP_NUM_THREADS=12
+
 for fastq_path in /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_ovarian/*/singlecell_dna/openbis/BSSE*L001_I1_001.fastq.gz;do
   filename=`basename $fastq_path`
   dirname="${fastq_path%/*/*/*}"
@@ -23,5 +25,5 @@ for fastq_path in /cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_o
   cd $output_dir
   snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/pipeline/Snakefile --configfile ./config_v1.13.json -j 48 -p -k --unlock
   snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/pipeline/Snakefile --configfile ./config_v1.13.json -j 48 -p -k --touch
-  bsub -J $sample_id -n 48 -W 23:57 -R fullnode -R "rusage[mem=5000]" snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/pipeline/Snakefile --configfile ./config_v1.13.json -j 48 -p -k
+  bsub -J $sample_id -n 48 -W 23:57 -R "rusage[mem=5000]" snakemake -s /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/pipeline/Snakefile --configfile ./config_v1.13.json -j 48 -p -k
 done
