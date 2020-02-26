@@ -106,7 +106,7 @@ rule all:
         derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
         robustness_results = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}_robustness.txt", tree_name=tree_outputs),
         bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
-        cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
+        # cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
     run:
         print("echo rule all")
 
