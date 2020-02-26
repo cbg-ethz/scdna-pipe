@@ -192,7 +192,7 @@ rule trick_fastqs:
         r1 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz",
         r2 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R2_001.fastq.gz",
         mem = config["tricking_fastqs"]["mem"],
-        time = config["tricking_fastqs"]["time"]
+        time = config["tricking_fastqs"]["time"],
         insert_length = config["tricking_fastqs"]["insert_length"]
     input:
         rules.rename_fastqs.output
