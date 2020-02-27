@@ -138,14 +138,17 @@ rule extract_genomic_info:
 
 rule add_filtered_bins_back:
     input:
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv", # use cluster tree results
+        cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv", # use cluster tree results
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv", # use cluster tree results
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv"
     output:
         inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
+        unique_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs.csv"
     benchmark:
         "benchmark/add_filtered_bins_back.tsv"
     run:
-        sa.add_filtered_bins_back(input.unique_cnv_profiles, input.excluded_bins)
+        sa.add_filtered_bins_back(input.cnv_profiles, input.excluded_bins, output=output.inferred_cnvs)
+        sa.add_filtered_bins_back(input.cnv_profiles, input.excluded_bins, output=output.unique_cnvs)
 
 rule merge_files:
     params:
