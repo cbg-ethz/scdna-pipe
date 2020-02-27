@@ -412,7 +412,6 @@ rule create_derived_symlinks:
         create_symlink(input.clustering_score, os.path.join(sym_derived_path, f"{analysis_prefix}__clustering_score.txt"))
 
         create_symlink(input.cluster_tree, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree.txt"))
-        create_symlink(input.cluster_tree_inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_inferred_cnvs.csv"))
         create_symlink(input.unique_cnv_profiles, os.path.join(sym_derived_path, f"{analysis_prefix}__unique_cluster_tree_cnvs.csv"))
         create_symlink(input.inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__inferred_cnvs.csv"))
         create_symlink(input.cluster_tree_genes_png, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_genes.png"))
