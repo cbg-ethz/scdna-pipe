@@ -17,12 +17,9 @@ import warnings
 sns.set_style("ticks")
 
 bin_size = config['bin_size']
-fastqs_path = config['fastqs_path']
-moved_fastqs_path = os.path.join(fastqs_path, "merged", "tricked")
 analysis_path = config['analysis_path']
 
 analysis_prefix = config['analysis_prefix']
-seq_prefix = config["sequencing_prefix"]
 
 sample_name = config['sample_name']
 gene_lists_path = config['genes_path']
