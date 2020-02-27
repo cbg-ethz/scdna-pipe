@@ -9,7 +9,7 @@ rule plot_cnv_matrix:
         segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cluster_tree_cnvs.csv"
     output:
         inferred_cnvs_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_cnvs_bins.png",
         sorted_normalised_counts_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",
