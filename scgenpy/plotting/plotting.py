@@ -59,8 +59,10 @@ def plot_bins(
         annotations = np.array(annotations).ravel()
         for c_id in np.unique(annotations):
             # Get last pos
-            ticks[c_id] = np.where(annotations == c_id)[0][-1]
-
+            t = np.where(annotations == c_id)[0]
+            if len(t) > 1:
+                t = t[-1]
+            ticks[c_id] = t
     if clone_cmap is None:
         clone_cmap = matplotlib.cm.get_cmap("Dark2")
         subset_colors = clone_cmap(np.arange(0, len(np.unique(annotations)), 1))
@@ -467,9 +469,15 @@ def convert_node_regions_to_genes(
         for gene in genes_to_highlight:
             node_str = node_str.replace(
                 gene,
-                "<b><font color=" + "\'" + highlight_color + "\'" + ">" + gene + "</font></b>",
+                "<b><font color="
+                + "'"
+                + highlight_color
+                + "'"
+                + ">"
+                + gene
+                + "</font></b>",
             )
-            
+
     if node_str == "":
         node_str = num_events_str
 
