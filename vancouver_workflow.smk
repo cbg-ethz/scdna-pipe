@@ -17,6 +17,7 @@ import warnings
 sns.set_style("ticks")
 
 scicone_path = config['scicone_path']
+output_temp_path = config['output_temp_path']
 
 bin_size = config['bin_size']
 analysis_path = config['analysis_path']
