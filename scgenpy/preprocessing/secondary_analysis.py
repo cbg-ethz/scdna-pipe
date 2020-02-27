@@ -267,7 +267,7 @@ class SecondaryAnalysis:
         :return:
         """
         input_cnvs = np.loadtxt(input_cnvs_path, delimiter=",")
-        print(f"input_cnvs shape: {unique_cnvs.shape}")
+        print(f"input_cnvs shape: {input_cnvs.shape}")
         if len(input_cnvs.shape) == 1:
             input_cnvs = input_cnvs.reshape(1, -1)
         bin_mask = np.loadtxt(bin_mask_path, delimiter=",")
