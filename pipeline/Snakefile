@@ -416,7 +416,7 @@ rule create_derived_symlinks:
         create_symlink(input.inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__inferred_cnvs.csv"))
         create_symlink(input.cluster_tree_genes_png, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_genes.png"))
 
-        create_symlink(input.tree_cluster_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__tree_cluster_sizes.txt"))
+        create_symlink(input.cluster_tree_tree_node_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_tree_node_sizes.csv"))
         create_symlink(input.overlapping_cluster_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_overlapping.png"))
 
         cluster_profile_plots = glob.glob(os.path.join(analysis_path, "inferred_cnvs", f"{analysis_prefix}__cluster_profile_[0-9]*.png"))
