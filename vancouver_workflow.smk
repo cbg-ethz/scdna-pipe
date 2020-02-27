@@ -21,7 +21,6 @@ analysis_path = config['analysis_path']
 
 analysis_prefix = config['analysis_prefix']
 
-sample_name = config['sample_name']
 gene_lists_path = config['genes_path']
 gene_coordinates_path = os.path.join(gene_lists_path, 'ensembl_hg19_annotations.tsv')
 general_main_gene_list_path = os.path.join(gene_lists_path, 'general', f"{config['general_main_gene_list']}")
@@ -32,12 +31,6 @@ except KeyError:
     tree_rep = 10
 
 tree_outputs = ["cluster_tree", "full_tree"]
-
-sa = SecondaryAnalysis(
-    sample_name=analysis_prefix,
-    output_path=analysis_path,
-    h5_path=None
-)
 
 # import rules
 include: os.path.join(workflow.basedir, "rules", "tree_learning.smk")
