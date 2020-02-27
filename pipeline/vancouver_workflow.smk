@@ -1,5 +1,9 @@
+from scgenpy import *
+from scgenpy.preprocessing.utils import *
+
 import glob
 import os
+import h5py
 import subprocess
 import numpy as np
 import pandas as pd
@@ -7,25 +11,20 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from pathlib import Path
-from secondary_analysis import SecondaryAnalysis
-from secondary_analysis.utils import *
 from collections import Counter
 import re
 import warnings
-sns.set()
-
+sns.set_style("ticks")
 
 bin_size = config['bin_size']
 analysis_path = config['analysis_path']
 
-symlinks_path = os.path.join(analysis_path, '..', 'symlinks')
-sym_raw_path = os.path.join(symlinks_path, "raw")
-cellranger_path = os.path.join(analysis_path, "cellranger")
-sample_name = config['sample_name']
-cr_sample_name = sample_name[:-3] # e.g. MHELAVELA_S2 becomes MHELAVELA
-all_genes_path = config['secondary_analysis']['all_genes_path']
-
 analysis_prefix = config['analysis_prefix']
+
+sample_name = config['sample_name']
+gene_lists_path = config['genes_path']
+gene_coordinates_path = os.path.join(gene_lists_path, 'ensembl_hg19_annotations.tsv')
+general_main_gene_list_path = os.path.join(gene_lists_path, 'general', f"{config['general_main_gene_list']}")
 
 try:
     tree_rep = config["inference"]["cluster_trees"]["n_reps"]
@@ -37,15 +36,14 @@ tree_outputs = ["cluster_tree", "full_tree"]
 sa = SecondaryAnalysis(
     sample_name=analysis_prefix,
     output_path=analysis_path,
-    h5_path=None,
-    genes_path=None,
-    all_genes_path=all_genes_path,
+    h5_path=None
 )
 
-
 # import rules
-include: os.path.join(workflow.basedir, "rules", "breakpoint_detection.smk")
 include: os.path.join(workflow.basedir, "rules", "tree_learning.smk")
+include: os.path.join(workflow.basedir, "rules", "breakpoint_detection.smk")
+include: os.path.join(workflow.basedir, "rules", "process_cnvs.smk")
+include: os.path.join(workflow.basedir, "rules", "plotting.smk")
 
 onstart:
     print(f"Workflow main directory: {workflow.basedir}")
@@ -104,51 +102,5 @@ rule all:
 
         robustness_results = expand(os.path.join(analysis_path, "tree_learning", analysis_prefix) + "_{tree_name}_robustness.txt", tree_name=tree_outputs),
         full_tree_inferred_cnvs_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__full_tree_cnvs.png"
-
-    output:
-        
     run:
         print("echo rule all")
-
-rule visualise_trees:
-    input:
-        tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.txt"
-    output:
-        tree_graphviz = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.graphviz",
-        tree_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__{tree_name}.png"
-    run:
-        tree_as_list = tree_to_graphviz(input.tree)
-        
-        for line in tree_as_list:
-            print(f"{line}\n")
-        
-        with open(output.tree_graphviz, "w") as file:
-            for line in tree_as_list:
-                file.write(f"{line}\n")
-
-        try:
-            cmd_output = subprocess.run(["dot", "-Tpng", f"{output.tree_graphviz}", "-o", f"{output.tree_figure}"])
-        except subprocess.SubprocessError as e:
-            print("Status : FAIL", e.returncode, e.output, e.stdout, e.stderr)
-        else:
-            print(f"subprocess out: {cmd_output}")
-            print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
-
-rule plot_inferred_cnvs:
-    input:
-        full_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__full_tree_cnvs.csv"
-    output:
-        full_tree_inferred_cnvs_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__full_tree_cnvs.png"
-    benchmark:
-        "benchmark/plot_inferred_cnvs.tsv"
-    run:
-        cnvs = np.loadtxt(input.full_tree_inferred_cnvs, delimiter=',', dtype=int)
-        cmap = sns.color_palette("RdBu_r", 5)
-        print("plotting")
-        plt.figure(figsize=(24, 8))
-        ax = sns.heatmap(cnvs, cmap=cmap)
-        colorbar = ax.collections[0].colorbar
-        colorbar.set_ticks([0.4, 1.2, 2, 2.8, 3.6])
-        colorbar.set_ticklabels(['0', '1', '2', '3', '4'])
-        plt.savefig(output.full_tree_inferred_cnvs_png)
-        plt.close()
