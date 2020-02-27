@@ -33,10 +33,10 @@ except KeyError:
 tree_outputs = ["cluster_tree", "full_tree"]
 
 # import rules
-include: os.path.join(workflow.basedir, "rules", "tree_learning.smk")
-include: os.path.join(workflow.basedir, "rules", "breakpoint_detection.smk")
-include: os.path.join(workflow.basedir, "rules", "process_cnvs.smk")
-include: os.path.join(workflow.basedir, "rules", "plotting.smk")
+include: os.path.join(workflow.basedir, "pipeline", "rules", "tree_learning.smk")
+include: os.path.join(workflow.basedir, "pipeline", "rules", "breakpoint_detection.smk")
+include: os.path.join(workflow.basedir, "pipeline", "rules", "process_cnvs.smk")
+include: os.path.join(workflow.basedir, "pipeline", "rules", "plotting.smk")
 
 onstart:
     print(f"Workflow main directory: {workflow.basedir}")
