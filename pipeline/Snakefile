@@ -142,7 +142,7 @@ rule add_filtered_bins_back:
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv", # use cluster tree results
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv"
     output:
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
         unique_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs.csv"
     benchmark:
         "benchmark/add_filtered_bins_back.tsv"
