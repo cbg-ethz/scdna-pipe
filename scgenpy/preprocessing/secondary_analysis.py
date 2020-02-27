@@ -259,17 +259,17 @@ class SecondaryAnalysis:
         with open(output_path + "__clustering_score.txt", "w") as f:
             f.write(str(Q))
 
-    def add_filtered_bins_back(self, unique_cnvs_path, bin_mask_path):
+    def add_filtered_bins_back(self, input_cnvs_path, bin_mask_path, output_path):
         """
         Adds the filtered bins back to the inferred cnvs
-        :param unique_cnvs_path: path to the file containing unique copy number profiles
+        :param input_cnvs_path: path to the file containing copy number profiles
         :param bin_mask_path: path to the excluded bins file
         :return:
         """
-        unique_cnvs = np.loadtxt(unique_cnvs_path, delimiter=",")
-        print(f"unique_cnvs shape: {unique_cnvs.shape}")
-        if len(unique_cnvs.shape) == 1:
-            unique_cnvs = unique_cnvs.reshape(1, -1)
+        input_cnvs = np.loadtxt(input_cnvs_path, delimiter=",")
+        print(f"input_cnvs shape: {unique_cnvs.shape}")
+        if len(input_cnvs.shape) == 1:
+            input_cnvs = input_cnvs.reshape(1, -1)
         bin_mask = np.loadtxt(bin_mask_path, delimiter=",")
         print(f"bin_mask shape: {bin_mask.shape}")
 
@@ -279,11 +279,11 @@ class SecondaryAnalysis:
         for bin_idx, bin_val in enumerate(bin_mask):
             c_row = []
             if bin_val:
-                for c_id in range(unique_cnvs.shape[0]):
+                for c_id in range(input_cnvs.shape[0]):
                     c_row.append(None)
             else:
-                for c_id in range(unique_cnvs.shape[0]):
-                    c_row.append(unique_cnvs[c_id][cnvs_counter])
+                for c_id in range(input_cnvs.shape[0]):
+                    c_row.append(input_cnvs[c_id][cnvs_counter])
                 cnvs_counter += 1
             cnvs_mat.append(c_row)
 
@@ -292,7 +292,7 @@ class SecondaryAnalysis:
 
         print("writing the inferred cnvs...")
         np.savetxt(
-            os.path.join(self.output_path, "inferred_cnvs", self.sample_name)
+            os.path.join(output_path, "inferred_cnvs", self.sample_name)
             + "__inferred_cnvs.csv",
             cnvs_arr,
             delimiter=",",
