@@ -148,7 +148,7 @@ rule add_filtered_bins_back:
         "benchmark/add_filtered_bins_back.tsv"
     run:
         sa.add_filtered_bins_back(input.cnv_profiles, input.excluded_bins, output.inferred_cnvs)
-        sa.add_filtered_bins_back(input.cnv_profiles, input.excluded_bins, output.unique_cnvs)
+        sa.add_filtered_bins_back(input.unique_cnv_profiles, input.excluded_bins, output.unique_cnvs)
 
 rule merge_files:
     params:
