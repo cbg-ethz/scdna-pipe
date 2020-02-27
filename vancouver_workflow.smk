@@ -27,6 +27,7 @@ analysis_prefix = config['analysis_prefix']
 gene_lists_path = config['genes_path']
 gene_coordinates_path = os.path.join(gene_lists_path, 'ensembl_hg19_annotations.tsv')
 general_main_gene_list_path = os.path.join(gene_lists_path, 'general', f"{config['general_main_gene_list']}")
+disease_genes_path = os.path.join(gene_lists_path, 'disease_specific', f"ovarian_genes.txt")
 
 try:
     tree_rep = config["inference"]["cluster_trees"]["n_reps"]
