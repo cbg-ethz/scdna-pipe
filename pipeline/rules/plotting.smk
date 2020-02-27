@@ -33,7 +33,7 @@ rule plot_cnv_matrix:
 
         print("loading the inferred cnvs...")
         inferred_cnvs = np.loadtxt(input.inferred_cnvs, delimiter=',')
-        print(f"shape of normalised regions: {inferred_cnvs.shape}")
+        print(f"shape of inferred cnvs: {inferred_cnvs.shape}")
 
         # Annotate with chromosome coordinates
         chr_indicator = pd.read_csv(input.bin_chr_indicator, header=None).values.ravel()
