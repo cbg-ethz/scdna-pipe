@@ -84,7 +84,7 @@ if not (pattern_1 and pattern_2 and pattern_3):
         + args.openbis_fastq_filename
         + '" does not have the expected pattern.'
     )
-sample_name = pattern_1.group(1)
+sample_name = pattern_1.group(1).replace("_", "-")
 sample_annotation = pattern_2.group(1)
 sample_number = pattern_3.group(1)
 
