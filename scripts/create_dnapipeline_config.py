@@ -96,7 +96,7 @@ singlecell_dna_path = os.path.join(
 )
 analysis_path = os.path.join(singlecell_dna_path, "analysis")
 dna_pipeline_path = os.path.join(args.project_path, "code/dna-pipeline/")
-dna_pipeline_code_path = os.path.join(dna_pipeline_path, "scdna-pipe2")
+dna_pipeline_code_path = os.path.join(dna_pipeline_path, "scdna-pipe")
 scicone_path = os.path.join(dna_pipeline_path, "scicone/build")
 
 # Build the json config
