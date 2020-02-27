@@ -138,7 +138,7 @@ rule extract_genomic_info:
 
 rule add_filtered_bins_back:
     input:
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__inferred_cnvs.csv", # use cluster tree results
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv", # use cluster tree results
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv"
     output:
         inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv"
