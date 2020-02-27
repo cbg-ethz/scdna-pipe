@@ -363,7 +363,6 @@ rule create_derived_symlinks:
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
         clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score.txt",
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        cluster_tree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv",
         cluster_tree_sorted_normalised_counts_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",
         cluster_tree_sorted_cnvs_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins.png",
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
@@ -411,7 +410,6 @@ rule create_derived_symlinks:
         create_symlink(input.cluster_tree_sorted_cnvs_bins, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_sorted_cnvs_bins.png"))
 
         create_symlink(input.clustering_score, os.path.join(sym_derived_path, f"{analysis_prefix}__clustering_score.txt"))
-        create_symlink(input.clusters_phenograph_assignment, os.path.join(sym_derived_path, f"{analysis_prefix}__clusters_phenograph_assignment.tsv"))
 
         create_symlink(input.avg_counts, os.path.join(sym_derived_path, f"{analysis_prefix}__avg_counts.csv"))
         create_symlink(input.cluster_tree, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree.txt"))
