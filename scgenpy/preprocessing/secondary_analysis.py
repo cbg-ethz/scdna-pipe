@@ -292,9 +292,5 @@ class SecondaryAnalysis:
 
         print("writing the inferred cnvs...")
         np.savetxt(
-            os.path.join(output_path, "inferred_cnvs", self.sample_name)
-            + "__inferred_cnvs.csv",
-            cnvs_arr,
-            delimiter=",",
-            fmt="%s",
+            output_path, cnvs_arr, delimiter=",", fmt="%s",
         )
