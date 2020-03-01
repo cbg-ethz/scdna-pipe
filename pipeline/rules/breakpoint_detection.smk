@@ -101,7 +101,7 @@ rule segment_regions:
         segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape.txt",
         segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states.txt"
     benchmark:
-        "benchmark/segment_regions.tsv"
+        "benchmarks/segment_regions.tsv"
     run:
         print("loading the filtered counts...")
         filtered_counts = np.loadtxt(input.filtered_counts, delimiter=',')
@@ -177,7 +177,7 @@ rule normalise_counts:
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv"
     benchmark:
-        "benchmark/normalise_counts.tsv"
+        "benchmarks/normalise_counts.tsv"
     run:
         from sklearn.preprocessing import normalize
 

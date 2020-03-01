@@ -60,7 +60,7 @@ rule cell_assignment:
         clustered_normalised_bins = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_bins.csv",
         clustered_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_labels.csv"
     benchmark:
-        "benchmark/cell_assignments.tsv"
+        "benchmarks/cell_assignments.tsv"
     run:
         inferred_cnvs = np.loadtxt(input.inferred_cnvs, delimiter=',') # cell-wise profiles
         normalised_bins = np.loadtxt(input.normalised_bins, delimiter=',')

@@ -14,7 +14,7 @@ rule create_bin_gene_region_df:
     output:
         bin_gene_region_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__bin_gene_region_df.csv"
     benchmark:
-        "benchmark/create_bin_gene_region_df.tsv"
+        "benchmarks/create_bin_gene_region_df.tsv"
     run:
         genes = pd.read_csv(input.gene_coordinates_path, sep="\t")
         chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=0)
@@ -47,7 +47,7 @@ rule create_cn_cluster_h5:
     output:
         cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
     benchmark:
-        "benchmark/create_cn_cluster_h5"
+        "benchmarks/create_cn_cluster_h5"
     run:
         all_genes = pd.read_csv(input.gene_coordinates_path, sep="\t", index_col=0)
         all_genes_list = all_genes['gene_name'].values.tolist()

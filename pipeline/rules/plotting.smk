@@ -15,7 +15,7 @@ rule plot_cnv_matrix:
         sorted_normalised_counts_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",
         sorted_inferred_cnvs_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins.png"
     benchmark:
-        "benchmark/plot_cnv_matrix.tsv"
+        "benchmarks/plot_cnv_matrix.tsv"
     run:
         from scipy.cluster.hierarchy import ward, leaves_list
         from scipy.spatial.distance import pdist
@@ -79,7 +79,7 @@ rule plot_data_matrix:
         normalised_bins_clustered_bps_heatmap = os.path.join(analysis_path,\
              "breakpoint_detection", analysis_prefix) + "_normalised_bins_clustered_bps.png"
     benchmark:
-        "benchmark/plot_breakpoints.tsv"
+        "benchmarks/plot_breakpoints.tsv"
     run:
         from scipy.cluster.hierarchy import ward, leaves_list
         from scipy.spatial.distance import pdist
@@ -173,7 +173,7 @@ rule plot_cluster_cnvs:
     output:
         overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png"
     benchmark:
-        "benchmark/plot_cluster_cnvs.tsv"
+        "benchmarks/plot_cluster_cnvs.tsv"
     run:
         cnvs_arr = np.loadtxt(input.inferred_cnvs, delimiter=',')
         chr_stops = pd.read_csv(input.chr_stops, sep="\t")
@@ -193,7 +193,7 @@ rule plot_heatmaps:
         cn_gene_df_roche_gene_list = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df_roche_gene_list.csv",
         heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png"
     benchmark:
-        "benchmark/plot_heatmap.tsv"
+        "benchmarks/plot_heatmap.tsv"
     run:
         bin_gene_region_df = pd.read_csv(input.bin_gene_region_df_path, index_col=0, low_memory=False)
 
