@@ -126,7 +126,7 @@ config["n_lanes"] = 2
 insert_length = 91
 if not args.is_novaseq:
     config["n_lanes"] = 4
-    insert_length = 58
+    insert_length = 56
 config["tricking_fastqs"] = {"insert_length": insert_length, "mem": 1000, "time": 1438}
 
 config["cellranger_dna"] = {
