@@ -138,7 +138,7 @@ rule visualise_trees:
     run:
         # Node sizes
         cell_node_assignments = np.loadtxt(input.cell_node_assignments, delimiter='\t')
-        keys, values = [arr.tolist() for arr in np.unique(cell_node_assignments[:,1], return_counts=True)]
+        keys, values = [arr.tolist() for arr in np.unique(cell_node_assignments, return_counts=True)]
         node_sizes = dict(zip(np.array(keys).astype(int).astype(str).tolist(), values))
 
         # Tree with region labels
