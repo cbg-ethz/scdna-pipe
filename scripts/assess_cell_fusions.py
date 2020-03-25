@@ -25,6 +25,18 @@ parser.add_argument(
     help="File containing the neutral state of each region",
 )
 parser.add_argument(
+    "-c",
+    "--original_cell_node_ids_file",
+    required=True,
+    help="File containing the node ids to which each cell was attached",
+)
+parser.add_argument(
+    "-i",
+    "--original_inferred_cnvs_file",
+    required=True,
+    help="File containing the inferred CNV of each cell",
+)
+parser.add_argument(
     "-b", "--scicone_binary", required=True, help="Path to SCICoNE binary"
 )
 parser.add_argument("-o", "--output_file", required=True, help="Output file")
@@ -35,6 +47,8 @@ input_tree = args.input_tree
 input_segmented_data = args.input_segmented_data
 input_segmented_region_sizes = args.input_segmented_region_sizes
 region_neutral_states_file = args.region_neutral_states_file
+original_cell_node_ids_file = args.original_cell_node_ids_file
+original_inferred_cnvs_file = args.original_inferred_cnvs_file
 bin = args.scicone_binary
 output_file = args.output_file
 
@@ -62,7 +76,7 @@ unique_assignments, unique_assignments_idx, tree_cluster_sizes = np.unique(
 )
 
 # Map node ID to subclone ID
-inferred_cnvs = learned_tree.outputs["inferred_cnvs"]
+inferred_cnvs = np.loadtxt(original_inferred_cnvs_file, delimiter=',')
 
 unique_cnvs, tree_node_sizes = np.unique(
     inferred_cnvs, axis=0, return_counts=True
@@ -84,6 +98,7 @@ for c_id in range(unique_cnvs.shape[0]):
 
 # Map node IDs to labels
 _, idx = np.unique(labels)
+original_cell_node_ids = np.loadtxt(original_cell_node_ids_file, delimiter=',')
 node_label_map = dict(zip(original_cell_node_ids[idx], labels[idx]))
 
 # Now add entries for the fusion nodes to the map by prefixing with 'F'
