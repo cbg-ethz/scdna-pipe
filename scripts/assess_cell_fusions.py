@@ -111,7 +111,7 @@ new_cell_node_ids = np.empty(n_cells)
 fusion_cell_node_ids = fusion_tree.outputs['cell_node_ids']
 for node_id in np.unique(fusion_cell_node_ids):
     cells = np.where(np.all(fusion_cell_node_ids == node_id, axis=1))[0]
-    new_cell_node_ids[cells] == node_label_map[node_id]
+    new_cell_node_ids[cells] == node_label_map[str(int(node_id))]
 
 # Count number of cells attached to each node
 uniques, counts = np.unique(new_cell_node_ids, return_counts=True)
