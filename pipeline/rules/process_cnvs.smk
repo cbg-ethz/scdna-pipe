@@ -69,11 +69,13 @@ rule assess_cell_fusions:
         input_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
         segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
         segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
-        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states.txt"
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states.txt",
+        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv",
+        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids.tsv",
     params:
         inference_binary = os.path.join(scicone_path, "inference"),
         scripts_dir = scripts_dir
     output:
         output_file = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
     shell:
-         "python {params.scripts_dir}/assess_cell_fusions.py -t {input.input_tree}  -d {input.segmented_counts} -r {input.segmented_region_sizes} -n {input.segmented_neutral_states} -b {params.inference_binary} -o {output.output_file}"
+         "python {params.scripts_dir}/assess_cell_fusions.py -t {input.input_tree}  -d {input.segmented_counts} -r {input.segmented_region_sizes} -n {input.segmented_neutral_states} -c {input.ctree_inferred_cnvs} -i {input.ctree_cell_node_assignments} -b {params.inference_binary} -o {output.output_file}"
