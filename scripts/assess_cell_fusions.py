@@ -108,6 +108,7 @@ for node in list(node_label_map):
 n_cells = inferred_cnvs.shape[0]
 new_cell_node_ids = np.empty(n_cells)
 # Replace cell_node_ids from fusion tree with new labels
+fusion_cell_node_ids = fusion_tree.outputs['cell_node_ids']
 for node_id in np.unique(fusion_cell_node_ids):
     cells = np.where(np.all(fusion_cell_node_ids == node_id, axis=1))[0]
     new_cell_node_ids[cells] == node_label_map[node_id]
