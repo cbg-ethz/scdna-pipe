@@ -71,9 +71,9 @@ rule assess_cell_fusions:
         segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
         segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states.txt"
     params:
-        scicone_path = os.path.join(scicone_path, "inference"),
+        inference_binary = os.path.join(scicone_path, "inference"),
         scripts_dir = scripts_dir
     output:
         output_file = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
     shell:
-         "python {params.scripts_dir}/assess_cell_fusions.py -t {input.input_tree}  -d {input.segmented_counts} -r {input.segmented_region_sizes} -n {input.segmented_neutral_states} -s {params.scicone_path} -o {output.output_file}"
+         "python {params.scripts_dir}/assess_cell_fusions.py -t {input.input_tree}  -d {input.segmented_counts} -r {input.segmented_region_sizes} -n {input.segmented_neutral_states} -b {params.inference_binary} -o {output.output_file}"
