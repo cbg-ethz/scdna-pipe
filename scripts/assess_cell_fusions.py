@@ -1,6 +1,6 @@
 import argparse
 import numpy as np
-from pyscicone import *
+from scicone import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
