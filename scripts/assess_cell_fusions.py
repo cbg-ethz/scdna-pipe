@@ -62,7 +62,7 @@ unique_assignments, unique_assignments_idx, tree_cluster_sizes = np.unique(
 )
 
 # Map node ID to subclone ID
-inferred_cnvs = learned_tree["inferred_cnvs"]
+inferred_cnvs = learned_tree.outputs["inferred_cnvs"]
 
 unique_cnvs, tree_node_sizes = np.unique(
     inferred_cnvs, axis=0, return_counts=True
