@@ -58,7 +58,7 @@ fusion_tree.learn_tree(
 )
 
 unique_assignments, unique_assignments_idx, tree_cluster_sizes = np.unique(
-    fusion_tree.outsputs["cell_node_ids"], return_index=True, return_counts=True
+    fusion_tree.outputs["cell_node_ids"], return_index=True, return_counts=True
 )
 
 # Map node ID to subclone ID
