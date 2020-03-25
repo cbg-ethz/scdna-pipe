@@ -78,4 +78,4 @@ rule assess_cell_fusions:
     output:
         output_file = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
     shell:
-         "python {params.scripts_dir}/assess_cell_fusions.py -t {input.input_tree}  -d {input.segmented_counts} -r {input.segmented_region_sizes} -n {input.segmented_neutral_states} -c {input.ctree_inferred_cnvs} -i {input.ctree_cell_node_assignments} -b {params.inference_binary} -o {output.output_file}"
+         "python {params.scripts_dir}/assess_cell_fusions.py -t {input.input_tree}  -d {input.segmented_counts} -r {input.segmented_region_sizes} -n {input.segmented_neutral_states} -i {input.ctree_inferred_cnvs} -c {input.ctree_cell_node_assignments} -b {params.inference_binary} -o {output.output_file}"
