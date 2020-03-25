@@ -48,7 +48,7 @@ fusion_tree = create_fusion_tree(learned_tree, region_neutral_states)
 fusion_tree.learn_tree(
     segmented_data,
     segmented_region_sizes,
-    n_iters=0,
+    n_iters=1,
     move_probs=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00],
     seed=42,
     postfix="fusion_tree",
