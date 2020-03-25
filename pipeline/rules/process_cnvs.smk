@@ -63,3 +63,16 @@ rule create_cn_cluster_h5:
         gene_attributes.create_dataset("gene_names", data=gene_names)
         cn_cluster_h5.create_dataset("matrix", data=gene_cn_df.values)
         cn_cluster_h5.close()
+
+rule assess_cell_fusions:
+    input:
+        input_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
+        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states.txt"
+    params:
+        scicone_path = os.path.join(scicone_path, "inference")
+    output:
+        output_file = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
+    shell:
+         "python {params.scripts_dir}/assess_cell_fusions.py -t {input.input_tree}  -d {input.segmented_counts} -r {input.segmented_region_sizes} -n {input.segmented_neutral_states} -s {params.scicone_path} -o {output.output_file}"
