@@ -99,7 +99,7 @@ for c_id in range(unique_cnvs.shape[0]):
 # Map node IDs to labels
 _, idx = np.unique(labels, return_index=True)
 original_cell_node_ids = np.loadtxt(original_cell_node_ids_file, delimiter=',')
-node_label_map = dict(zip(original_cell_node_ids[idx].astype(str), labels[idx].astype(str)))
+node_label_map = dict(zip(original_cell_node_ids[idx].astype(str), labels[idx]))
 
 # Now add entries for the fusion nodes to the map by prefixing with 'F'
 for node in list(node_label_map):
