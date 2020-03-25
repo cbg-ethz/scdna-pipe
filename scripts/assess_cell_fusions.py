@@ -97,7 +97,7 @@ for c_id in range(unique_cnvs.shape[0]):
     labels[cells] = c_id
 
 # Map node IDs to labels
-_, idx = np.unique(labels)
+_, idx = np.unique(labels, return_index=True)
 original_cell_node_ids = np.loadtxt(original_cell_node_ids_file, delimiter=',')
 node_label_map = dict(zip(original_cell_node_ids[idx], labels[idx]))
 
