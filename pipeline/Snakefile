@@ -483,9 +483,9 @@ rule create_derived_symlinks:
             all_genes.update(set(deleted_genes))
 
             # Gene - drug associations.
-            drugs_responsive_genes = set()
             df = pd.read_csv('drugs_responsive_genes.txt', header=None)
             drug_map = zip(df[0], df[1])
+            drugs_responsive_genes = set()
             for item in drug_map:
                 drug = item[0]
                 gene = item[1]
@@ -494,9 +494,9 @@ rule create_derived_symlinks:
             drugs_responsive_genes = list(drugs_responsive_genes)
             drugs_responsive_genes.sort()
 
-            drugs_resistant_genes = set()
             df = pd.read_csv('drugs_resistant_genes.txt', header=None)
             drug_map = zip(df[0], df[1])
+            drugs_resistant_genes = set()
             for item in drug_map:
                 drug = item[0]
                 gene = item[1]
