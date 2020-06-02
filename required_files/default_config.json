@@ -62,6 +62,6 @@
     }
   },
   "scicone_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scicone/build/",
-  "output_temp_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/temp/"
+  "output_temp_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/temp/",
   "drugs_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/drugs_of_interest/"
 }
