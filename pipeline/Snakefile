@@ -483,41 +483,28 @@ rule create_derived_symlinks:
             all_genes.update(set(deleted_genes))
 
             # Gene - drug associations.
-            responsive_gene_drug_association = {}
-            df = pd.read_csv(input.drugs_responsive_genes, header=None)
-            drug_map = zip(df[0], df[1])
-            for item in drug_map:
-                drug = item[0]
-                gene = item[1]
-                if gene in responsive_gene_drug_association:
-                    responsive_gene_drug_association[gene].append(drug)
-                else:
-                    responsive_gene_drug_association[gene] = [drug]
-
-            resistant_gene_drug_association = {}
-            df = pd.read_csv(input.drugs_resistant_genes, header=None)
-            drug_map = zip(df[0], df[1])
-            for item in drug_map:
-                drug = item[0]
-                gene = item[1]
-                if gene in resistant_gene_drug_association:
-                    resistant_gene_drug_association[gene].append(drug)
-                else:
-                    resistant_gene_drug_association[gene] = [drug]
-
             drugs_responsive_genes = set()
-            for gene in all_genes:
-                if gene in responsive_gene_drug_association:
-                    drugs_responsive_genes.update(set(responsive_gene_drug_association[gene]))
+            df = pd.read_csv('drugs_responsive_genes.txt', header=None)
+            drug_map = zip(df[0], df[1])
+            for item in drug_map:
+                drug = item[0]
+                gene = item[1]
+                if gene in all_genes:
+                    drugs_responsive_genes.add(drug)
             drugs_responsive_genes = list(drugs_responsive_genes)
             drugs_responsive_genes.sort()
 
             drugs_resistant_genes = set()
-            for gene in all_genes:
-                if gene in resistant_gene_drug_association:
-                    drugs_resistant_genes.update(set(resistant_gene_drug_association[gene]))
+            df = pd.read_csv('drugs_resistant_genes.txt', header=None)
+            drug_map = zip(df[0], df[1])
+            for item in drug_map:
+                drug = item[0]
+                gene = item[1]
+                if gene in all_genes:
+                    drugs_resistant_genes.add(drug)
             drugs_resistant_genes = list(drugs_resistant_genes)
             drugs_resistant_genes.sort()
+
             summary_file.write(f"Drugs the affected genes are responsive to: {','.join(drugs_responsive_genes)}")
             summary_file.write(f"Drugs the affected genes are resistant to: {','.join(drugs_resistant_genes)}")
 
