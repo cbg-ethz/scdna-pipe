@@ -1,0 +1,126 @@
+5-fluorouracil,HSPA5
+5-fluorouracil,MTHFR
+Abiraterone,CYP17A1
+Alpelisib,PIK3CA
+Atezolizumab,CD274
+Belinostat,MLL
+Bevacizumab,IDH1
+Bevacizumab,MMP2
+Bevacizumab,NF2
+Binimetinib,NRAS
+Buparlisib,PIK3CA
+Cabozantinib,GNA11
+Cabozantinib,MET
+Cabozantinib,RET
+Carboplatin,BRCA1
+Carboplatin,BRCA2
+Carboplatin,BRCA1
+Paclitaxel,BRCA1
+Carboplatin,BRCA2
+Paclitaxel,BRCA2
+Cetuximab,AREG
+Cetuximab,EGFR
+Cetuximab,EREG
+Cetuximab,IDH1
+Cetuximab,KRAS
+Cetuximab,NT5E
+Cisplatin,ATM
+Cisplatin,ERCC2
+Cisplatin,FANCC
+Cisplatin,RB1
+Cisplatin,BRCA1
+Cisplatin,BRCA2
+Crizotinib,ALK
+Crizotinib,MET
+Crizotinib,ROS1
+Dabrafenib,BRAF
+Dasatinib,ABL1
+Dasatinib,IDH1
+Dasatinib,IDH2
+Dasatinib,KIT
+Dasatinib,PDGFRA
+Decitabine,DNMT3A
+Decitabine,TP53
+Docetaxel,DEFA1
+Doxorubicin,TOP2A
+Doxorubicin,TP53
+Enzalutamide,AR
+Enzalutamide,CYP17A1
+Epirubicin,FOXP3
+Erlotinib,EGFR
+Everolimus,ERBB2
+Everolimus,ESR1
+Everolimus,MTOR
+Everolimus,NF1
+Everolimus,NF2
+Everolimus,PIK3CA
+Everolimus,PTEN
+Everolimus,TSC1
+Everolimus,TSC2
+Gefitinib,EGFR
+Gemcitabine,RRM1
+Imatinib,ABL1
+Imatinib,KIT
+Imatinib,NF1
+Imatinib,PDGFB
+Imatinib,PDGFRA
+Imatinib,PDGFRB
+Midostaurin,FLT3
+Midostaurin,KIT
+Niraparib,BRCA1
+Niraparib,BRCA2
+Niraparib,RAD51
+Niraparib,ATM
+Niraparib,PTEN
+Olaparib,ATM
+Olaparib,BRCA1
+Olaparib,BRCA2
+Olaparib,CHEK2
+Olaparib,MRE11
+Olaparib,RAD51
+Paclitaxel,ABCB1
+Paclitaxel,PDCD4
+Paclitaxel,Carboplatin
+Paclitaxel,ERCC2
+Palbociclib,CCND2
+Palbociclib,ERBB2
+Palbociclib,ESR1
+Regorafenib,KIT
+Regorafenib,PDGFRA
+Rucaparib,BRCA1
+Rucaparib,BRCA2
+Rucaparib,RAD51
+Rucaparib,ATM
+Rucaparib,PTEN
+Sorafenib,ARAF
+Sorafenib,FLT3
+Sorafenib,KIT
+Sorafenib,PDGFRA
+Sorafenib,RET
+Sorafenib,VEGFA
+Temozolomide,IDH1
+Temozolomide,MGMT
+Temsirolimus,MTOR
+Temsirolimus,TSC1
+Temsirolimus,TSC2
+Trametinib,BRAF
+Trametinib,GNAQ
+Trametinib,KRAS
+Vemurafenib,BRAF
+Vinblastine,NF1
+Carboplatin + AC-T,BRCA1
+Carboplatin + AC-T,BRCA2
+Carboplatin + Paclitaxel,BRCA1
+Carboplatin + Paclitaxel,BRCA2
+Cobimetinib + Vemurafenib,BRAF
+Dabrafenib + Trametinib,BRAF
+Decitabine + Trametinib,MEK
+Decitabine + Trametinib,ERK
+Olaparib + carboplatin,BRCA1
+Olaparib + carboplatin,BRCA2
+Olaparib + paclitaxel,BRCA1
+Olaparib + paclitaxel,BRCA2
+Olaparib + paclitaxel + carboplatin,BRCA1
+Olaparib + paclitaxel + carboplatin,BRCA2
+Paclitaxel + Carboplatin,ERCC2
+Vemurafenib + Cobimetinib,BRAF
