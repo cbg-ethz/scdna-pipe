@@ -377,6 +377,8 @@ rule create_derived_symlinks:
         cr_cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
         cr_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
         cr_web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html",
+        drugs_responsive_genes = os.path.join(config['drugs_path'], "drugs_responsive_genes.txt")
+        drugs_resistant_genes = os.path.join(config['drugs_path'], "drugs_resistant_genes.txt")
 
     output:
         derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{filename}") for filename in derived_file_names]
@@ -475,6 +477,36 @@ rule create_derived_symlinks:
 
                 summary_file.write(f"There {verb} {n_clusters} {clones} detected with {amp_str}"
                 f" and {del_str} among the pre-selected genes.")
+
+            all_genes = set()
+            all_genes.update(set(amplified_genes))
+            all_genes.update(set(deleted_genes))
+
+            # Gene - drug associations.
+            df = pd.read_csv(input.drugs_responsive_genes, header=None)
+            drug_map = zip(df[0], df[1])
+            drugs_responsive_genes = set()
+            for item in drug_map:
+                drug = item[0]
+                gene = item[1]
+                if gene in all_genes:
+                    drugs_responsive_genes.add(drug)
+            drugs_responsive_genes = list(drugs_responsive_genes)
+            drugs_responsive_genes.sort()
+
+            df = pd.read_csv(input.drugs_resistant_genes, header=None)
+            drug_map = zip(df[0], df[1])
+            drugs_resistant_genes = set()
+            for item in drug_map:
+                drug = item[0]
+                gene = item[1]
+                if gene in all_genes:
+                    drugs_resistant_genes.add(drug)
+            drugs_resistant_genes = list(drugs_resistant_genes)
+            drugs_resistant_genes.sort()
+
+            summary_file.write(f"Drugs the affected genes are responsive to: {','.join(drugs_responsive_genes)}")
+            summary_file.write(f"Drugs the affected genes are resistant to: {','.join(drugs_resistant_genes)}")
 
 rule create_derived_checksum:
     params:

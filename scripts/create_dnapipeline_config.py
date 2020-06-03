@@ -152,7 +152,7 @@ config["secondary_analysis"] = {
 
 config["plotting"] = {
     "profiles": {"offset_sizes": 0.1, "s": 5},
-    "trees": {"highlight_color": "chocolate", "max_genes_per_line": 6},
+    "trees": {"max_genes_per_line": 6},
 }
 
 config["breakpoint_detection"] = {
@@ -194,6 +194,8 @@ config["inference"] = {
 
 config["scicone_path"] = scicone_path
 config["output_temp_path"] = os.path.join(dna_pipeline_code_path, "temp")
+config["drugs_path"] = os.path.join(
+        dna_pipeline_code_path, "required_files/drugs_of_interest/"
 
 with open(args.out, "w") as outfile:
     outfile.write(json.dumps(config, indent=2, sort_keys=False))

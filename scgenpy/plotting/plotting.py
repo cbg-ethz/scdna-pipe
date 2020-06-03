@@ -273,80 +273,11 @@ def _plot_bins(
         plt.show()
 
 
-def convert_event_region_to_gene(
-    region_event_str,
-    bin_gene_region_df,
-    priority_only=False,
-    genes_to_highlight=None,
-    highlight_color="red",
-    genes_only=False,
-):
-    """
-        Returns a string indicating gene-wise events in affected region
-        Examples:
-                "+2R174"     -> ["+2BRAF", "+2MALAT1"]
-                "-1R656:658" -> ["-1JAK2", "-1MLNA", "-1CDK4"]
-        :param region_event_str: str
-        :param bin_gene_region_df: DataFrame
-            with (gene_name, region, original_bin) fields
-        :param priority_only: boolean
-            indicating if only priority genes should be returned
-        :param genes_to_highlight: list
-            genes that should be displayed in a different color
-        :param highlight_color: str
-            color to use in genes to highlight
-        :return: list of str
-    """
-    # Get event (-2, -1, +1, +2, etc)
-    event_str = region_event_str[:2]
-    region_str = region_event_str[3:]
-    if ":" in region_str:  # multiple regions: "-1R656:658"
-        aux = [int(region) for region in region_str.split(":")]
-        region_list = np.arange(aux[0], aux[1] + 1)
-    else:
-        region_list = [int(region_str)]
-
-    gene_list = []
-    for region in region_list:
-        genes_in_region = get_genes_in_region(
-            region, bin_gene_region_df, priority_only=priority_only
-        )
-        gene_list.append(genes_in_region)
-
-    gene_list = [item for sublist in gene_list for item in sublist]
-
-    # Highlight some genes
-    if genes_to_highlight is not None:
-        for index, gene in enumerate(gene_list):
-            if gene in genes_to_highlight:
-                gene_list[index] = (
-                    "<font color="
-                    + "'"
-                    + highlight_color
-                    + "'"
-                    + ">"
-                    + gene
-                    + "</font>"
-                )
-
-    gene_string = "[" + ",".join(gene_list) + "]"
-    if len(gene_list) == 0:
-        gene_event_str = ""
-    else:
-        if not genes_only:
-            gene_event_str = event_str + gene_string
-        else:
-            gene_event_str = gene_string
-
-    return gene_event_str
-
-
 def convert_node_regions_to_genes(
     node_str,
     bin_gene_region_df,
     priority_only=False,
     genes_to_highlight=None,
-    highlight_color="red",
     max_genes_per_line=10,
 ):
     """
@@ -445,6 +376,19 @@ def convert_node_regions_to_genes(
             node_str = "<i> </i>" + node_str + "<i> </i>"
             if i < len(str_dict.keys()):
                 node_str = node_str + " " + newline + " " + newline
+            # highlight genes of interest
+            if genes_to_highlight is not None:
+                for gene in genes_to_highlight:
+                    node_str = node_str.replace(
+                        gene,
+                        "<b><font color="
+                        + "'"
+                        + color
+                        + "'"
+                        + ">"
+                        + gene
+                        + "</font></b>",
+                    )
 
     # If newline followed by ']', replace with newline after ']'
     node_str = node_str.replace(newline + "]", "]" + newline)
@@ -464,20 +408,6 @@ def convert_node_regions_to_genes(
                 )
             )
 
-    # highlight genes
-    if genes_to_highlight is not None:
-        for gene in genes_to_highlight:
-            node_str = node_str.replace(
-                gene,
-                "<b><font color="
-                + "'"
-                + highlight_color
-                + "'"
-                + ">"
-                + gene
-                + "</font></b>",
-            )
-
     if node_str == "":
         node_str = num_events_str
 
@@ -490,7 +420,6 @@ def tree_to_graphviz(
     gene_labels=False,
     bin_gene_region_df=None,
     genes_to_highlight=None,
-    highlight_color="yellow",
     max_genes_per_line=6,
     output_path=None,
 ):
@@ -564,7 +493,6 @@ def tree_to_graphviz(
                     bin_gene_region_df,
                     priority_only=True,
                     genes_to_highlight=genes_to_highlight,
-                    highlight_color=highlight_color,
                     max_genes_per_line=max_genes_per_line,
                 )
 
