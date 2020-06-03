@@ -23,7 +23,7 @@ def set_region_neutral_states(all_region_stops, known_region_stops, known_region
     for i, known_stop in enumerate(known_region_stops):
         end_idx = np.where(all_region_stops==known_stop)[0][0]
         all_region_neutral_states[start_idx:end_idx+1] = known_region_neutral_states[i]
-        start_idx = end_idx
+        start_idx = end_idx+1
 
     return all_region_neutral_states
 
