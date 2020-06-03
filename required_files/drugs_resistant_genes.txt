@@ -1,0 +1,45 @@
+5-fluorouracil,ALCAM
+5-fluorouracil,CDKN1A
+5-fluorouracil,SMAD4
+Abiraterone,AR
+Bevacizumab,BRAF
+Bevacizumab,EPHB4
+Bevacizumab,MMP9 
+Bicalutamide,AR
+Cetuximab,BRAF
+Cetuximab,ERBB2
+Cetuximab,ERBB3
+Cetuximab,KRAS
+Cetuximab,NRAS
+Cetuximab,PIK3CA
+Cetuximab,PTEN
+Cisplatin,AURKA
+Cisplatin,DNMT1
+Cisplatin,ERCC2
+Cisplatin,KRAS
+Cisplatin,MDM2
+Cisplatin,TP53
+Crizotinib,ALK
+Crizotinib,AREG
+Dasatinib,ABL1
+Docetaxel,CXCR4
+Erlotinib,EGFR
+Erlotinib,KRAS
+Gefitinib,EGFR
+Gefitinib,KRAS
+Imatinib,ABL1
+Imatinib,BCL2L11
+Imatinib,KIT
+Imatinib,PDGFRA
+Melphalan,KRAS
+Olaparib,BRCA1
+Paclitaxel,STMN1
+Paclitaxel,TIMP1
+Sorafenib,FLT3
+Sorafenib,PROM1
+Vemurafenib,BRAF
+Vemurafenib,MET
+Vemurafenib,NRAS
+Bicalutamide + palbociclib,AR
+Bicalutamide + palbociclib,RB
+Carboplatin + Paclitaxel,KRAS 
