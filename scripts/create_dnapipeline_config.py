@@ -195,7 +195,7 @@ config["inference"] = {
 config["scicone_path"] = scicone_path
 config["output_temp_path"] = os.path.join(dna_pipeline_code_path, "temp")
 config["drugs_path"] = os.path.join(
-        dna_pipeline_code_path, "required_files/drugs_of_interest/"
+        dna_pipeline_code_path, "required_files/drugs_of_interest/")
 
 with open(args.out, "w") as outfile:
     outfile.write(json.dumps(config, indent=2, sort_keys=False))
