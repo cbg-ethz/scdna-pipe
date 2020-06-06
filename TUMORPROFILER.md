@@ -116,12 +116,14 @@ $ python create_dnapipeline_config.py -f BSSE_QGF_131049_HNY5VBGXC_1_MADEGOD_T_s
 ```    
 $ module load python/3.6.0 graphviz hdf5/1.8.12 gcc/6.2.0 eth_proxy cmake/3.11.4
 $ module load /cluster/work/bewi/modules/cellranger-dna/1.1.0/cellranger-dna-1.1.0/cellranger-dna.modulefile
+## configure SCICoNE
 $ cd /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scicone
 $ mkdir build && cd build                       # Create and enter the build directory
 $ cmake ..                                      # Compile the program with cmake
 $ make                                          # Build the executables
 $ cd /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scicone/pyscicone
 $ pip install -e .
+## configure the pipeline
 $ cd /cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/
 $ pip install -e .
 
