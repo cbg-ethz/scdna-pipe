@@ -506,9 +506,9 @@ rule create_derived_symlinks:
             drugs_resistant_genes.sort()
 
             summary_file.write(f"Drugs the affected genes are responsive to: "
-            f"{','.join(drugs_responsive_genes) if len(drugs_responsive_genes) else 'no associated drugs were found'}.\n\n")
+            f"{', '.join(drugs_responsive_genes) if len(drugs_responsive_genes) else 'no associated drugs were found'}.\n\n")
             summary_file.write(f"Drugs the affected genes are resistant to: "
-            f"{','.join(drugs_resistant_genes) if len(drugs_resistant_genes) else 'no associated drugs were found'}.\n")
+            f"{', '.join(drugs_resistant_genes) if len(drugs_resistant_genes) else 'no associated drugs were found'}.\n")
 
 rule create_derived_checksum:
     params:
