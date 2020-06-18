@@ -444,10 +444,10 @@ rule create_derived_symlinks:
 
         amplified_genes = cn_gene_df[(cn_gene_df > params.ploidy).any(axis='columns')].index.values.tolist()
         n_amplified_genes = len(amplified_genes)
-        amplified_genes = ', '.join(amplified_genes)
+        amplified_genes_str = ', '.join(amplified_genes)
         deleted_genes = cn_gene_df[(cn_gene_df < params.ploidy).any(axis='columns')].index.values.tolist()
         n_deleted_genes = len(deleted_genes)
-        deleted_genes = ', '.join(deleted_genes)
+        deleted_genes_str = ', '.join(deleted_genes)
 
         open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w").close()
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w") as summary_file:
@@ -467,16 +467,16 @@ rule create_derived_symlinks:
                     verb = 'is'
                     clones = 'clone'
                 if n_amplified_genes > 0:
-                    amp_str = f"copy number gains in {amplified_genes}"
+                    amp_str = f"copy number gains in {amplified_genes_str}"
                 else:
                     amp_str = f"no copy number gains"
                 if n_deleted_genes > 0:
-                    del_str = f"copy number deletions in {deleted_genes}"
+                    del_str = f"copy number deletions in {deleted_genes_str}"
                 else:
                     del_str = f"no copy number deletions"
 
                 summary_file.write(f"There {verb} {n_clusters} {clones} detected with {amp_str}"
-                f" and {del_str} among the pre-selected genes.")
+                f" and {del_str} among the pre-selected genes.\n\n")
 
             all_genes = set()
             all_genes.update(set(amplified_genes))
@@ -505,8 +505,10 @@ rule create_derived_symlinks:
             drugs_resistant_genes = list(drugs_resistant_genes)
             drugs_resistant_genes.sort()
 
-            summary_file.write(f"Drugs the affected genes are responsive to: {','.join(drugs_responsive_genes)}")
-            summary_file.write(f"Drugs the affected genes are resistant to: {','.join(drugs_resistant_genes)}")
+            summary_file.write(f"Drugs the affected genes are responsive to: "
+            f"{','.join(drugs_responsive_genes) if len(drugs_responsive_genes) else 'no associated drugs were found'}.\n\n")
+            summary_file.write(f"Drugs the affected genes are resistant to: "
+            f"{','.join(drugs_resistant_genes) if len(drugs_resistant_genes) else 'no associated drugs were found'}.\n")
 
 rule create_derived_checksum:
     params:
