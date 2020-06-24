@@ -64,6 +64,30 @@ rule create_cn_cluster_h5:
         cn_cluster_h5.create_dataset("matrix", data=gene_cn_df.values)
         cn_cluster_h5.close()
 
+rule identify_diploid:
+    input:
+        inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv",
+        excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
+        bin_chr_indicator_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
+    output:
+        is_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__is_diploid.txt",
+    run:
+        inferred_cnvs = np.loadtxt(input.inferred_cnvs, delimiter=',')
+        excluded_bins = np.loadtxt(input.excluded_bins_path)
+        excluded_bins = excluded_bins.astype(bool)
+        bin_chr_indicator = np.loadtxt(input.bin_chr_indicator_path)
+        bin_chr_indicator = bin_chr_indicator[~excluded_bins].ravel()
+        x_start = np.where(bin_chr_indicator=='X')[0]
+
+        inferred_cnvs = inferred_cnvs[:, :x_start]
+        n_bins = x_start
+        n_cells = inferred_cnvs.shape[0]
+
+        is_diploid = np.array(np.sum(inferred_cnvs, axis=1) / n_bins > 0.98)
+        is_diploid = is_diploid.reshape(n_cells, 1)
+
+        np.savetxt(output.is_diploid, is_diploid)
+
 rule assess_cell_fusions:
     input:
         input_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
