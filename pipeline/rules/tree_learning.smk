@@ -11,16 +11,16 @@ rule learn_cluster_tree:
         output_temp_path = output_temp_path
     input:
         segmented_counts = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
-        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states.txt"
+                "breakpoint_detection", analysis_prefix) + "_segmented_counts_{stage}.csv",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_{stage}.txt",
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_{stage}.txt"
     output:
-        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score.txt",
-        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv",
-        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids.tsv",
-        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness.txt"
-        ctree_outliers = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_outliers.txt"
+        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_{stage}.txt",
+        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_{stage}.txt",
+        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_{stage}.csv",
+        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_{stage}.tsv",
+        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_{stage}.txt"
+        is_outlier = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier_{stage}.txt"
     threads: 10
     run:
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
@@ -51,16 +51,16 @@ rule learn_cluster_tree:
 
 rule cell_assignment:
     input:
-        inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv",
-        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
-        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv"
+        inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_{stage}.csv",
+        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions_{stage}.csv",
+        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins_{stage}.csv"
     output:
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
-        tree_node_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_tree_node_sizes.txt",
-        clustered_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_cluster_tree_inferred_cnvs.csv",
-        clustered_normalised_regions = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_regions.csv",
-        clustered_normalised_bins = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_bins.csv",
-        clustered_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_labels.csv"
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_{stage}.csv",
+        tree_node_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_tree_node_sizes_{stage}.txt",
+        clustered_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_cluster_tree_inferred_cnvs_{stage}.csv",
+        clustered_normalised_regions = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_regions_{stage}.csv",
+        clustered_normalised_bins = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_bins_{stage}.csv",
+        clustered_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_labels_{stage}.csv"
     benchmark:
         "benchmarks/cell_assignments.tsv"
     run:

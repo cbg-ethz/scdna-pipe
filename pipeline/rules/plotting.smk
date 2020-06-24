@@ -4,12 +4,12 @@ from scgenpy.preprocessing.utils import sort_chromosomes
 
 rule plot_cnv_matrix:
     input:
-        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
-        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
-        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
+        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins_final.csv",
+        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions_final.csv",
+        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions_final.txt",
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
-        inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv",
+        inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_final.csv",
         is_outlier = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier.txt"
     output:
         inferred_cnvs_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_cnvs_bins.png",
@@ -67,9 +67,9 @@ rule plot_cnv_matrix:
 
 rule plot_data_matrix:
     input:
-        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
-        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
-        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
+        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins_final.csv",
+        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions_final.csv",
+        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions_final.txt",
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
     output:
@@ -127,8 +127,8 @@ rule visualise_trees:
         highlight_color = config['plotting']['trees']['highlight_color'],
         max_genes_per_line = config['plotting']['trees']['max_genes_per_line']
     input:
-        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids.tsv",
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt",
+        cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_final.tsv",
         bin_gene_region_df_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__bin_gene_region_df.csv",
         genes_to_highlight_path = disease_genes_path
     output:
@@ -172,7 +172,7 @@ rule plot_cluster_cnvs:
         max_amp_val = config['inference']['copy_number_limit'],
         ploidy = config['inference']['ploidy']
     input:
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs.csv",
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs_final.csv",
         chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv"
     output:
         overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png"
