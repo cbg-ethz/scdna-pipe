@@ -6,7 +6,7 @@ rule learn_cluster_tree:
         c_penalise = config["inference"]["c_penalise"],
         copy_number_limit = config["inference"]["copy_number_limit"],
         posfix = "",
-        remove_cluster_outliers = True,
+        remove_cluster_outliers = True if wildcards.stage == 'candidate' else False,
         scicone_path = scicone_path,
         output_temp_path = output_temp_path
     input:
@@ -48,6 +48,9 @@ rule learn_cluster_tree:
 
         with open(output.clustering_score, "w") as file:
             file.write(str(sci.clustering_score))
+
+        is_outlier = np.isnan(sci.best_cluster_tree.outputs['cell_node_ids'].ravel()).reshape(n_cells,1).astype(bool)
+        np.savetxt(outputs.is_outlier, is_outlier)
 
 rule cell_assignment:
     input:
