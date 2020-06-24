@@ -106,6 +106,7 @@ def plot_bins(
         cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
     else:
         cmap = sns.diverging_palette(220, 10, as_cmap=True)
+    cmap.set_bad(color="black")  # for NaN
     im = plt.pcolormesh(bins, cmap=cmap, clim=(vmin, vmax), norm=norm)
     plt.ylabel(ylabel)
     plt.yticks([])

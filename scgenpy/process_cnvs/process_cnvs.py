@@ -23,6 +23,8 @@ def cluster_clones(inferred_cnvs, normalised_bins, normalised_regions):
 
     for c_id in range(unique_cnvs.shape[0]):
         cells = np.where(np.all(inferred_cnvs == unique_cnvs[c_id], axis=1))[0]
+        if np.any(np.isnan(unique_cnvs[c_id])):
+            labels[cells] = "NA"
         labels[cells] = c_id
 
     # Sort cells by sorted clone index

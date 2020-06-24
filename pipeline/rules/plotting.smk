@@ -9,7 +9,8 @@ rule plot_cnv_matrix:
         segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
-        inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv"
+        inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv",
+        is_outlier = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier.txt"
     output:
         inferred_cnvs_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_cnvs_bins.png",
         sorted_normalised_counts_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",
@@ -138,6 +139,9 @@ rule visualise_trees:
     run:
         # Node sizes
         cell_node_assignments = np.loadtxt(input.cell_node_assignments, delimiter='\t')
+
+        # Remove outliers
+        cell_node_assignments = cell_node_assignments[cell_node_assignments != 'NA']
         keys, values = [arr.tolist() for arr in np.unique(cell_node_assignments, return_counts=True)]
         node_sizes = dict(zip(np.array(keys).astype(int).astype(str).tolist(), values))
 

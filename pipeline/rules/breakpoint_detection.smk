@@ -42,7 +42,8 @@ rule detect_breakpoints:
         matrix_shape = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts_shape.txt",
         chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
-        bin_chr_indicator_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt"
+        bin_chr_indicator_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
+        is_outlier = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier.txt"
     output:
         segmented_regions = os.path.join(analysis_path,\
              "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
@@ -53,8 +54,12 @@ rule detect_breakpoints:
             os.makedirs(params.bp_detection_path)
         except FileExistsError:
             print("breakpoint detection directory already exists.")
-        input_shape = np.loadtxt(input.matrix_shape)
-        (n_cells, n_bins) = [int(input_shape[i]) for i in range(2)]
+
+        data = np.loadtxt(input.d_matrix_file, delimiter=',')
+        (n_cells, n_bins) = data.shape
+
+        is_outlier = np.loadtxt(input.is_outlier).astype(bool)
+        data = data[~is_outlier]
 
         chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=0)
 
@@ -75,8 +80,6 @@ rule detect_breakpoints:
         g = gpl + gmn
 
         sci = SCICoNE(params.scicone_path, params.output_temp_path, persistence=True, postfix=params.postfix)
-
-        data = np.loadtxt(input.d_matrix_file, delimiter=',')
         bps = sci.detect_breakpoints(data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, compute_sp=False, evaluate_peaks=False)
 
         filtered_lr = filter_lr(bps['lr_vec'].T, H=g)

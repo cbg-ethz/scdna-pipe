@@ -6,6 +6,7 @@ rule learn_cluster_tree:
         c_penalise = config["inference"]["c_penalise"],
         copy_number_limit = config["inference"]["copy_number_limit"],
         posfix = "",
+        remove_cluster_outliers = True,
         scicone_path = scicone_path,
         output_temp_path = output_temp_path
     input:
@@ -19,6 +20,7 @@ rule learn_cluster_tree:
         ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv",
         ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids.tsv",
         ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness.txt"
+        ctree_outliers = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_outliers.txt"
     threads: 10
     run:
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
@@ -30,7 +32,7 @@ rule learn_cluster_tree:
         sci = SCICoNE(params.scicone_path, params.output_temp_path, persistence=False, postfix=params.posfix)
 
         # Run cluster trees
-        sci.learn_tree(segmented_counts, segmented_region_sizes, n_reps=params.n_reps, cluster=True, full=False, cluster_tree_n_iters=params.cluster_tree_n_iters,
+        sci.learn_tree(segmented_counts, segmented_region_sizes, remove_cluster_outliers=params.remove_cluster_outliers, n_reps=params.n_reps, cluster=True, full=False, cluster_tree_n_iters=params.cluster_tree_n_iters,
                                 max_tries=params.cluster_tree_n_tries, robustness_thr=0.5, alpha=alpha, copy_number_limit=params.copy_number_limit,
                                 c_penalise=params.c_penalise, region_neutral_states=segmented_neutral_states)
 
