@@ -27,7 +27,7 @@
   "secondary_analysis": {
     "h5_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MADEGOD-T/singlecell_dna/analysis/cellranger/MADEGOD/outs/cnv_data.h5",
     "bins_to_remove": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv",
-    "genes_path": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/genes_of_interest/",
+    "genes_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/required_files/genes_of_interest",
     "general_main_gene_list": "dna_long_gene_list.txt",
   },
   "plotting": {
@@ -36,7 +36,6 @@
       "s": 5
     },
     "trees": {
-      "highlight_color": "chocolate",
       "max_genes_per_line": 6
     }
   },
@@ -63,5 +62,6 @@
     }
   },
   "scicone_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scicone/build/",
-  "output_temp_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/temp/"
+  "output_temp_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/temp/",
+  "drugs_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/required_files/drugs_of_interest/"
 }

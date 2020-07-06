@@ -124,7 +124,6 @@ rule plot_data_matrix:
 
 rule visualise_trees:
     params:
-        highlight_color = config['plotting']['trees']['highlight_color'],
         max_genes_per_line = config['plotting']['trees']['max_genes_per_line']
     input:
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt",
@@ -158,8 +157,7 @@ rule visualise_trees:
         genes_to_highlight.columns = ["gene"]
         genes_to_highlight = genes_to_highlight.gene.values.tolist()
         genes_tree = tree_to_graphviz(input.cluster_tree, node_sizes=node_sizes, gene_labels=True, bin_gene_region_df=bin_gene_region_df,
-                                genes_to_highlight=genes_to_highlight, highlight_color=params.highlight_color,
-                                max_genes_per_line=params.max_genes_per_line)
+                                genes_to_highlight=genes_to_highlight, max_genes_per_line=params.max_genes_per_line)
         with open(output.cluster_tree_genes_graphviz, "w") as file:
             for line in genes_tree:
                 file.write(f"{line}\n")
