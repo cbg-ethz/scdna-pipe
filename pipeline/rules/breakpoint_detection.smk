@@ -43,7 +43,7 @@ rule detect_breakpoints:
         chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
-        is_outlier_initial = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier_initial.txt"
+        is_outlier_initial = os.path.join(analysis_path, "filtering", analysis_prefix) + "_initial_is_outlier.txt"
     output:
         segmented_regions = os.path.join(analysis_path,\
              "breakpoint_detection", analysis_prefix) + "_segmented_regions_candidate.txt",
@@ -167,7 +167,7 @@ rule segment_regions:
         segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape_{stage}.txt",
         segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_{stage}.txt"
     benchmark:
-        "benchmarks/segment_regions.tsv"
+        "benchmarks/segment_regions_{stage}.tsv"
     run:
         print("loading the filtered counts...")
         filtered_counts = np.loadtxt(input.filtered_counts, delimiter=',')
@@ -243,7 +243,7 @@ rule normalise_counts:
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins_{stage}.csv",
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions_{stage}.csv"
     benchmark:
-        "benchmarks/normalise_counts.tsv"
+        "benchmarks/normalise_counts_{stage}.tsv"
     run:
         from sklearn.preprocessing import normalize
 

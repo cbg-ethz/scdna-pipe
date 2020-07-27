@@ -10,7 +10,7 @@ rule plot_cnv_matrix:
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
         inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_final.csv",
-        is_outlier = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier.txt"
+        is_outlier = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier_final.txt"
     output:
         inferred_cnvs_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_cnvs_bins.png",
         sorted_normalised_counts_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",

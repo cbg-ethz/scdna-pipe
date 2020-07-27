@@ -13,6 +13,7 @@ import seaborn as sns
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import phenograph
 from tqdm import tqdm
 from pathlib import Path
 from collections import Counter
@@ -72,7 +73,7 @@ derived_file_names = [
             "cluster_tree_sorted_cnvs_bins.png",
             "unique_cluster_tree_cnvs.csv",
             "inferred_cnvs.csv",
-            "cluster_tree_tree_node_sizes.txt",
+            "tree_node_sizes_cluster_tree.txt",
             "cluster_tree_genes.png",
             "cluster_profile_files.txt",
             "cluster_profile_overlapping.png",
@@ -110,6 +111,25 @@ rule all:
     run:
         print("echo rule all")
 
+rule identify_outliers:
+    input:
+        d_matrix_file = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
+    output:
+        is_outlier_initial = os.path.join(analysis_path, "filtering", analysis_prefix) + "_initial_is_outlier.txt",
+    run:
+        data = np.loadtxt(input.d_matrix_file, delimiter=',')
+
+        n_cells = data.shape[0]
+        n_neighbours = max(int(n_cells / 10), 2) # avoid errors
+
+        normalized_data = data / np.sum(data, axis=1).reshape(-1,1)
+        communities, graph, Q = phenograph.cluster(data=normalized_data, k=n_neighbours, n_jobs=1, jaccard=True)
+
+        is_outlier_initial = np.array([[True if c==-1 else False for c in communities]])
+        is_outlier_initial = is_outlier_initial.reshape(n_cells, 1)
+
+        np.savetxt(output.is_outlier_initial, is_outlier_initial)
+
 rule remove_tenx_artifacts:
     params:
         bins = config["secondary_analysis"]["bins_to_remove"]
@@ -138,14 +158,14 @@ rule extract_genomic_info:
 
 rule add_filtered_bins_back:
     input:
-        cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv", # use cluster tree results
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv", # use cluster tree results
+        cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_{stage}.csv", # use cluster tree results
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_{stage}.csv", # use cluster tree results
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv"
     output:
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
-        unique_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs.csv"
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs_{stage}.csv",
+        unique_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs_{stage}.csv"
     benchmark:
-        "benchmark/add_filtered_bins_back.tsv"
+        "benchmark/add_filtered_bins_back_{stage}.tsv"
     run:
         sa.add_filtered_bins_back(input.cnv_profiles, input.excluded_bins, output.inferred_cnvs)
         sa.add_filtered_bins_back(input.unique_cnv_profiles, input.excluded_bins, output.unique_cnvs)
@@ -355,19 +375,19 @@ rule create_derived_symlinks:
         bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
-        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
+        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions_final.txt",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_final.txt",
         segmented_counts = os.path.join(analysis_path,\
         "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins.csv",
-        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions.csv",
-        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score.txt",
-        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
+        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions_final.csv",
+        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_final.txt",
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt",
         cluster_tree_sorted_normalised_counts_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",
         cluster_tree_sorted_cnvs_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins.png",
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs.csv",
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs.csv",
-        cluster_tree_tree_node_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_tree_node_sizes.txt",
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_final.csv",
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs_final.csv",
+        cluster_tree_tree_node_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_node_sizes_cluster_tree_final.txt",
         cluster_tree_genes_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
         overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
@@ -418,7 +438,7 @@ rule create_derived_symlinks:
         create_symlink(input.inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__inferred_cnvs.csv"))
         create_symlink(input.cluster_tree_genes_png, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_genes.png"))
 
-        create_symlink(input.cluster_tree_tree_node_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_tree_node_sizes.txt"))
+        create_symlink(input.cluster_tree_tree_node_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__tree_node_sizes_cluster_tree.txt"))
         create_symlink(input.overlapping_cluster_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_overlapping.png"))
 
         cluster_profile_plots = glob.glob(os.path.join(analysis_path, "inferred_cnvs", f"{analysis_prefix}__cluster_profile_[0-9]*.png"))

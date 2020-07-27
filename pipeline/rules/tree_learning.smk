@@ -6,7 +6,7 @@ rule learn_cluster_tree:
         c_penalise = config["inference"]["c_penalise"],
         copy_number_limit = config["inference"]["copy_number_limit"],
         posfix = "",
-        remove_cluster_outliers = True if wildcards.stage == 'candidate' else False,
+        remove_cluster_outliers = lambda w: True if w.stage == 'candidate' else False,
         scicone_path = scicone_path,
         output_temp_path = output_temp_path
     input:
@@ -19,7 +19,7 @@ rule learn_cluster_tree:
         ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_{stage}.txt",
         ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_{stage}.csv",
         ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_{stage}.tsv",
-        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_{stage}.txt"
+        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_{stage}.txt",
         is_outlier = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier_{stage}.txt"
     threads: 10
     run:
@@ -59,13 +59,13 @@ rule cell_assignment:
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins_{stage}.csv"
     output:
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_{stage}.csv",
-        tree_node_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_tree_node_sizes_{stage}.txt",
+        tree_node_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_node_sizes_cluster_tree_{stage}.txt",
         clustered_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_cluster_tree_inferred_cnvs_{stage}.csv",
         clustered_normalised_regions = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_regions_{stage}.csv",
         clustered_normalised_bins = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_bins_{stage}.csv",
         clustered_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_labels_{stage}.csv"
     benchmark:
-        "benchmarks/cell_assignments.tsv"
+        "benchmarks/cell_assignments_{stage}.tsv"
     run:
         inferred_cnvs = np.loadtxt(input.inferred_cnvs, delimiter=',') # cell-wise profiles
         normalised_bins = np.loadtxt(input.normalised_bins, delimiter=',')
