@@ -50,6 +50,7 @@
     "threshold": 3,
     "bp_limit": 300,
     "subset_size": 0,
+    "seed":42,
   },
   "inference": {
     "ploidy": 2,
