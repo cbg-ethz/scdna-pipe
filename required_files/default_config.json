@@ -26,6 +26,7 @@
   },
   "secondary_analysis": {
     "h5_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MADEGOD-T/singlecell_dna/analysis/cellranger/MADEGOD/outs/cnv_data.h5",
+    "metrics_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MADEGOD-T/singlecell_dna/analysis/cellranger/MADEGOD/outs/per_cell_summary_metrics.cnv",
     "bins_to_remove": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv",
     "genes_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/required_files/genes_of_interest",
     "general_main_gene_list": "dna_long_gene_list.txt",
@@ -39,11 +40,15 @@
       "max_genes_per_line": 6
     }
   },
+  "outlier_detection": {
+    "gini_treshold": 0.4
+  },
   "breakpoint_detection": {
-    "window_size": 50,
+    "window_size": 100,
     "verbosity": 1,
     "threshold": 3,
     "bp_limit": 300,
+    "subset_size": 0,
   },
   "inference": {
     "ploidy": 2,
@@ -58,7 +63,8 @@
       "n_tries": 5,
       "n_nodes": 0,
       "move_probs":[0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.01],
-      "n_reps": 10
+      "n_reps": 10,
+      "min_cluster_size": 1
     }
   },
   "scicone_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scicone/build/",

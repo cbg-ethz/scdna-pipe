@@ -69,21 +69,28 @@ rule identify_diploid:
         inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_candidate.csv",
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
+        chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
     output:
         is_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "_is_diploid_candidate.txt",
     run:
         inferred_cnvs = np.loadtxt(input.inferred_cnvs, delimiter=',')
         excluded_bins = np.loadtxt(input.excluded_bins_path)
         excluded_bins = excluded_bins.astype(bool)
-        bin_chr_indicator = np.loadtxt(input.bin_chr_indicator_path)
+        bin_chr_indicator = pd.read_csv(input.bin_chr_indicator_path, header=None).values.ravel()
         bin_chr_indicator = bin_chr_indicator[~excluded_bins].ravel()
-        x_start = np.where(bin_chr_indicator=='X')[0]
 
-        inferred_cnvs = inferred_cnvs[:, :x_start]
-        n_bins = x_start
+        x_start = np.where(bin_chr_indicator=='X')[0][0]
+        y_start = np.where(bin_chr_indicator=='Y')[0][0]
+
+        neutral_bins = np.ones((inferred_cnvs.shape[1],)) * 2
+        chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=1).T
+        neutral_bins[x_start:y_start] = chr_stops['X']['neutral_state']
+        neutral_bins[y_start:] = chr_stops['Y']['neutral_state']
+
         n_cells = inferred_cnvs.shape[0]
+        n_bins = inferred_cnvs.shape[1]
 
-        is_diploid = np.array(np.sum(inferred_cnvs, axis=1) / n_bins > 0.98)
+        is_diploid = np.array(np.sum(inferred_cnvs == neutral_bins, axis=1) / n_bins > 0.98)
         is_diploid = is_diploid.reshape(n_cells, 1)
 
         np.savetxt(output.is_diploid, is_diploid)

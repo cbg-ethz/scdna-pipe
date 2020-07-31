@@ -8,6 +8,7 @@ from collections import Counter
 from sklearn.preprocessing import normalize
 import os
 import matplotlib
+from scicone.utils import gini
 
 if os.environ.get("DISPLAY", "") == "":
     # print("no display found. Using non-interactive Agg backend")
@@ -126,7 +127,7 @@ class SecondaryAnalysis:
 
         h5f.close()
 
-    def remove_tenx_genomics_artifacts(self, bins):
+    def remove_tenx_genomics_artifacts(self, bins, to_file=False):
         """
         Filters out the technical noise produced by 10x genomics sequencing artifacts.
         :param bins: The list of bins corresponding to technical noise
@@ -183,30 +184,53 @@ class SecondaryAnalysis:
         normalized_counts = normalized_counts[:, ~to_filter_out]
         print(normalized_counts.shape)
 
-        print("writing output...")
-
-        output_path = os.path.join(self.output_path, "filtering")
-
-        np.savetxt(
-            os.path.join(output_path, self.sample_name) + "__excluded_bins.csv",
-            to_filter_out,
-            delimiter=",",
-        )
-
-        np.savetxt(
-            output_path + "/" + self.sample_name + "__filtered_counts_shape.txt",
-            normalized_counts.shape,
-        )
-
-        np.savetxt(
-            output_path + "/" + self.sample_name + "__filtered_counts.csv",
-            normalized_counts,
-            delimiter=",",
-        )
-
-        print("Output written to: " + output_path)
-
         h5f.close()
+
+        if to_file:
+            print("writing output...")
+
+            output_path = os.path.join(self.output_path, "filtering")
+
+            np.savetxt(
+                os.path.join(output_path, self.sample_name) + "__excluded_bins.csv",
+                to_filter_out,
+                delimiter=",",
+            )
+
+            np.savetxt(
+                output_path + "/" + self.sample_name + "__filtered_counts_shape.txt",
+                normalized_counts.shape,
+            )
+
+            np.savetxt(
+                output_path + "/" + self.sample_name + "__filtered_counts.csv",
+                normalized_counts,
+                delimiter=",",
+            )
+
+            print("Output written to: " + output_path)
+        else:
+            return normalized_counts, to_filter_out
+
+    def remove_outliers(self, data, threshold=0.4, normalise=True):
+        if normalise:
+            in_data = data / np.sum(data, axis=1).reshape(-1, 1)
+        else:
+            in_data = data
+
+        gini_coeffs = []
+        for cell in in_data:
+            gini_coeffs.append(gini(cell))
+        gini_coeffs = np.array(gini_coeffs)
+
+        is_outlier = np.array(
+            [[True if coeff > threshold else False for coeff in gini_coeffs]]
+        )
+        is_outlier = is_outlier.ravel()
+
+        data = data[~is_outlier]
+
+        return data, is_outlier
 
     def apply_phenograph(self, normalised_regions_path, n_jobs=1):
         """
