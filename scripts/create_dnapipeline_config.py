@@ -75,7 +75,7 @@ if not (args.gender == "male" or args.gender == "female"):
     sys.exit('Argument "--gender cannot be parsed.')
 
 # Parse the input
-pattern_1 = re.search("_1_(.+)_T_scD", args.openbis_fastq_filename)
+pattern_1 = re.search("_1_+([^_]+)_T_scD", args.openbis_fastq_filename)
 pattern_2 = re.search("^BSSE_QGF_[0-9]+_([^_]+)_", args.openbis_fastq_filename)
 pattern_3 = re.search("_S([0-9]+)_L00[0-9]_.._001", args.openbis_fastq_filename)
 if not (pattern_1 and pattern_2 and pattern_3):
