@@ -8,6 +8,7 @@ from collections import Counter
 from sklearn.preprocessing import normalize
 import os
 import matplotlib
+import scipy
 from scicone.utils import gini
 
 if os.environ.get("DISPLAY", "") == "":
@@ -212,7 +213,18 @@ class SecondaryAnalysis:
         else:
             return normalized_counts, to_filter_out
 
-    def remove_outliers(self, data, threshold=0.4, normalise=True):
+    def remove_outliers(self, data, alpha=0.05):
+        h5f = h5py.File(self.h5_path, "r")
+        dimapds = h5f["per_cell_summary_metrics"]["normalized_dimapd"][()]
+        mean, std = scipy.stats.distributions.norm.fit(dimapds)
+        pvals = 1.0 - scipy.stats.distributions.norm.cdf(dimapds, mean, std)
+
+        is_outlier = pvals < alpha
+        data = data[~is_outlier]
+
+        return data, is_outlier
+
+    def remove_outliers_gini(self, data, threshold=0.4, normalise=True):
         if normalise:
             in_data = data / np.sum(data, axis=1).reshape(-1, 1)
         else:
