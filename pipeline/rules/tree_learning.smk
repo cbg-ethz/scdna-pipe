@@ -6,7 +6,7 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
-rule learn_cluster_tree:
+rule learn_candidate_cluster_tree:
     params:
         cluster_tree_n_iters = config["inference"]["cluster_trees"]["n_iters"],
         cluster_tree_n_tries = config["inference"]["cluster_trees"]["n_tries"],
@@ -15,19 +15,19 @@ rule learn_cluster_tree:
         copy_number_limit = config["inference"]["copy_number_limit"],
         posfix = "",
         scicone_path = scicone_path,
-        output_temp_path = output_temp_path
+        output_temp_path = output_temp_path,
     input:
         segmented_counts = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_counts_{stage}.csv",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_{stage}.txt",
-        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_{stage}.txt"
+                "breakpoint_detection", analysis_prefix) + "_segmented_counts_candidate.csv",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_candidate.txt",
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_candidate.txt"
     output:
-        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_{stage}.txt",
-        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_{stage}.txt",
-        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_{stage}.csv",
-        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_{stage}.tsv",
-        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_{stage}.txt",
-        ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_{stage}.json",
+        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_candidate.txt",
+        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_candidate.txt",
+        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_candidate.csv",
+        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_candidate.tsv",
+        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_candidate.txt",
+        ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_candidate.json",
     threads: 10
     run:
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
@@ -36,6 +36,7 @@ rule learn_cluster_tree:
         alpha = 1./segmented_counts.shape[1]
         n_bins = np.sum(segmented_region_sizes)
         n_cells = segmented_counts.shape[0]
+
         sci = SCICoNE(params.scicone_path, params.output_temp_path, persistence=False, postfix=params.posfix)
 
         # Run cluster trees
@@ -58,6 +59,80 @@ rule learn_cluster_tree:
 
         with open(output.ctree_json, 'w') as file:
             json.dump(sci.best_cluster_tree.node_dict, file, cls=NumpyEncoder)
+
+rule learn_final_cluster_tree:
+    params:
+        cluster_tree_n_iters = config["inference"]["cluster_trees"]["n_iters"],
+        cluster_tree_n_tries = config["inference"]["cluster_trees"]["n_tries"],
+        n_reps = config["inference"]["cluster_trees"]["n_reps"],
+        c_penalise = config["inference"]["c_penalise"],
+        copy_number_limit = config["inference"]["copy_number_limit"],
+        posfix = "",
+        scicone_path = scicone_path,
+        output_temp_path = output_temp_path,
+    input:
+        segmented_counts = os.path.join(analysis_path,\
+                "breakpoint_detection", analysis_prefix) + "_segmented_counts_final.csv",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_final.txt",
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_final.txt",
+        is_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "_is_diploid_candidate.txt",
+    output:
+        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_final.txt",
+        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt",
+        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_final.csv",
+        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_final.tsv",
+        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_final.txt",
+        ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.json",
+    threads: 10
+    run:
+        segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
+        segmented_region_sizes = np.loadtxt(input.segmented_region_sizes, delimiter=',')
+        segmented_neutral_states = np.loadtxt(input.segmented_neutral_states, delimiter=',')
+        alpha = 1./segmented_counts.shape[1]
+        n_bins = np.sum(segmented_region_sizes)
+        n_cells = segmented_counts.shape[0]
+
+        is_diploid = np.loadtxt(input.is_diploid).astype(bool)
+        run = False if np.count_nonzero(is_diploid) <= n_cells * 2./3 else True # Don't re-run if didn't re-run breakpoint_detection
+
+        if run:
+            sci = SCICoNE(params.scicone_path, params.output_temp_path, persistence=False, postfix=params.posfix)
+
+            # Run cluster trees
+            sci.learn_tree(segmented_counts, segmented_region_sizes, n_reps=params.n_reps, cluster=True, full=False, cluster_tree_n_iters=params.cluster_tree_n_iters,
+                                    max_tries=params.cluster_tree_n_tries, robustness_thr=0.5, alpha=alpha, copy_number_limit=params.copy_number_limit,
+                                    c_penalise=params.c_penalise, region_neutral_states=segmented_neutral_states)
+
+            # Store best cluster tree
+            with open(output.ctree, "w") as file:
+                for line in sci.best_cluster_tree.tree_str.splitlines():
+                    file.write(f"{line}\n")
+            np.savetxt(output.ctree_inferred_cnvs, sci.best_cluster_tree.outputs['inferred_cnvs'], delimiter=',')
+            np.savetxt(output.ctree_cell_node_assignments, sci.best_cluster_tree.outputs['cell_node_ids'], delimiter='\t')
+
+            with open(output.ctree_robustness_score, "w") as file:
+                file.write(f"{sci.cluster_tree_robustness_score}\n")
+
+            with open(output.clustering_score, "w") as file:
+                file.write(str(sci.clustering_score))
+
+            with open(output.ctree_json, 'w') as file:
+                json.dump(sci.best_cluster_tree.node_dict, file, cls=NumpyEncoder)
+        else:
+            # Copy previous
+            from shutil import copyfile
+            clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_candidate.txt"
+            ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_candidate.txt"
+            ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_candidate.csv"
+            ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_candidate.tsv"
+            ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_candidate.txt"
+            ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_candidate.json"
+            copyfile(clustering_score, output.clustering_score)
+            copyfile(ctree, output.ctree)
+            copyfile(ctree_inferred_cnvs, output.ctree_inferred_cnvs)
+            copyfile(ctree_cell_node_assignments, output.ctree_cell_node_assignments)
+            copyfile(ctree_robustness_score, output.ctree_robustness_score)
+            copyfile(ctree_json, output.ctree_json)
 
 rule cell_assignment:
     input:
