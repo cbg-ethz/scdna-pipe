@@ -51,11 +51,6 @@ rule plot_cnv_matrix:
         chr_stops_filtered_bins = [np.where(chr_indicator_filtered==chr)[0][-1] for chr in chromosome_list]
         chr_stops_filtered_bins_dict = dict(zip(chromosome_list, chr_stops_filtered_bins))
 
-        # print("plotting the heatmap of clustered inferred cnvs ordered according to input...")
-        # plot_bins(inferred_cnvs[hclust_index], chr_stops_filtered_bins_dict, vlines=True,
-        #             cbar_title='Copy number\nstates', vmax=None,
-        #             figsize=(24,8), output_path=output.inferred_cnvs_heatmap, dpi=300)
-
         # Now plot data with the inferred CNV information (i.e. cells ordered and annotated by inferred clone)
         clustered_inferred_cnvs, clustered_normalised_bins, clustered_labels = cluster_clones(inferred_cnvs, normalised_bins, normalised_regions)
 
