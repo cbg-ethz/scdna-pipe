@@ -44,7 +44,6 @@ fastq_lanes = [f"L00{i}" for i in range(1, n_lanes+1)]
 sample_name = config['sample_name']
 cr_sample_name = sample_name[:-3] # e.g. MHELAVELA_S2 becomes MHELAVELA
 h5_path = config['secondary_analysis']['h5_path']
-metrics_path = config['secondary_analysis']['metrics_path']
 gene_lists_path = config['secondary_analysis']['genes_path']
 gene_coordinates_path = os.path.join(gene_lists_path, 'ensembl_hg19_annotations.tsv')
 disease_genes_path = os.path.join(gene_lists_path, 'disease_specific', f"{config['disease']}_genes.txt")
@@ -126,7 +125,7 @@ rule run:
 rule filter_counts:
     params:
         bins = config["secondary_analysis"]["bins_to_remove"],
-        threshold = config['outlier_detection']['gini_treshold']
+        alpha = config["outlier_detection"]["alpha"]
     input:
         h5_file = h5_path
     output:
@@ -137,15 +136,7 @@ rule filter_counts:
         is_outlier = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier.txt"
     run:
         bin_filtered_counts, excluded_bins = sa.remove_tenx_genomics_artifacts(bins=params.bins, to_file=False)
-        # If there is a per_cell_summary_metrics, use it. Otherwise, use Gini coefficient with specified threshold
-        try:
-            metrics = pd.read_csv(metrics_path)
-            is_outlier = metrics['is_high_dimapd'].values.astype(bool)
-            filtered_counts = bin_filtered_counts[~is_outlier]
-        except FileNotFoundError as e:
-            print(e)
-            print('Manually filtering out cells with given threshold.')
-            filtered_counts, is_outlier = sa.remove_outliers(bin_filtered_counts, threshold=params.threshold, normalise=True)
+        filtered_counts, is_outlier = sa.remove_outliers(bin_filtered_counts, alpha=params.alpha)
 
         np.savetxt(output.is_outlier, is_outlier, delimiter=",")
         np.savetxt(output.excluded_bins, excluded_bins, delimiter=",")
