@@ -606,6 +606,9 @@ def plot_tree_graphviz(tree_graphviz_path, output_path):
 
 
 def plot_heatmap(gene_cn_df, output_path=None):
+    cmap = scicone.plotting.get_cnv_cmap(4)
+    cmap.set_bad(color="black")  # for NaN
+
     if "is_imputed" in gene_cn_df.columns:
         is_imputed = gene_cn_df["is_imputed"]
         gene_cn_df = gene_cn_df.drop(columns=["is_imputed"])
@@ -619,7 +622,7 @@ def plot_heatmap(gene_cn_df, output_path=None):
 
     figure_width = gene_cn_df.shape[0] / 2 + 1.5
     plt.figure(figsize=(8, figure_width), dpi=300)
-    cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
+    # cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
     heatmap = sns.heatmap(
         gene_cn_df,
         annot=annot,
