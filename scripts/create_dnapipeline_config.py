@@ -32,7 +32,7 @@ parser.add_argument(
     "--lite",
     type=str,
     default="False",
-    help="lite: True to start from existing h5_path and metrics_path, False otherwise",
+    help="lite: True to ignore CellRanger's web_summary.html, alarams_summary.txt and summary.csv for the derived checksum, False otherwise",
 )
 parser.add_argument(
     "-n",
@@ -171,11 +171,12 @@ config["plotting"] = {
 }
 
 config["breakpoint_detection"] = {
-    "window_size": 50,
+    "window_size": 100,
     "verbosity": 1,
     "threshold": 3,
     "bp_limit": 300,
     "subset_size": 0,
+    "seed": 42,
 }
 
 config["inference"] = {
