@@ -164,7 +164,7 @@ rule detect_malignant_breakpoints:
         else:
             from shutil import copyfile
             copyfile(input.segmented_regions, output.segmented_regions)
-            copyfile(input.segmented_regions_sizes, output.segmented_regions_sizes)
+            copyfile(input.segmented_region_sizes, output.segmented_region_sizes)
 
 rule segment_regions:
     input:
