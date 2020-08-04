@@ -50,6 +50,7 @@
     "bp_limit": 300,
     "subset_size": 0,
     "seed":42,
+    "filter": "False",
   },
   "inference": {
     "ploidy": 2,

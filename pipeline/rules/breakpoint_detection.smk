@@ -36,6 +36,7 @@ rule detect_breakpoints:
         bp_detection_path = os.path.join(analysis_path, "breakpoint_detection"),
         subset_size = config["breakpoint_detection"]["subset_size"],
         seed = config["breakpoint_detection"]["seed"],
+        filter = config["breakpoint_detection"]["filter"],
         postfix = analysis_prefix,
         scicone_path = scicone_path,
         output_temp_path = output_temp_path
@@ -71,22 +72,26 @@ rule detect_breakpoints:
             chr_stop_bins_filtered.append(np.where(bin_chr_indicator_filtered==chr)[0][-1])
         chr_stop_bins_filtered = np.array(chr_stop_bins_filtered)[:-1]
 
-        freq = np.fft.fftfreq(n_bins, 1)
-        df = 0.015
-        gpl = np.exp(- ((freq-1/(2*params.window_size))/(2*df))**2)  # pos. frequencies
-        gmn = np.exp(- ((freq+1/(2*params.window_size))/(2*df))**2)
-        g = gpl + gmn
-
         sci = SCICoNE(params.scicone_path, params.output_temp_path, persistence=True, postfix=params.postfix)
         in_data = data
         if params.subset_size > 0:
             np.random.seed(params.seed)
             cell_subset = np.random.choice(data.shape[0], size=params.subset_size, replace=False)
             in_data = data[cell_subset]
-        bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, compute_sp=False, evaluate_peaks=False)
 
-        filtered_lr = filter_lr(bps['lr_vec'].T, H=g)
-        bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, lr=filtered_lr, input_breakpoints=chr_stop_bins_filtered)
+        if params.filter:
+            freq = np.fft.fftfreq(n_bins, 1)
+            df = 0.015
+            gpl = np.exp(- ((freq-1/(2*params.window_size))/(2*df))**2)  # pos. frequencies
+            gmn = np.exp(- ((freq+1/(2*params.window_size))/(2*df))**2)
+            g = gpl + gmn
+
+            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, compute_sp=False, evaluate_peaks=False)
+            filtered_lr = filter_lr(bps['lr_vec'].T, H=g)
+            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, lr=filtered_lr, input_breakpoints=chr_stop_bins_filtered)
+        else:
+            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, input_breakpoints=chr_stop_bins_filtered)
+        print(f'Detected {np.array(bps["segmented_regions"]).ravel().shape[0]} breakpoints.')
 
         os.rename(params.postfix+"bp_segmented_regions.txt", output.segmented_regions)
         os.rename(params.postfix+"bp_segmented_region_sizes.txt", output.segmented_region_sizes)
