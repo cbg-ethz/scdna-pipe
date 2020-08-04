@@ -13,6 +13,7 @@ rule plot_cnv_matrix:
         inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_final.csv",
         is_outlier = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier.txt",
         all_cells_normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__all_cells_normalised_bins_final.csv",
+        cell_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cell_labels_final.csv",
     output:
         sorted_normalised_counts_heatmap_candidate_bp = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins_candidate_bps.png",
         sorted_normalised_counts_heatmap_final_bp = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins_final_bps.png",
@@ -33,13 +34,12 @@ rule plot_cnv_matrix:
         normalised_bins = np.loadtxt(input.normalised_bins, delimiter=',')
         print(f"shape of normalised bins: {normalised_bins.shape}")
 
-        print("loading the normalised regions...")
-        normalised_regions = np.loadtxt(input.normalised_regions, delimiter=',')
-        print(f"shape of normalised regions: {normalised_regions.shape}")
-
         print("loading the inferred cnvs...")
         inferred_cnvs = np.loadtxt(input.inferred_cnvs, delimiter=',')
         print(f"shape of inferred cnvs: {inferred_cnvs.shape}")
+
+        print("loading the cell labels...")
+        cell_labels = np.loadtxt(input.cell_labels, delimiter=',')
 
         # Annotate with chromosome coordinates
         chr_indicator = pd.read_csv(input.bin_chr_indicator, header=None).values.ravel()
@@ -52,7 +52,10 @@ rule plot_cnv_matrix:
         chr_stops_filtered_bins_dict = dict(zip(chromosome_list, chr_stops_filtered_bins))
 
         # Now plot data with the inferred CNV information (i.e. cells ordered and annotated by inferred clone)
-        clustered_inferred_cnvs, clustered_normalised_bins, clustered_labels = cluster_clones(inferred_cnvs, normalised_bins, normalised_regions)
+        clustered_cells = np.argsort(cell_labels)
+        clustered_labels = cell_labels[clustered_cells]
+        clustered_inferred_cnvs = inferred_cnvs[clustered_cells]
+        clustered_normalised_bins = normalised_bins[clustered_cells]
 
         # Add the outlier cells
         outlier_cnvs = np.nan * np.ones((np.count_nonzero(is_outlier), clustered_inferred_cnvs.shape[1]))
