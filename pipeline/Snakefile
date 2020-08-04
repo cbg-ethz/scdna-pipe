@@ -74,7 +74,6 @@ derived_file_names =[
     "cluster_tree_sorted_cnvs_bins.png",
     "unique_cluster_tree_cnvs.csv",
     "inferred_cnvs.csv",
-    "tree_node_sizes_cluster_tree.txt",
     "cluster_tree_genes.png",
     "cluster_profile_files.txt",
     "cluster_profile_overlapping.png",
@@ -390,7 +389,6 @@ rule create_derived_symlinks:
         cluster_tree_sorted_cnvs_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins.png",
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_final.csv",
         inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs_final.csv",
-        cluster_tree_tree_node_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_node_sizes_cluster_tree_final.txt",
         cluster_tree_genes_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
         overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
@@ -443,7 +441,6 @@ rule create_derived_symlinks:
         create_symlink(input.cluster_tree_tetraploid_json, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_tetraploid.json"))
         create_symlink(input.cluster_tree_tetraploid, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_tetraploid.txt"))
 
-        create_symlink(input.cluster_tree_tree_node_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__tree_node_sizes_cluster_tree.txt"))
         create_symlink(input.overlapping_cluster_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_overlapping.png"))
         create_symlink(input.clone_lib_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__clone_lib_sizes.png"))
 
