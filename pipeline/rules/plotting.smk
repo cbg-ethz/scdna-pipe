@@ -137,7 +137,7 @@ rule visualise_trees:
     input:
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt",
         cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_final.tsv",
-        node_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__node_labels_final.json",
+        cluster_tree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.json",
         bin_gene_region_df_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__bin_gene_region_df.csv",
         genes_to_highlight_path = disease_genes_path
     output:
@@ -147,8 +147,12 @@ rule visualise_trees:
         cluster_tree_genes_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png"
     run:
         # Node labels
-        with open(input.node_labels) as json_file:
-            node_labels = json.load(json_file)
+        with open(input.cluster_tree_json) as json_file:
+            cluster_tree = json.load(json_file)
+        node_labels = dict()
+        for node in cluster_tree:
+            if cluster_tree[node]['label'] != "":
+                node_labels[node] = cluster_tree[node]['label']
 
         # Node sizes
         cell_node_assignments = np.loadtxt(input.cell_node_assignments, delimiter='\t')

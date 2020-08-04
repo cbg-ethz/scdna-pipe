@@ -28,6 +28,7 @@ rule learn_candidate_cluster_tree:
         ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_candidate.tsv",
         ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_candidate.txt",
         ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_candidate.json",
+        ctree_cell_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cell_labels_candidate.csv",
     threads: 10
     run:
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
@@ -43,6 +44,7 @@ rule learn_candidate_cluster_tree:
         sci.learn_tree(segmented_counts, segmented_region_sizes, n_reps=params.n_reps, cluster=True, full=False, cluster_tree_n_iters=params.cluster_tree_n_iters,
                                 max_tries=params.cluster_tree_n_tries, robustness_thr=0.5, alpha=alpha, copy_number_limit=params.copy_number_limit,
                                 c_penalise=params.c_penalise, region_neutral_states=segmented_neutral_states)
+        sci.best_cluster_tree.read_tree_str(sci.best_cluster_tree.tree_str, num_labels=True)
 
         # Store best cluster tree
         with open(output.ctree, "w") as file:
@@ -59,6 +61,8 @@ rule learn_candidate_cluster_tree:
 
         with open(output.ctree_json, 'w') as file:
             json.dump(sci.best_cluster_tree.node_dict, file, cls=NumpyEncoder)
+
+        np.savetxt(output.ctree_cell_labels, np.array(sci.best_cluster_tree.cell_node_labels).astype(int), delimiter='\t')
 
 rule learn_final_cluster_tree:
     params:
@@ -83,6 +87,7 @@ rule learn_final_cluster_tree:
         ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_final.tsv",
         ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_final.txt",
         ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.json",
+        ctree_cell_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cell_labels_final.csv",
     threads: 10
     run:
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
@@ -102,6 +107,7 @@ rule learn_final_cluster_tree:
             sci.learn_tree(segmented_counts, segmented_region_sizes, n_reps=params.n_reps, cluster=True, full=False, cluster_tree_n_iters=params.cluster_tree_n_iters,
                                     max_tries=params.cluster_tree_n_tries, robustness_thr=0.5, alpha=alpha, copy_number_limit=params.copy_number_limit,
                                     c_penalise=params.c_penalise, region_neutral_states=segmented_neutral_states)
+            sci.best_cluster_tree.read_tree_str(sci.best_cluster_tree.tree_str, num_labels=True)
 
             # Store best cluster tree
             with open(output.ctree, "w") as file:
@@ -118,6 +124,8 @@ rule learn_final_cluster_tree:
 
             with open(output.ctree_json, 'w') as file:
                 json.dump(sci.best_cluster_tree.node_dict, file, cls=NumpyEncoder)
+
+            np.savetxt(output.ctree_cell_labels, np.array(sci.best_cluster_tree.cell_node_labels).astype(int), delimiter='\t')
         else:
             # Copy previous
             from shutil import copyfile
@@ -127,107 +135,39 @@ rule learn_final_cluster_tree:
             ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_candidate.tsv"
             ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_candidate.txt"
             ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_candidate.json"
+            ctree_cell_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cell_labels_candidate.csv"
             copyfile(clustering_score, output.clustering_score)
             copyfile(ctree, output.ctree)
             copyfile(ctree_inferred_cnvs, output.ctree_inferred_cnvs)
             copyfile(ctree_cell_node_assignments, output.ctree_cell_node_assignments)
             copyfile(ctree_robustness_score, output.ctree_robustness_score)
             copyfile(ctree_json, output.ctree_json)
+            copyfile(ctree_cell_labels, output.ctree_cell_labels)
 
-rule cell_assignment:
+rule get_unique_cnvs:
     input:
-        inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_{stage}.csv",
-        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_{stage}.tsv",
-        normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions_{stage}.csv",
-        normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins_{stage}.csv"
+        cluster_tree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_{stage}.json",
     output:
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_{stage}.csv",
-        tree_node_sizes =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__tree_node_sizes_cluster_tree_{stage}.txt",
-        clustered_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_cluster_tree_inferred_cnvs_{stage}.csv",
-        clustered_normalised_regions = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_regions_{stage}.csv",
-        clustered_normalised_bins = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustered_normalised_bins_{stage}.csv",
-        cell_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cell_labels_{stage}.csv",
-        node_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__node_labels_{stage}.json",
     benchmark:
-        "benchmarks/cell_assignments_{stage}.tsv"
+        "benchmarks/get_unique_cnvs_{stage}.tsv"
     run:
-        inferred_cnvs = np.loadtxt(input.inferred_cnvs, delimiter=',') # cell-wise profiles
-        cell_node_ids = np.loadtxt(input.ctree_cell_node_assignments, delimiter=',') # cell-wise profiles
-        normalised_bins = np.loadtxt(input.normalised_bins, delimiter=',')
-        normalised_regions = np.loadtxt(input.normalised_regions, delimiter=',')
+        with open(input.cluster_tree_json) as json_file:
+            cluster_tree = json.load(json_file)
 
-        unique_cnvs, tree_node_sizes = np.unique(inferred_cnvs, axis=0, return_counts=True) # clone-wise profiles
-        if len(unique_cnvs.shape) == 1: # if only one cluster
-            unique_cnvs = unique_cnvs.reshape(1, -1)
-
-        # Sort clones by distance to diploid profile
-        dist_to_diploid = []
-        diploid_profile = np.ones([unique_cnvs.shape[1]]) * 2
-        for c_id in range(unique_cnvs.shape[0]):
-            dist_to_diploid.append(np.linalg.norm(unique_cnvs[c_id]-diploid_profile))
-        order = np.argsort(dist_to_diploid)
-        unique_cnvs = unique_cnvs[order]
-        tree_node_sizes = tree_node_sizes[order]
-
-        labels = np.empty(inferred_cnvs.shape[0])
-        for c_id in range(unique_cnvs.shape[0]):
-            cells = np.where(np.all(inferred_cnvs==unique_cnvs[c_id], axis=1))[0]
-            labels[cells] = c_id
-
-        node_labels = dict()
-        for c_id in range(unique_cnvs.shape[0]):
-            node_id = cell_node_ids[np.where(labels == c_id)[0][0]]
-            node_labels[str(int(node_id))] = c_id
-
-        with open(output.node_labels, 'w') as file:
-            json.dump(node_labels, file)
-
-        # Sort cells by sorted clone index
-        cell_order = np.argsort(labels)
-        clustered_labels = labels[cell_order]
-        inferred_cnvs = inferred_cnvs[cell_order]
-        normalised_bins = normalised_bins[cell_order]
-        normalised_regions = normalised_regions[cell_order]
+        unique_cnvs = []
+        node_labels = []
+        for node in cluster_tree:
+            if cluster_tree[node]['size'] > 0:
+                node_labels.append(int(cluster_tree[node]['label']))
+                unique_cnvs.append(np.array(cluster_tree[node]['cnv']))
+        order = np.argsort(np.array(node_labels))
+        unique_cnvs = np.array(unique_cnvs)[order]
 
         print("saving the unique cnv profiles...")
         np.savetxt(
             output.unique_cnv_profiles,
             unique_cnvs,
-            delimiter=",",
-            fmt='%d'
-        )
-        print("saving the tree cluster sizes...")
-        np.savetxt(
-            output.tree_node_sizes,
-            tree_node_sizes,
-            delimiter=",",
-            fmt='%d'
-        )
-        print("saving the sorted cnv profiles...")
-        np.savetxt(
-            output.clustered_inferred_cnvs,
-            inferred_cnvs,
-            delimiter=",",
-            fmt='%d'
-        )
-        print("saving the sorted normalised bins...")
-        np.savetxt(
-            output.clustered_normalised_bins,
-            normalised_bins,
-            delimiter=",",
-            fmt='%d'
-        )
-        print("saving the sorted normalised regions...")
-        np.savetxt(
-            output.clustered_normalised_regions,
-            normalised_regions,
-            delimiter=",",
-            fmt='%d'
-        )
-        print("saving the sorted cell labels...")
-        np.savetxt(
-            output.cell_labels,
-            labels,
             delimiter=",",
             fmt='%d'
         )
