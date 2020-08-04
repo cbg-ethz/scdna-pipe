@@ -72,27 +72,27 @@ rule plot_cnv_matrix:
         print(f"number of final breakpoints: {len(final_bps)}")
 
         print("plotting the heatmap of normalised counts ordered by clone...")
-        scicone.plotting.plot_matrix(clustered_normalised_bins_full, mode='data', cbar_title='Raw counts', vmax=2,
+        scicone.plotting.plot_matrix(clustered_normalised_bins_full, mode='data', cbar_title='  Normalized  \ncounts', vmax=2,
                             chr_stops_dict=chr_stops_filtered_bins_dict,
                             labels=clustered_labels_full,
                             figsize=(24,8), output_path=output.sorted_normalised_counts_heatmap, dpi=100)
 
         print("plotting the heatmap of normalised counts ordered by clone with candidate breakpoints...")
-        scicone.plotting.plot_matrix(clustered_normalised_bins_full, mode='data', cbar_title='Raw counts', vmax=2,
+        scicone.plotting.plot_matrix(clustered_normalised_bins_full, mode='data', cbar_title='  Normalized  \ncounts', vmax=2,
                             chr_stops_dict=chr_stops_filtered_bins_dict,
                             labels=clustered_labels_full,
                             bps=candidate_bps,
                             figsize=(24,8), output_path=output.sorted_normalised_counts_heatmap_candidate_bp, dpi=100)
 
         print("plotting the heatmap of normalised counts ordered by clone with final breakpoints...")
-        scicone.plotting.plot_matrix(clustered_normalised_bins_full, mode='data', cbar_title='Raw counts', vmax=2,
+        scicone.plotting.plot_matrix(clustered_normalised_bins_full, mode='data', cbar_title='  Normalized  \ncounts', vmax=2,
                             chr_stops_dict=chr_stops_filtered_bins_dict,
                             labels=clustered_labels_full,
                             bps=final_bps,
                             figsize=(24,8), output_path=output.sorted_normalised_counts_heatmap_final_bp, dpi=100)
 
         print("plotting the heatmap of inferred cnvs ordered by clone...")
-        scicone.plotting.plot_matrix(clustered_inferred_cnvs_full, mode='cnv', cbar_title='CNV', vmax=4,
+        scicone.plotting.plot_matrix(clustered_inferred_cnvs_full, mode='cnv', cbar_title='Copy number\nvalues', vmax=4,
                             chr_stops_dict=chr_stops_filtered_bins_dict,
                             labels=clustered_labels_full,
                             figsize=(24,8), output_path=output.sorted_inferred_cnvs_heatmap, dpi=100)
