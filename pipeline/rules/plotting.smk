@@ -2,6 +2,16 @@ from scgenpy.plotting.plotting import *
 from scgenpy.process_cnvs.process_cnvs import *
 from scgenpy.preprocessing.utils import sort_chromosomes
 
+rule plots:
+    input:
+        sorted_inferred_cnvs_heatmap = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins.png",
+        lib_sizes = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clone_lib_sizes.png",
+        cluster_tree_genes_figure =  os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
+        overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
+        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png"
+    run:
+        print("Getting plots")
+
 rule plot_cnv_matrix:
     input:
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins_final.csv",
