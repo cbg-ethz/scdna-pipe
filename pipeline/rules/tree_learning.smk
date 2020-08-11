@@ -178,7 +178,7 @@ rule learn_tetraploid_cluster_tree:
         cluster_tree_n_tries = config["inference"]["cluster_trees"]["n_tries"],
         n_reps = config["inference"]["cluster_trees"]["n_reps"],
         c_penalise = config["inference"]["c_penalise"],
-        copy_number_limit = config["inference"]["copy_number_limit"],
+        copy_number_limit = config["inference"]["copy_number_limit"] + 2,
         posfix = "",
         scicone_path = scicone_path,
         output_temp_path = output_temp_path
