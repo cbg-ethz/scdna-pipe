@@ -7,17 +7,26 @@ Belinostat,MLL
 Bevacizumab,IDH1
 Bevacizumab,MMP2
 Bevacizumab,NF2
+Binimetinib,BRAF
+Binimetinib,GNA11
+Binimetinib,GNAQ
 Binimetinib,NRAS
 Buparlisib,PIK3CA
+Cabozantinib,ABL
+Cabozantinib,FLT3
 Cabozantinib,GNA11
+Cabozantinib,KIT
 Cabozantinib,MET
 Cabozantinib,RET
+Cabozantinib,ROS
+Cabozantinib,VEGFR2
+Carboplatin+AC-T,BRCA1
+Carboplatin+AC-T,BRCA2
 Carboplatin,BRCA1
 Carboplatin,BRCA2
-Carboplatin,BRCA1
-Paclitaxel,BRCA1
-Carboplatin,BRCA2
-Paclitaxel,BRCA2
+Carboplatin,BRCA2	
+Carboplatin+Paclitaxel,BRCA1
+Carboplatin+Paclitaxel,BRCA2
 Cetuximab,AREG
 Cetuximab,EGFR
 Cetuximab,EREG
@@ -25,15 +34,24 @@ Cetuximab,IDH1
 Cetuximab,KRAS
 Cetuximab,NT5E
 Cisplatin,ATM
+Cisplatin,BRCA1
+Cisplatin,BRCA2
 Cisplatin,ERCC2
 Cisplatin,FANCC
 Cisplatin,RB1
-Cisplatin,BRCA1
-Cisplatin,BRCA2
+Cobimetinib,BRAF
+Cobimetinib,GNA11
+Cobimetinib,GNAQ
+Cobimetinib,NF1
+Cobimetinib,NRAS
+Cobimetinib+Vemurafenib,BRAF
+Cobimetinib+Vemurafenib,BRAF
 Crizotinib,ALK
 Crizotinib,MET
 Crizotinib,ROS1
 Dabrafenib,BRAF
+Dabrafenib+Trametinib,BRAF
+Dabrafenib+Trametinib,BRAF
 Dasatinib,ABL1
 Dasatinib,IDH1
 Dasatinib,IDH2
@@ -41,6 +59,8 @@ Dasatinib,KIT
 Dasatinib,PDGFRA
 Decitabine,DNMT3A
 Decitabine,TP53
+Decitabine+Trametinib,ERK
+Decitabine+Trametinib,MEK
 Docetaxel,DEFA1
 Doxorubicin,TOP2A
 Doxorubicin,TP53
@@ -65,62 +85,93 @@ Imatinib,NF1
 Imatinib,PDGFB
 Imatinib,PDGFRA
 Imatinib,PDGFRB
+Imatinib,PDGFRB	
 Midostaurin,FLT3
 Midostaurin,KIT
+Midostaurin,PKC
+MLN2480,GNA11
+MLN2480,GNAQ
+MLN2480,NRAS
+MLN2480,RAF
+Niraparib,ATM
 Niraparib,BRCA1
 Niraparib,BRCA2
-Niraparib,RAD51
-Niraparib,ATM
 Niraparib,PTEN
+Niraparib,RAD51
 Olaparib,ATM
+Olaparib,ATR
 Olaparib,BRCA1
 Olaparib,BRCA2
+Olaparib+carboplatin,BRCA1
+Olaparib+carboplatin,BRCA2
 Olaparib,CHEK2
 Olaparib,MRE11
+Olaparib+paclitaxel,BRCA1
+Olaparib+paclitaxel,BRCA2
+Olaparib+paclitaxel+carboplatin,BRCA1
+Olaparib+paclitaxel+carboplatin,BRCA2
 Olaparib,RAD51
 Paclitaxel,ABCB1
-Paclitaxel,PDCD4
+Paclitaxel,BRCA1
+Paclitaxel,BRCA2
 Paclitaxel,Carboplatin
+Paclitaxel+Carboplatin,ERCC2
 Paclitaxel,ERCC2
+Paclitaxel,PDCD4
+Palbociclib,CCND1
 Palbociclib,CCND2
+Palbociclib,CDK4
+Palbociclib,CDK6
+Palbociclib,CDKN2A
+Palbociclib,CDKN2B
 Palbociclib,ERBB2
 Palbociclib,ESR1
 Regorafenib,KIT
 Regorafenib,PDGFRA
+Regorafenib,RAF-1
+Regorafenib,RET
+Regorafenib,VEGFR1
+Regorafenib,VEGFR2
+Regorafenib,VEGFR3
+Ribociclib,CCND1
+Ribociclib,CDK4
+Ribociclib,CDK6
+Ribociclib,CDKN2A
+Ribociclib,CDKN2B
+Rucaparib,ATM
+Rucaparib,BAP1
 Rucaparib,BRCA1
 Rucaparib,BRCA2
-Rucaparib,RAD51
-Rucaparib,ATM
 Rucaparib,PTEN
+Rucaparib,RAD51
 Sorafenib,ARAF
+Sorafenib,BRAF
 Sorafenib,FLT3
 Sorafenib,KIT
 Sorafenib,PDGFRA
+Sorafenib,RAF-1
 Sorafenib,RET
 Sorafenib,VEGFA
+Temozolomide,ATM
+Temozolomide,ATR
 Temozolomide,IDH1
 Temozolomide,MGMT
+Temsirolimus,AKT
 Temsirolimus,MTOR
+Temsirolimus,NF2
 Temsirolimus,TSC1
 Temsirolimus,TSC2
 Trametinib,BRAF
+Trametinib+Dabrafenib,BRAF
+Trametinib,GNA11
 Trametinib,GNAQ
 Trametinib,KRAS
+Trametinib,NF1
+Trametinib,NRAS
+Ulixertinib,BRAF
+Ulixertinib,MEK1
+Ulixertinib,NRAS
 Vemurafenib,BRAF
+Vemurafenib+Cobimetinib,BRAF
+Vemurafenib+Cobimetinib,BRAF
 Vinblastine,NF1
-Carboplatin + AC-T,BRCA1
-Carboplatin + AC-T,BRCA2
-Carboplatin + Paclitaxel,BRCA1
-Carboplatin + Paclitaxel,BRCA2
-Cobimetinib + Vemurafenib,BRAF
-Dabrafenib + Trametinib,BRAF
-Decitabine + Trametinib,MEK
-Decitabine + Trametinib,ERK
-Olaparib + carboplatin,BRCA1
-Olaparib + carboplatin,BRCA2
-Olaparib + paclitaxel,BRCA1
-Olaparib + paclitaxel,BRCA2
-Olaparib + paclitaxel + carboplatin,BRCA1
-Olaparib + paclitaxel + carboplatin,BRCA2
-Paclitaxel + Carboplatin,ERCC2
-Vemurafenib + Cobimetinib,BRAF

@@ -4,8 +4,15 @@
 Abiraterone,AR
 Bevacizumab,BRAF
 Bevacizumab,EPHB4
+Bevacizumab,MMP9
 Bevacizumab,MMP9 
 Bicalutamide,AR
+Bicalutamide + palbociclib,AR
+Bicalutamide+palbociclib,AR
+Bicalutamide + palbociclib,RB
+Bicalutamide+palbociclib,RB
+Carboplatin + Paclitaxel,KRAS 
+Carboplatin+Paclitaxel,KRAS
 Cetuximab,BRAF
 Cetuximab,ERBB2
 Cetuximab,ERBB3
@@ -19,9 +26,12 @@ Cisplatin,ERCC2
 Cisplatin,KRAS
 Cisplatin,MDM2
 Cisplatin,TP53
+Cobimetinib+Vemurafenib,BRAF
+Cobimetinib+Vemurafenib,MITF
 Crizotinib,ALK
 Crizotinib,AREG
 Dasatinib,ABL1
+Dasatinib,NF1
 Docetaxel,CXCR4
 Erlotinib,EGFR
 Erlotinib,KRAS
@@ -35,11 +45,11 @@ Melphalan,KRAS
 Olaparib,BRCA1
 Paclitaxel,STMN1
 Paclitaxel,TIMP1
+Paclitaxel,TIMP1	
+Pomalidomide,CRBN	
 Sorafenib,FLT3
 Sorafenib,PROM1
+Sorafenib,PROM1	
 Vemurafenib,BRAF
 Vemurafenib,MET
 Vemurafenib,NRAS
-Bicalutamide + palbociclib,AR
-Bicalutamide + palbociclib,RB
-Carboplatin + Paclitaxel,KRAS 
