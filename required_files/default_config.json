@@ -1,4 +1,5 @@
 {
+  "lite": "False",
   "sample_name": "MADEGOD_S2",
   "gender": "female",
   "sequencing_prefix": "MADEGOD-T_scD_250c-r1v1.0_r1v1.0-AHNY5VBGXC",
@@ -39,11 +40,17 @@
       "max_genes_per_line": 6
     }
   },
+  "outlier_detection": {
+    "alpha": 0.05
+  },
   "breakpoint_detection": {
-    "window_size": 50,
+    "window_size": 100,
     "verbosity": 1,
     "threshold": 3,
     "bp_limit": 300,
+    "subset_size": 0,
+    "seed":42,
+    "filter": "False",
   },
   "inference": {
     "ploidy": 2,
@@ -58,7 +65,8 @@
       "n_tries": 5,
       "n_nodes": 0,
       "move_probs":[0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.01],
-      "n_reps": 10
+      "n_reps": 10,
+      "min_cluster_size": 1
     }
   },
   "scicone_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scicone/build/",

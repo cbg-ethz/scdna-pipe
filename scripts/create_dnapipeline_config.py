@@ -28,6 +28,13 @@ parser.add_argument(
     "-g", "--gender", type=str, required=True, help="gender: male or female"
 )
 parser.add_argument(
+    "-l",
+    "--lite",
+    type=str,
+    default="False",
+    help="lite: True to ignore CellRanger's web_summary.html, alarams_summary.txt and summary.csv for the derived checksum, False otherwise",
+)
+parser.add_argument(
     "-n",
     "--is_novaseq",
     action="store_true",
@@ -37,7 +44,7 @@ parser.add_argument(
     "-v",
     "--pipeline_version",
     type=str,
-    default="v1.13",
+    default="v1.14",
     help="Version of the DNA pipeline",
 )
 parser.add_argument(
@@ -102,6 +109,7 @@ scicone_path = os.path.join(dna_pipeline_path, "scicone/build")
 # Build the json config
 config = {}
 
+config["lite"] = args.lite
 config["sample_name"] = pattern_1.group(1) + "_S" + sample_number
 config["sequencing_prefix"] = (
     sample_name + "-T_scD_250c-r1v1.0_r1v1.0-A" + sample_annotation
@@ -140,6 +148,9 @@ config["secondary_analysis"] = {
     "h5_path": os.path.join(
         analysis_path, "cellranger", sample_name, "outs/cnv_data.h5"
     ),
+    "metrics_path": os.path.join(
+        analysis_path, "cellranger", sample_name, "outs/per_cell_summary_metrics.cnv"
+    ),
     "bins_to_remove": os.path.join(
         dna_pipeline_code_path,
         "required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv",
@@ -156,10 +167,13 @@ config["plotting"] = {
 }
 
 config["breakpoint_detection"] = {
-    "window_size": 50,
+    "window_size": 100,
     "verbosity": 1,
     "threshold": 3,
     "bp_limit": 300,
+    "subset_size": 0,
+    "seed": 42,
+    "filter": "False",
 }
 
 config["inference"] = {
@@ -189,13 +203,15 @@ config["inference"] = {
             0.01,
         ],
         "n_reps": 10,
+        "min_cluster_size": 1,
     },
 }
 
 config["scicone_path"] = scicone_path
 config["output_temp_path"] = os.path.join(dna_pipeline_code_path, "temp")
 config["drugs_path"] = os.path.join(
-        dna_pipeline_code_path, "required_files/drugs_of_interest/")
+    dna_pipeline_code_path, "required_files/drugs_of_interest/"
+)
 
 with open(args.out, "w") as outfile:
     outfile.write(json.dumps(config, indent=2, sort_keys=False))

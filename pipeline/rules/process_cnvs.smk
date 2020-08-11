@@ -5,8 +5,8 @@ rule create_bin_gene_region_df:
         gene_coordinates_path = gene_coordinates_path,
         chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
-        region_stops_path = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions.txt",
-        inferred_cnvs_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs.csv",
+        region_stops_path = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions_final.txt",
+        inferred_cnvs_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs_final.csv",
         general_main_gene_list_path = general_main_gene_list_path,
         disease_genes_path = disease_genes_path
     params:
@@ -64,14 +64,45 @@ rule create_cn_cluster_h5:
         cn_cluster_h5.create_dataset("matrix", data=gene_cn_df.values)
         cn_cluster_h5.close()
 
+rule identify_diploid:
+    input:
+        inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_candidate.csv",
+        excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
+        bin_chr_indicator_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
+        chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
+    output:
+        is_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "_is_diploid_candidate.txt",
+    run:
+        inferred_cnvs = np.loadtxt(input.inferred_cnvs, delimiter=',')
+        excluded_bins = np.loadtxt(input.excluded_bins_path)
+        excluded_bins = excluded_bins.astype(bool)
+        bin_chr_indicator = pd.read_csv(input.bin_chr_indicator_path, header=None).values.ravel()
+        bin_chr_indicator = bin_chr_indicator[~excluded_bins].ravel()
+
+        x_start = np.where(bin_chr_indicator=='X')[0][0]
+        y_start = np.where(bin_chr_indicator=='Y')[0][0]
+
+        neutral_bins = np.ones((inferred_cnvs.shape[1],)) * 2
+        chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=1).T
+        neutral_bins[x_start:y_start] = chr_stops['X']['neutral_state']
+        neutral_bins[y_start:] = chr_stops['Y']['neutral_state']
+
+        n_cells = inferred_cnvs.shape[0]
+        n_bins = inferred_cnvs.shape[1]
+
+        is_diploid = np.array(np.sum(inferred_cnvs == neutral_bins, axis=1) / n_bins > 0.98)
+        is_diploid = is_diploid.reshape(n_cells, 1)
+
+        np.savetxt(output.is_diploid, is_diploid)
+
 rule assess_cell_fusions:
     input:
-        input_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree.txt",
-        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_counts.csv",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes.txt",
-        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states.txt",
-        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs.csv",
-        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids.tsv",
+        input_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt",
+        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_counts_final.csv",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_final.txt",
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_final.txt",
+        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_final.csv",
+        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_final.tsv",
     params:
         inference_binary = os.path.join(scicone_path, "inference"),
         scripts_dir = scripts_dir

@@ -1,4 +1,5 @@
 from scgenpy.process_cnvs.process_cnvs import *
+import scicone
 
 import numpy as np
 import pandas as pd
@@ -64,7 +65,7 @@ def plot_bins(
                 t = t[-1]
             ticks[c_id] = t
     if clone_cmap is None:
-        clone_cmap = matplotlib.cm.get_cmap("Dark2")
+        clone_cmap = scicone.constants.LABEL_CMAP
         subset_colors = clone_cmap(np.arange(0, len(np.unique(annotations)), 1))
         clone_cmap = matplotlib.colors.ListedColormap(subset_colors)
 
@@ -89,7 +90,7 @@ def plot_bins(
             cb.ax.text(
                 0.5,
                 ((bounds[j + 1] + bounds[j]) / 2) / bounds[-1],
-                int(lab),
+                lab,
                 ha="center",
                 va="center",
                 rotation=90,
@@ -106,6 +107,7 @@ def plot_bins(
         cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
     else:
         cmap = sns.diverging_palette(220, 10, as_cmap=True)
+    cmap.set_bad(color="black")  # for NaN
     im = plt.pcolormesh(bins, cmap=cmap, clim=(vmin, vmax), norm=norm)
     plt.ylabel(ylabel)
     plt.yticks([])
@@ -351,6 +353,7 @@ def convert_node_regions_to_genes(
 
     i = 0
     for key in str_dict:
+        print(str_dict[key])
         i += 1
         if len(str_dict[key]) != 0:
             # Show only one occurence of each gene
@@ -366,30 +369,30 @@ def convert_node_regions_to_genes(
             )
             node_str = (
                 node_str
-                + "["
+                + ":"
                 + ",".join(
                     f"{x}" + newline if (i + 1) % max_genes_per_line == 0 else str(x)
                     for i, x in enumerate(str_dict[key])
                 )
-                + "]"
             )
             node_str = "<i> </i>" + node_str + "<i> </i>"
             if i < len(str_dict.keys()):
                 node_str = node_str + " " + newline + " " + newline
             # highlight genes of interest
             if genes_to_highlight is not None:
-                for gene in genes_to_highlight:
-                    node_str = node_str.replace(
-                        gene,
-                        "<b><font color="
-                        + "'"
-                        + color
-                        + "'"
-                        + ">"
-                        + gene
-                        + "</font></b>",
-                    )
-
+                for gene in np.unique(genes_to_highlight):
+                    if gene in str_dict[key]:
+                        node_str = node_str.replace(
+                            gene,
+                            "<b><font color="
+                            + "'"
+                            + color
+                            + "'"
+                            + ">"
+                            + gene
+                            + "</font></b>",
+                        )
+            print(node_str)
     # If newline followed by ']', replace with newline after ']'
     node_str = node_str.replace(newline + "]", "]" + newline)
 
@@ -416,11 +419,13 @@ def convert_node_regions_to_genes(
 
 def tree_to_graphviz(
     tree_path,
+    gender=None,
     node_sizes=None,
     gene_labels=False,
     bin_gene_region_df=None,
     genes_to_highlight=None,
     max_genes_per_line=6,
+    node_labels=None,
     output_path=None,
 ):
     """
@@ -437,91 +442,114 @@ def tree_to_graphviz(
 
     graphviz_header = [
         "digraph { \n",
-        'node [style=filled,color="#D4C0D6",fontsize=20,margin=0,shape=oval]'
-        'edge [arrowhead=none, color="#602A86"]',
+        'node [style=filled,color="#E6E6FA",fontsize=20,margin=0,shape=oval]'
+        'edge [arrowhead=none, color="#E6E6FA"]',
     ]
 
     graphviz_labels = []
     graphviz_links = []
 
-    graphviz_labels.append("0[label=<<font point-size='30'> Neutral </font>>]")  # root
+    neutral_label = "Diploid"
+    if gender is not None:
+        neutral_label = neutral_label + " " + gender
 
+    # graphviz_labels.append(f"0[label=<<font point-size='30'> {neutral_label} </font>>]")  # root
+    newline = "<br/>"
+    endline = "<i> </i>"
     for line in list_tree_file:
-        if line.startswith("node 0:"):
-            continue
-        elif line.startswith("node"):
+        if line.startswith("node"):
             comma_splits = line.split(",")
 
             comma_first = re.split(" |:", comma_splits[0])
             node_id = comma_first[1]
-            p_id = comma_first[4]
-            comma_rest = comma_splits[1:]
-            comma_rest[0] = comma_rest[0].lstrip("[")
-            comma_rest[-1] = comma_rest[-1].rstrip("]\n")
-            merged_labels = []
-            [k_begin, previous_v] = (int(x) for x in comma_rest[0].split(":"))
-            k_end = k_begin
-            for term in comma_rest[1:]:  # events vector
-                [k, v] = (int(x) for x in term.split(":"))
-                if k == k_end + 1 and v == previous_v:
-                    k_end = k  # update the end
-                else:
-                    if k_begin == k_end:
-                        merged_labels.append(f"{previous_v:+}R{k_begin}")
-                    else:
-                        merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
-                    k_begin = k_end = k
-                previous_v = v
-            # print the last one
-            if k_begin == k_end:
-                merged_labels.append(f"{previous_v:+}R{k_begin}")
+            if line.startswith("node 0:"):
+                str_merged_labels = f"<font point-size='30'> {neutral_label} </font>"
             else:
-                merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
+                p_id = comma_first[4]
+                comma_rest = comma_splits[1:]
+                comma_rest[0] = comma_rest[0].lstrip("[")
+                comma_rest[-1] = comma_rest[-1].rstrip("]\n")
+                merged_labels = []
+                [k_begin, previous_v] = (int(x) for x in comma_rest[0].split(":"))
+                k_end = k_begin
+                for term in comma_rest[1:]:  # events vector
+                    [k, v] = (int(x) for x in term.split(":"))
+                    if k == k_end + 1 and v == previous_v:
+                        k_end = k  # update the end
+                    else:
+                        if k_begin == k_end:
+                            merged_labels.append(f"{previous_v:+}R{k_begin}")
+                        else:
+                            merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
+                        k_begin = k_end = k
+                    previous_v = v
+                # print the last one
+                if k_begin == k_end:
+                    merged_labels.append(f"{previous_v:+}R{k_begin}")
+                else:
+                    merged_labels.append(f"{previous_v:+}R{k_begin}:{k_end}")
 
-            str_merged_labels = (
-                "<i> </i>"
-                + " ".join(
-                    f"{x}<i> </i><br/>" if i % 10 == 0 and i > 0 else str(x)
-                    for i, x in enumerate(merged_labels)
+                str_merged_labels = (
+                    "<i> </i>"
+                    + " ".join(
+                        f"{x}<i> </i><br/>" if i % 10 == 0 and i > 0 else str(x)
+                        for i, x in enumerate(merged_labels)
+                    )
+                    + "<i> </i>"
                 )
-                + "<i> </i>"
-            )
-            if gene_labels and bin_gene_region_df is not None:
-                node_str = " ".join(merged_labels)  # "+1R75 +1R218:219 +1R221:223"
-                str_merged_labels = convert_node_regions_to_genes(
-                    node_str,
-                    bin_gene_region_df,
-                    priority_only=True,
-                    genes_to_highlight=genes_to_highlight,
-                    max_genes_per_line=max_genes_per_line,
+                if gene_labels and bin_gene_region_df is not None:
+                    node_str = " ".join(merged_labels)  # "+1R75 +1R218:219 +1R221:223"
+                    str_merged_labels = convert_node_regions_to_genes(
+                        node_str,
+                        bin_gene_region_df,
+                        priority_only=True,
+                        genes_to_highlight=genes_to_highlight,
+                        max_genes_per_line=max_genes_per_line,
+                    )
+
+                # If there are newlines followed by endlines, switch
+                str_merged_labels = str_merged_labels.replace(
+                    newline + endline, endline + newline
                 )
 
-            newline = "<br/>"
-            endline = "<i> </i>"
+                # Remove whatever comes after the last endline position
+                new_end_pos = (
+                    [m.start() for m in re.finditer(endline, str_merged_labels)][-1]
+                    + len(endline)
+                    - 1
+                )
+                if len(str_merged_labels) > new_end_pos + 1:
+                    str_merged_labels = str_merged_labels[: new_end_pos + 1]
 
-            # If there are newlines followed by endlines, switch
-            str_merged_labels = str_merged_labels.replace(
-                newline + endline, endline + newline
-            )
+                # Replace multiple endlines with one
+                while endline * 2 in str_merged_labels:
+                    str_merged_labels = str_merged_labels.replace(endline * 2, endline)
 
-            # Remove whatever comes after the last endline position
-            new_end_pos = (
-                [m.start() for m in re.finditer(endline, str_merged_labels)][-1]
-                + len(endline)
-                - 1
-            )
-            if len(str_merged_labels) > new_end_pos + 1:
-                str_merged_labels = str_merged_labels[: new_end_pos + 1]
+                # # If node string ends with newlines, remove them
+                # par = " " + newline + " " + newline
+                # l = list(str_merged_labels)
+                # if l[-len(par):] == list(par):
+                #     str_merged_labels = ''.join(l[:-len(par)])
 
-            # Replace multiple endlines with one
-            while endline * 2 in str_merged_labels:
-                str_merged_labels = str_merged_labels.replace(endline * 2, endline)
+                graphviz_links.append(f"{p_id} -> {node_id}")
 
-            # # If node string ends with newlines, remove them
-            # par = " " + newline + " " + newline
-            # l = list(str_merged_labels)
-            # if l[-len(par):] == list(par):
-            #     str_merged_labels = ''.join(l[:-len(par)])
+            # Add node labels
+            if node_labels is not None:
+                cmap = scicone.constants.LABEL_CPAL_HEX
+                try:
+                    color = cmap[int(node_labels[str(node_id)])]
+                    print(
+                        f"Color for {node_id} with label {node_labels[str(node_id)]}: {color}"
+                    )
+                    node_label = (
+                        f'<font point-size="28" color="{color}"><b>'
+                        + "Subclone "
+                        + str(node_labels[str(node_id)])
+                        + "</b></font>"
+                    )
+                    str_merged_labels = node_label + "<br/><br/>" + str_merged_labels
+                except KeyError:
+                    print(f"No label for node {node_id}")
 
             # Add node size
             if node_sizes is not None:
@@ -543,7 +571,6 @@ def tree_to_graphviz(
             graphviz_labels.append(
                 f"{node_id}[label=<{str_merged_labels}>]"
             )  # use < > to allow HTML
-            graphviz_links.append(f"{p_id} -> {node_id}")
 
     txt = graphviz_header + graphviz_labels + graphviz_links + ["}"]
 
@@ -579,6 +606,9 @@ def plot_tree_graphviz(tree_graphviz_path, output_path):
 
 
 def plot_heatmap(gene_cn_df, output_path=None):
+    cmap = scicone.plotting.get_cnv_cmap(4)
+    cmap.set_bad(color="black")  # for NaN
+
     if "is_imputed" in gene_cn_df.columns:
         is_imputed = gene_cn_df["is_imputed"]
         gene_cn_df = gene_cn_df.drop(columns=["is_imputed"])
@@ -592,7 +622,7 @@ def plot_heatmap(gene_cn_df, output_path=None):
 
     figure_width = gene_cn_df.shape[0] / 2 + 1.5
     plt.figure(figsize=(8, figure_width), dpi=300)
-    cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
+    # cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
     heatmap = sns.heatmap(
         gene_cn_df,
         annot=annot,
@@ -690,7 +720,7 @@ def plot_profile(
         subclone_ids = np.arange(n_subclones).astype(str).tolist()
 
     if cmap is None:
-        cmap = matplotlib.cm.get_cmap("Dark2")
+        cmap = scicone.constants.LABEL_CMAP
     if colors_idx is None:
         colors_idx = np.arange(n_subclones)
 
@@ -713,8 +743,8 @@ def plot_profile(
         )
         plt.ylim([0 - 0.2, ymax])
         plt.xlim([0 - 0.01 * n_bins, n_bins + 0.01 * n_bins])
-        plt.xlabel("chromosome")
-        plt.ylabel("copy number")
+        plt.xlabel("Chromosomes")
+        plt.ylabel("Copy number")
 
     plt.tick_params(axis="y", which="major", labelsize=yticksize)
 
