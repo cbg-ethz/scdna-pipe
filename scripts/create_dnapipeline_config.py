@@ -161,10 +161,6 @@ config["secondary_analysis"] = {
     "general_main_gene_list": "dna_long_gene_list.txt",
 }
 
-config["outlier_detection"] = {
-    "gini_treshold": 0.4,
-}
-
 config["plotting"] = {
     "profiles": {"offset_sizes": 0.1, "s": 5},
     "trees": {"max_genes_per_line": 6},
@@ -177,6 +173,7 @@ config["breakpoint_detection"] = {
     "bp_limit": 300,
     "subset_size": 0,
     "seed": 42,
+    "filter": "False",
 }
 
 config["inference"] = {
