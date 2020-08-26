@@ -605,13 +605,23 @@ def plot_tree_graphviz(tree_graphviz_path, output_path):
         print(f"stdout: {cmd_output.stdout}\n stderr: {cmd_output.stderr}")
 
 
-def plot_heatmap(gene_cn_df, output_path=None):
+def plot_heatmap(
+    gene_cn_df,
+    colorbar=True,
+    title="Copy number values of subclone per gene",
+    figsize=(16, 4),
+    dpi=100,
+    output_path=None,
+    ax=None,
+):
     cmap = scicone.plotting.get_cnv_cmap(4)
     cmap.set_bad(color="black")  # for NaN
-
+    sns.set_style("ticks")
     if "is_imputed" in gene_cn_df.columns:
         is_imputed = gene_cn_df["is_imputed"]
         gene_cn_df = gene_cn_df.drop(columns=["is_imputed"])
+    else:
+        is_imputed = None
 
     if np.all(~np.isnan(gene_cn_df)):
         annot = np.array(gene_cn_df.astype(int).astype(str))
@@ -620,8 +630,17 @@ def plot_heatmap(gene_cn_df, output_path=None):
     annot[np.where(gene_cn_df == 4)] = ["4+"] * len(np.where(gene_cn_df == 4)[0])
     annot = annot.astype(str)
 
-    figure_width = gene_cn_df.shape[0] / 2 + 1.5
-    plt.figure(figsize=(8, figure_width), dpi=300)
+    lut = dict(
+        zip(
+            range(gene_cn_df.shape[0]),
+            scicone.constants.LABEL_CPAL_HEX[: gene_cn_df.shape[0]],
+        )
+    )
+    row_colors = pd.Series(range(gene_cn_df.shape[0])).map(lut)
+
+    # figure_width = gene_cn_df.shape[0] / 2 + 1.5
+    if not ax:
+        plt.figure(figsize=figsize, dpi=dpi)
     # cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
     heatmap = sns.heatmap(
         gene_cn_df,
@@ -633,47 +652,21 @@ def plot_heatmap(gene_cn_df, output_path=None):
         yticklabels=True,
         cbar_kws={"ticks": [0, 1, 2, 3, 4]},
         fmt="",
+        cbar=colorbar,
+        ax=ax,
     )
-    colorbar = heatmap.collections[0].colorbar
-    colorbar.set_ticks([0.4, 1.2, 2, 2.8, 3.6])
-    colorbar.set_ticklabels(["0", "1", "2", "3", "4+"])
-    heatmap.set_title("Copy number values of genes per subclone")
+    if colorbar:
+        colorbar = heatmap.collections[0].colorbar
+        colorbar.set_ticks([0.4, 1.2, 2, 2.8, 3.6])
+        colorbar.set_ticklabels(["0", "1", "2", "3", "4+"])
+    heatmap.set_title(title)
     heatmap.set_facecolor("#656565")
-    plt.xlabel("Subclone")
-    # b, t = plt.ylim()  # discover the values for bottom and top
-    # b += 0.5  # Add 0.5 to the bottom
-    # t -= 0.5  # Subtract 0.5 from the top
-    # plt.ylim(b, t)  # update the ylim(bottom, top) values
-
-    # ax = heatmap.ax_heatmap
-    if is_imputed is not None:
-        for i in range(is_imputed.shape[0]):
-            if is_imputed.iloc[i]:
-                # heatmap.add_patch(Rectangle((j, is_imputed.shape[0]-1-i), closed=True, fill=False, edgecolor='gray', lw=3))
-                box = np.array(
-                    [
-                        [0, i],
-                        [gene_cn_df.shape[1], i],
-                        [gene_cn_df.shape[1], i + 1],
-                        [0, i + 1],
-                    ]
-                )
-                heatmap.add_patch(
-                    Polygon(
-                        box,
-                        closed=True,
-                        fill=False,
-                        edgecolor="gray",
-                        lw=1.5,
-                        ls="--",
-                        clip_on=False,
-                    )
-                )
+    heatmap.set_xlabel("Subclone")
+    plt.yticks(rotation=0)
+    # plt.xticks(rotation=45)
 
     if output_path is not None:
         plt.savefig(output_path, bbox_inches="tight")
-    else:
-        plt.show()
 
 
 def plot_profile(
