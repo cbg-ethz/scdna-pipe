@@ -217,6 +217,12 @@ rule plot_cluster_cnvs:
         output_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix)
         plot_cluster_cnvs(cnvs_arr, chr_stops, output_path=output_path, ymax=ymax, offset_sizes=params.offset_sizes, s=params.s)
 
+
+try:
+    max_genes = config['plotting']['heatmaps']['max_genes']
+except KeyError:
+    max_genes = 20
+
 rule plot_heatmaps:
     input:
         general_gene_lists_path = os.path.join(gene_lists_path, 'general'),
@@ -241,10 +247,19 @@ rule plot_heatmaps:
                genes_list = genes_list.gene.values.tolist()
 
                gene_cn_df_imputed = get_gene_cn_df(genes_list, bin_gene_region_df, impute=True)
+               gene_cn_df = gene_cn_df_imputed.drop(['is_imputed'], axis=1)
+               n_genes = gene_cn_df.shape[0]
+               n_cols = int(np.ceil(n_genes/max_genes))
 
                gene_list_name = os.path.splitext(f)[0]
                output_png_file_name = os.path.splitext(output.heatmap_cnvs)[0] + '_' + gene_list_name + '.png'
-               plot_heatmap(gene_cn_df_imputed, output_path=output_png_file_name)
+
+               f, axes = plt.subplots(1,n_cols,figsize=(6*n_cols,7), dpi=100)
+               axes = np.array([axes]).ravel()
+               for i in range(n_cols):
+                   plot_heatmap(gene_cn_df.iloc[max_genes*i:max_genes*(i+1),:], dpi=None, title="", colorbar=False, ax=axes[i])
+               plt.suptitle("Copy number values of gene per subclone")
+               plt.savefig(output_png_file_name, bbox_inches = 'tight',)
 
                output_csv_file_name = os.path.splitext(output.gene_cn_df)[0] + '_' + gene_list_name + '.csv'
                gene_cn_df_imputed.to_csv(
@@ -257,8 +272,16 @@ rule plot_heatmaps:
         disease_genes_list = disease_genes_list.gene.values.tolist()
 
         gene_cn_df_imputed = get_gene_cn_df(disease_genes_list, bin_gene_region_df, impute=True)
+        gene_cn_df = gene_cn_df_imputed.drop(['is_imputed'], axis=1)
+        n_genes = gene_cn_df.shape[0]
+        n_cols = int(np.ceil(n_genes/max_genes))
 
-        plot_heatmap(gene_cn_df_imputed, output_path=output.heatmap_cnvs)
+        f, axes = plt.subplots(1,n_cols,figsize=(6*n_cols,7), dpi=100)
+        axes = np.array([axes]).ravel()
+        for i in range(n_cols):
+            plot_heatmap(gene_cn_df.iloc[max_genes*i:max_genes*(i+1),:], dpi=None, title="", colorbar=False, ax=axes[i])
+        plt.suptitle("Copy number values of gene per subclone")
+        plt.savefig(output.heatmap_cnvs, bbox_inches = 'tight',)
 
         gene_cn_df_imputed.to_csv(
             output.gene_cn_df
