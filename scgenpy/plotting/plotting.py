@@ -630,14 +630,6 @@ def plot_heatmap(
     annot[np.where(gene_cn_df == 4)] = ["4+"] * len(np.where(gene_cn_df == 4)[0])
     annot = annot.astype(str)
 
-    lut = dict(
-        zip(
-            range(gene_cn_df.shape[0]),
-            scicone.constants.LABEL_CPAL_HEX[: gene_cn_df.shape[0]],
-        )
-    )
-    row_colors = pd.Series(range(gene_cn_df.shape[0])).map(lut)
-
     # figure_width = gene_cn_df.shape[0] / 2 + 1.5
     if not ax:
         plt.figure(figsize=figsize, dpi=dpi)
