@@ -254,11 +254,12 @@ rule plot_heatmaps:
                gene_list_name = os.path.splitext(f)[0]
                output_png_file_name = os.path.splitext(output.heatmap_cnvs)[0] + '_' + gene_list_name + '.png'
 
-               f, axes = plt.subplots(1,n_cols,figsize=(6*n_cols,7), dpi=100)
-               axes = np.array([axes]).ravel()
+               fig = plt.figure(figsize=(4*n_cols,7), dpi=100)
+               outer = gridspec.GridSpec(1, n_cols, wspace=.5, hspace=0.2)
                for i in range(n_cols):
-                   plot_heatmap(gene_cn_df.iloc[max_genes*i:max_genes*(i+1),:], dpi=None, title="", colorbar=False, ax=axes[i])
-               plt.suptitle("Copy number values of gene per subclone")
+                   plot_heatmap(gene_cn_df.iloc[max_genes*i:max_genes*(i+1),:], title="", colorbar=False, outer=outer[i], fig=fig, max=max_genes,
+                                   final=(i==n_cols-1))
+               plt.suptitle("Copy number value of gene per subclone", fontsize=20)
                plt.savefig(output_png_file_name, bbox_inches = 'tight',)
 
                output_csv_file_name = os.path.splitext(output.gene_cn_df)[0] + '_' + gene_list_name + '.csv'
@@ -276,11 +277,12 @@ rule plot_heatmaps:
         n_genes = gene_cn_df.shape[0]
         n_cols = int(np.ceil(n_genes/max_genes))
 
-        f, axes = plt.subplots(1,n_cols,figsize=(6*n_cols,7), dpi=100)
-        axes = np.array([axes]).ravel()
+        fig = plt.figure(figsize=(4*n_cols,7), dpi=100)
+        outer = gridspec.GridSpec(1, n_cols, wspace=.5, hspace=0.2)
         for i in range(n_cols):
-            plot_heatmap(gene_cn_df.iloc[max_genes*i:max_genes*(i+1),:], dpi=None, title="", colorbar=False, ax=axes[i])
-        plt.suptitle("Copy number values of gene per subclone")
+            plot_heatmap(gene_cn_df.iloc[max_genes*i:max_genes*(i+1),:], title="", colorbar=False, outer=outer[i], fig=fig, max=max_genes,
+                            final=(i==n_cols-1))
+        plt.suptitle("Copy number value of gene per subclone", fontsize=20)
         plt.savefig(output.heatmap_cnvs, bbox_inches = 'tight',)
 
         gene_cn_df_imputed.to_csv(

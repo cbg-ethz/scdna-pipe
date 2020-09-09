@@ -8,6 +8,7 @@ import matplotlib
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+from matplotlib import gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.patches import Rectangle, Polygon
@@ -613,6 +614,10 @@ def plot_heatmap(
     dpi=100,
     output_path=None,
     ax=None,
+    outer=None,
+    fig=None,
+    final=False,
+    max=20,
 ):
     cmap = scicone.plotting.get_cnv_cmap(4)
     cmap.set_bad(color="black")  # for NaN
@@ -630,9 +635,24 @@ def plot_heatmap(
     annot[np.where(gene_cn_df == 4)] = ["4+"] * len(np.where(gene_cn_df == 4)[0])
     annot = annot.astype(str)
 
-    # figure_width = gene_cn_df.shape[0] / 2 + 1.5
-    if not ax:
-        plt.figure(figsize=figsize, dpi=dpi)
+    if final:
+        gs = gridspec.GridSpecFromSubplotSpec(
+            3,
+            1,
+            subplot_spec=outer,
+            hspace=0.01,
+            height_ratios=[gene_cn_df.shape[0] - 2, 1, max - 2 - gene_cn_df.shape[0]],
+        )
+    else:
+        gs = gridspec.GridSpecFromSubplotSpec(
+            2,
+            1,
+            subplot_spec=outer,
+            hspace=0.01,
+            height_ratios=[gene_cn_df.shape[0] - 2, 1],
+        )
+
+    ax = plt.Subplot(fig, gs[0])
     # cmap = matplotlib.colors.ListedColormap(sns.diverging_palette(220, 10, n=5))
     heatmap = sns.heatmap(
         gene_cn_df,
@@ -640,7 +660,7 @@ def plot_heatmap(
         cmap=cmap,
         vmin=0,
         vmax=4,
-        xticklabels=True,
+        xticklabels=False,
         yticklabels=True,
         cbar_kws={"ticks": [0, 1, 2, 3, 4]},
         fmt="",
@@ -651,11 +671,28 @@ def plot_heatmap(
         colorbar = heatmap.collections[0].colorbar
         colorbar.set_ticks([0.4, 1.2, 2, 2.8, 3.6])
         colorbar.set_ticklabels(["0", "1", "2", "3", "4+"])
-    heatmap.set_title(title)
-    heatmap.set_facecolor("#656565")
-    heatmap.set_xlabel("Subclone")
-    plt.yticks(rotation=0)
+    ax.set_title(title)
+    ax.set_facecolor("#656565")
+    # heatmap.set_xlabel("Subclone")
+    # ax.set_ytick_labels(rotation=0)
     # plt.xticks(rotation=45)
+    fig.add_subplot(ax)
+
+    ax = plt.Subplot(fig, gs[1])
+    subset_colors = scicone.constants.LABEL_CPAL_HEX[: gene_cn_df.shape[1]]
+    clone_cmap = matplotlib.colors.ListedColormap(subset_colors)
+    sns.heatmap(
+        np.array([range(gene_cn_df.columns.size)]),
+        annot=True,
+        fmt="",
+        ax=ax,
+        cmap=clone_cmap,
+        cbar=False,
+    )
+    ax.set_xlabel("Subclone")
+    ax.set_yticks([])
+    ax.set_xticks([])
+    fig.add_subplot(ax)
 
     if output_path is not None:
         plt.savefig(output_path, bbox_inches="tight")
