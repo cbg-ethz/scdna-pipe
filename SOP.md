@@ -242,6 +242,9 @@ dataset    /tree/is_cell_in_group
 ## alarms_summary.txt
 - Format: Unstructured human readable data
 - Content description: Text file containing the sequencing alerts.
+## possorted_bam.bam
+- Format: BAM file
+- Content description: Barcode-corrected reads aligned to the reference, sorted by reference position.
 
 # Analysis: Extract genomic coordinates
 - Description: Extracts the genomic coordinates from cellranger output
@@ -293,7 +296,6 @@ dataset    /tree/is_cell_in_group
 
 ## clustering_score.txt
 - Format: Text file with a single floating point number.
-
 - Content description: The Louvain Modularity score of the graph-based clustering algorithm.
 ## cluster_tree.txt
 - Format: Custom human-readable text format.
