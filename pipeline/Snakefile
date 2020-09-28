@@ -87,6 +87,7 @@ if not config['lite']:
     derived_file_names.append("web_summary.html")
     derived_file_names.append("summary.csv")
     derived_file_names.append("alarms_summary.txt")
+    derived_file_names.append("possorted_bam.bam")
 
 tree_outputs = ["cluster_tree"]
 
@@ -306,20 +307,18 @@ rule copy_cellranger_outputs:
     input:
         cellranger_done = "cellranger_done.txt"
     output:
-        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
-        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
-        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
-        os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html"
+        alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
+        cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
+        summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
+        web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html",
+        bam = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam",
     shell:
         "cd {params.cellranger_path}; \
-         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5'\
-             '{params.cellranger_path}/renamed/{params.analysis_prefix}__cnv_data.h5';\
-         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/alarms_summary.txt'\
-             '{params.cellranger_path}/renamed/{params.analysis_prefix}__alarms_summary.txt';\
-         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/summary.csv'\
-             '{params.cellranger_path}/renamed/{params.analysis_prefix}__summary.csv';\
-         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/web_summary.html'\
-             '{params.cellranger_path}/renamed/{params.analysis_prefix}__web_summary.html';"
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/alarms_summary.txt' '{output.alarms_summary}';\
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5' '{output.cnv_data}';\
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/summary.csv' '{output.summary}';\
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/web_summary.html' '{output.web_summary}';\
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/possorted_bam.bam' '{output.bam}';"
 
 rule create_cluster_plots_list:
     params:
@@ -411,6 +410,7 @@ rule create_derived_symlinks:
             create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", os.path.join(sym_derived_path, f"{analysis_prefix}__alarms_summary.txt"))
             create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", os.path.join(sym_derived_path, f"{analysis_prefix}__summary.csv"))
             create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html", os.path.join(sym_derived_path, f"{analysis_prefix}__web_summary.html"))
+            create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam", os.path.join(sym_derived_path, f"{analysis_prefix}__possorted_bam.bam"))
         else:
             create_symlink(h5_path, os.path.join(sym_derived_path, f"{analysis_prefix}__cnv_data.h5"))
 
