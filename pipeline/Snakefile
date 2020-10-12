@@ -106,21 +106,6 @@ include: os.path.join(workflow.basedir, "rules", "plotting.smk")
 onstart:
     print(f"Workflow main directory: {workflow.basedir}")
 
-rule run:
-    input:
-        # checksums
-        raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
-        derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
-        robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_final.txt",
-        bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
-        cell_fusions_summary = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
-    output:
-        done = "all_done.txt"
-    shell:
-        "\
-        echo rule run\
-        touch all_done.txt\
-        "
 
 rule filter_counts:
     params:
@@ -172,153 +157,171 @@ rule add_filtered_bins_back:
         sa.add_filtered_bins_back(input.cnv_profiles, input.excluded_bins, output.inferred_cnvs)
         sa.add_filtered_bins_back(input.unique_cnv_profiles, input.excluded_bins, output.unique_cnvs)
 
-rule merge_files:
-    params:
-        fastqs_path = fastqs_path,
-        n_lanes = n_lanes,
-	scripts_dir = scripts_dir
-    input:
-        raw_fastqs = expand('{sample}', sample=raw_fastqs)
-    output:
-        done = "merge_files_done.txt"
-    shell:
-        "sh {params.scripts_dir}/merge_10x_gzip_files.sh {params.fastqs_path} {params.n_lanes}; \
-	if [ -d {params.fastqs_path}/merged ] ; \
-	then \
-	    echo merged directory exists;\
-	else \
-	    mkdir {params.fastqs_path}/merged;\
-	fi ; \
-        mv {params.fastqs_path}/MERGED_BSSE* {params.fastqs_path}/merged;\
-        chmod 775 {params.fastqs_path}/merged/*;\
-	touch merge_files_done.txt"
+if not config['lite']:
+    rule run:
+        input:
+            # checksums
+            raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
+            derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
+            robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_final.txt",
+            bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
+            cell_fusions_summary = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
+        output:
+            done = "all_done.txt"
+        shell:
+            "\
+            echo rule run\
+            touch all_done.txt\
+            "
 
 
-rule rename_fastqs:
-    input:
-        rules.merge_files.output.done
-    output:
-        "rename_fastqs_done.txt"
-    run:
-        merged_fastqs_path = fastqs_path + "/merged/"
-    	print(merged_fastqs_path)
-    	fastqs_dir = merged_fastqs_path
-    	for filename in os.listdir(fastqs_dir):
-    	    if filename.startswith("MERGED_BSSE") and filename.endswith('.gz'):
-    	        print("old name: " + filename)
-                print("new name: " + rename_fastq(filename))
-                os.rename(fastqs_dir+filename, fastqs_dir+rename_fastq(filename, sample_name=sample_name))
-        Path('rename_fastqs_done.txt').touch()
+    rule merge_files:
+        params:
+            fastqs_path = fastqs_path,
+            n_lanes = n_lanes,
+            scripts_dir = scripts_dir
+        input:
+            raw_fastqs = expand('{sample}', sample=raw_fastqs)
+        output:
+            done = "merge_files_done.txt"
+        shell:
+            "sh {params.scripts_dir}/merge_10x_gzip_files.sh {params.fastqs_path} {params.n_lanes}; \
+        	if [ -d {params.fastqs_path}/merged ] ; \
+        	then \
+        	    echo merged directory exists;\
+        	else \
+        	    mkdir {params.fastqs_path}/merged;\
+        	fi ; \
+                mv {params.fastqs_path}/MERGED_BSSE* {params.fastqs_path}/merged;\
+                chmod 775 {params.fastqs_path}/merged/*;\
+        	touch merge_files_done.txt"
 
-rule trick_fastqs:
-    params:
-        fastqs_path = fastqs_path,
-        scripts_dir = scripts_dir,
-        r1 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz",
-        r2 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R2_001.fastq.gz",
-        mem = config["tricking_fastqs"]["mem"],
-        time = config["tricking_fastqs"]["time"],
-        insert_length = config["tricking_fastqs"]["insert_length"]
-    input:
-        rules.rename_fastqs.output
-    output:
-        r1_fastqs = os.path.join(moved_fastqs_path, sample_name) + "_" + "{lane_no}" + "_R1_001.fastq.gz"
-    shell:
-        "\
-        if [ -d {params.fastqs_path}/merged/tricked ] ; \
-        then \
-        echo tricked directory exists;\
-        else \
-        mkdir {params.fastqs_path}/merged/tricked;\
-        fi ;\
-        python {params.scripts_dir}/cellranger_dna_trick.py -r1 {params.r1}  -r2 {params.r2} -l {params.insert_length} -o {params.fastqs_path}/merged/tricked/"
+    rule rename_fastqs:
+        input:
+            rules.merge_files.output.done
+        output:
+            "rename_fastqs_done.txt"
+        run:
+            merged_fastqs_path = fastqs_path + "/merged/"
+            print(merged_fastqs_path)
+            fastqs_dir = merged_fastqs_path
+            for filename in os.listdir(fastqs_dir):
+                if filename.startswith("MERGED_BSSE") and filename.endswith('.gz'):
+                    print("old name: " + filename)
+                    print("new name: " + rename_fastq(filename))
+                    os.rename(fastqs_dir+filename, fastqs_dir+rename_fastq(filename, sample_name=sample_name))
+            Path('rename_fastqs_done.txt').touch()
 
-rule move_fastqs:
-    params:
-        fastqs_path = fastqs_path,
-        sample_name = sample_name
-    input:
-        tricked_fastqs = expand(os.path.join(moved_fastqs_path, sample_name) + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes)
-    output:
-        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt"
-    shell:
-        "mv {params.fastqs_path}/merged/*_R2_* {params.fastqs_path}/merged/tricked/;\
-             mv {params.fastqs_path}/merged/*_I1_* {params.fastqs_path}/merged/tricked/;\
-                  chmod 755 {params.fastqs_path}/merged/tricked/*;\
-                      touch move_fastqs_to_tricked_done.txt;"
 
-rule create_raw_files_list:
-    params:
-        sym_raw_path = sym_raw_path,
-        seq_prefix = seq_prefix
-    input:
-        sym_r1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
-        sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
-        sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes)
-    output:
-        os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt"
-    shell:
-        "cd {params.sym_raw_path}; ls > {params.seq_prefix}__raw_files.txt "
+    rule trick_fastqs:
+        params:
+            fastqs_path = fastqs_path,
+            scripts_dir = scripts_dir,
+            r1 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R1_001.fastq.gz",
+            r2 = fastqs_path+"/merged/" + sample_name + "_" + "{lane_no}" + "_R2_001.fastq.gz",
+            mem = config["tricking_fastqs"]["mem"],
+            time = config["tricking_fastqs"]["time"],
+            insert_length = config["tricking_fastqs"]["insert_length"]
+        input:
+            rules.rename_fastqs.output
+        output:
+            r1_fastqs = os.path.join(moved_fastqs_path, sample_name) + "_" + "{lane_no}" + "_R1_001.fastq.gz"
+        shell:
+            "\
+            if [ -d {params.fastqs_path}/merged/tricked ] ; \
+            then \
+            echo tricked directory exists;\
+            else \
+            mkdir {params.fastqs_path}/merged/tricked;\
+            fi ;\
+            python {params.scripts_dir}/cellranger_dna_trick.py -r1 {params.r1}  -r2 {params.r2} -l {params.insert_length} -o {params.fastqs_path}/merged/tricked/"
 
-rule create_raw_checksum:
-    params:
-        sym_raw_path = sym_raw_path,
-        seq_prefix = seq_prefix
-    input:
-        os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt"
-    output:
-        checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5"
-    shell:
-        "cd {params.sym_raw_path}; find . -exec md5sum '{{}}' \; >  {output.checksum_file}"
+    rule move_fastqs:
+        params:
+            fastqs_path = fastqs_path,
+            sample_name = sample_name
+        input:
+            tricked_fastqs = expand(os.path.join(moved_fastqs_path, sample_name) + "_" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes)
+        output:
+            move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt"
+        shell:
+            "mv {params.fastqs_path}/merged/*_R2_* {params.fastqs_path}/merged/tricked/;\
+                 mv {params.fastqs_path}/merged/*_I1_* {params.fastqs_path}/merged/tricked/;\
+                      chmod 755 {params.fastqs_path}/merged/tricked/*;\
+                          touch move_fastqs_to_tricked_done.txt;"
 
-rule run_cellranger:
-    params:
-        fastqs_path = fastqs_path+'/merged/tricked',
-        cr_sample_name = cr_sample_name,
-        cellranger_path = cellranger_path,
-        local_cores = config['cellranger_dna']['local_cores'],
-        local_mem = config['cellranger_dna']['local_mem'],
-        mem_per_core = config['cellranger_dna']['mem_per_core'],
-        mem = config['cellranger_dna']['mem'],
-        time = config['cellranger_dna']['time']
-    input:
-        move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
-        reference_path = config['ref_genome_path']
-    output:
-        cnv_data = os.path.join(cellranger_path, cr_sample_name) + "/outs/cnv_data.h5",
-        cellranger_done = "cellranger_done.txt"
-    shell:
-        'if [ -d {params.cellranger_path}/run ] ; \
-        then \
-        echo cellranger directory exists;\
-        else \
-        mkdir {params.cellranger_path}/run;\
-        fi ;\
-         pushd {params.cellranger_path}/run; cellranger-dna cnv --reference={input.reference_path} --fastqs={params.fastqs_path}\
-         --localmem={params.local_mem} --localcores={params.local_cores} --mempercore={params.mem_per_core}\
-         --id={params.cr_sample_name} --sample={params.cr_sample_name}; ln -s "{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5"\
-         "{params.cellranger_path}/{params.cr_sample_name}/outs/cnv_data.h5"; popd; touch cellranger_done.txt'
+    rule create_raw_files_list:
+        params:
+            sym_raw_path = sym_raw_path,
+            seq_prefix = seq_prefix
+        input:
+            sym_r1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R1_001.fastq.gz", lane_no = fastq_lanes),
+            sym_r2_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_R2_001.fastq.gz", lane_no = fastq_lanes),
+            sym_i1_fastqs = expand(os.path.join(sym_raw_path, seq_prefix) + "__" + "{lane_no}" + "_I1_001.fastq.gz", lane_no = fastq_lanes)
+        output:
+            os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt"
+        shell:
+            "cd {params.sym_raw_path}; ls > {params.seq_prefix}__raw_files.txt "
 
-rule copy_cellranger_outputs:
-    params:
-        cr_sample_name = cr_sample_name,
-        cellranger_path = cellranger_path,
-        analysis_prefix = analysis_prefix
-    input:
-        cellranger_done = "cellranger_done.txt"
-    output:
-        alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
-        cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
-        summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
-        web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html",
-        bam = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam",
-    shell:
-        "cd {params.cellranger_path}; \
-         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/alarms_summary.txt' '{output.alarms_summary}';\
-         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5' '{output.cnv_data}';\
-         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/summary.csv' '{output.summary}';\
-         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/web_summary.html' '{output.web_summary}';\
-         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/possorted_bam.bam' '{output.bam}';"
+    rule create_raw_checksum:
+        params:
+            sym_raw_path = sym_raw_path,
+            seq_prefix = seq_prefix
+        input:
+            os.path.join(sym_raw_path, seq_prefix) + "__raw_files.txt"
+        output:
+            checksum_file = os.path.join(sym_raw_path, seq_prefix) + "__raw_files.md5"
+        shell:
+            "cd {params.sym_raw_path}; find . -exec md5sum '{{}}' \; >  {output.checksum_file}"
+
+    rule run_cellranger:
+        params:
+            fastqs_path = fastqs_path+'/merged/tricked',
+            cr_sample_name = cr_sample_name,
+            cellranger_path = cellranger_path,
+            local_cores = config['cellranger_dna']['local_cores'],
+            local_mem = config['cellranger_dna']['local_mem'],
+            mem_per_core = config['cellranger_dna']['mem_per_core'],
+            mem = config['cellranger_dna']['mem'],
+            time = config['cellranger_dna']['time']
+        input:
+            move_after_tricking_fastqs = "move_fastqs_to_tricked_done.txt",
+            reference_path = config['ref_genome_path']
+        output:
+            cnv_data = os.path.join(cellranger_path, cr_sample_name) + "/outs/cnv_data.h5",
+            cellranger_done = "cellranger_done.txt"
+        shell:
+            'if [ -d {params.cellranger_path}/run ] ; \
+            then \
+            echo cellranger directory exists;\
+            else \
+            mkdir {params.cellranger_path}/run;\
+            fi ;\
+             pushd {params.cellranger_path}/run; cellranger-dna cnv --reference={input.reference_path} --fastqs={params.fastqs_path}\
+             --localmem={params.local_mem} --localcores={params.local_cores} --mempercore={params.mem_per_core}\
+             --id={params.cr_sample_name} --sample={params.cr_sample_name}; ln -s "{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5"\
+             "{params.cellranger_path}/{params.cr_sample_name}/outs/cnv_data.h5"; popd; touch cellranger_done.txt'
+
+    rule copy_cellranger_outputs:
+        params:
+            cr_sample_name = cr_sample_name,
+            cellranger_path = cellranger_path,
+            analysis_prefix = analysis_prefix
+        input:
+            cellranger_done = "cellranger_done.txt"
+        output:
+            alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
+            cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
+            summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
+            web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html",
+            bam = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam",
+        shell:
+            "cd {params.cellranger_path}; \
+             ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/alarms_summary.txt' '{output.alarms_summary}';\
+             ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5' '{output.cnv_data}';\
+             ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/summary.csv' '{output.summary}';\
+             ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/web_summary.html' '{output.web_summary}';\
+             ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/possorted_bam.bam' '{output.bam}';"
 
 rule create_cluster_plots_list:
     params:
