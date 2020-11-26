@@ -164,8 +164,6 @@ if not config['lite']:
             # checksums
             raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
             derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
-            robustness_results = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_final.txt",
-            bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
             cell_fusions_summary = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
         output:
             done = "all_done.txt"
