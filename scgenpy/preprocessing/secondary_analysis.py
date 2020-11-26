@@ -9,7 +9,7 @@ from sklearn.preprocessing import normalize
 import os
 import matplotlib
 import scipy
-from scicone.utils import gini
+from scicone.utils import gini, filter_bins
 
 if os.environ.get("DISPLAY", "") == "":
     # print("no display found. Using non-interactive Agg backend")
@@ -38,11 +38,6 @@ class SecondaryAnalysis:
         self.sample_name = sample_name
         self.output_path = output_path
         self.h5_path = h5_path
-
-        paths = [output_path, output_path + "/filtering/", output_path + "/clustering/"]
-        for path in paths:
-            if not os.path.exists(path):
-                os.makedirs(path)
 
     def extract_genomic_info(self, gender):
         """
@@ -128,7 +123,7 @@ class SecondaryAnalysis:
 
         h5f.close()
 
-    def remove_tenx_genomics_artifacts(self, bins, to_file=False):
+    def remove_tenx_genomics_artifacts(self, bins, bin_threshold=3, to_file=False):
         """
         Filters out the technical noise produced by 10x genomics sequencing artifacts.
         :param bins: The list of bins corresponding to technical noise
@@ -182,6 +177,12 @@ class SecondaryAnalysis:
 
         print("normalized_counts matrix shape before & after filtering")
         print(normalized_counts.shape)
+
+        # Filter out some more bins
+        is_outlier = np.zeros((normalized_counts.shape[1],))
+        _, outliers_idx = filter_bins(normalized_counts, thres=bin_threshold)
+        is_outlier[outliers_idx] = 1
+        to_filter_out = np.logical_or(to_filter_out, is_outlier)
         normalized_counts = normalized_counts[:, ~to_filter_out]
         print(normalized_counts.shape)
 
@@ -213,13 +214,14 @@ class SecondaryAnalysis:
         else:
             return normalized_counts, to_filter_out
 
-    def remove_outliers(self, data, alpha=0.05):
+    def remove_outliers(self, data, alpha=0.05, median_thres=0):
         h5f = h5py.File(self.h5_path, "r")
         dimapds = h5f["per_cell_summary_metrics"]["normalized_dimapd"][()]
         mean, std = scipy.stats.distributions.norm.fit(dimapds)
         pvals = 1.0 - scipy.stats.distributions.norm.cdf(dimapds, mean, std)
+        median_counts = np.median(data, axis=1)
 
-        is_outlier = pvals < alpha
+        is_outlier = np.logical_or(pvals < alpha, median_counts <= median_thres)
         data = data[~is_outlier]
 
         return data, is_outlier

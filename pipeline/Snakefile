@@ -22,6 +22,10 @@ import re
 import warnings
 sns.set_style("ticks")
 
+wildcard_constraints:
+    stage = "((?!_)[A-Za-z])+",
+    root = "((?!_)[A-Za-z])+"
+
 scicone_path = config['scicone_path']
 output_temp_path = config['output_temp_path']
 
@@ -67,9 +71,7 @@ derived_file_names =[
     "normalised_regions.csv",
     "clustering_score.txt",
     "cluster_tree.json",
-    "cluster_tree_tetraploid.json",
     "cluster_tree.txt",
-    "cluster_tree_tetraploid.txt",
     "cluster_tree_sorted_normalised_counts_bins.png",
     "cluster_tree_sorted_cnvs_bins.png",
     "unique_cluster_tree_cnvs.csv",
@@ -110,7 +112,8 @@ onstart:
 rule filter_counts:
     params:
         bins = config["secondary_analysis"]["bins_to_remove"],
-        alpha = config["outlier_detection"]["alpha"]
+        alpha = config["outlier_detection"]["alpha"],
+        bin_threshold = config["outlier_detection"]["bin_threshold"]
     input:
         h5_file = h5_path
     output:
@@ -120,8 +123,10 @@ rule filter_counts:
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         is_outlier = os.path.join(analysis_path, "filtering", analysis_prefix) + "_is_outlier.txt"
     run:
-        bin_filtered_counts, excluded_bins = sa.remove_tenx_genomics_artifacts(bins=params.bins, to_file=False)
-        filtered_counts, is_outlier = sa.remove_outliers(bin_filtered_counts, alpha=params.alpha)
+        bin_filtered_counts, excluded_bins = sa.remove_tenx_genomics_artifacts(bins=params.bins, bin_threshold=params.bin_threshold, to_file=False)
+        filtered_counts, is_outlier = sa.remove_outliers(bin_filtered_counts, alpha=params.alpha, median_thres=0)
+        print(f"Marked {np.count_nonzero(is_outlier)}/{bin_filtered_counts.shape[0]} cells as outliers.")
+        print(f"Final data shape: {filtered_counts.shape}")
 
         np.savetxt(output.is_outlier, is_outlier, delimiter=",")
         np.savetxt(output.excluded_bins, excluded_bins, delimiter=",")
@@ -138,21 +143,17 @@ rule extract_genomic_info:
         chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         bin_chr_indicator = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
         bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv"
-    benchmark:
-        "benchmarks/extract_genomic_info.tsv"
     run:
         sa.extract_genomic_info(params.gender)
 
 rule add_filtered_bins_back:
     input:
-        cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_{stage}.csv", # use cluster tree results
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_{stage}.csv", # use cluster tree results
+        cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_final_{root}.csv", # use cluster tree results
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_final_{root}.csv", # use cluster tree results
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv"
     output:
-        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs_{stage}.csv",
-        unique_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs_{stage}.csv"
-    benchmark:
-        "benchmarks/add_filtered_bins_back_{stage}.tsv"
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs_final_{root}.csv",
+        unique_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs_final_{root}.csv"
     run:
         sa.add_filtered_bins_back(input.cnv_profiles, input.excluded_bins, output.inferred_cnvs)
         sa.add_filtered_bins_back(input.unique_cnv_profiles, input.excluded_bins, output.unique_cnvs)
@@ -328,11 +329,11 @@ rule create_cluster_plots_list:
         analysis_prefix = analysis_prefix,
         analysis_path = analysis_path
     input:
-        secondary_analysis_done = "secondary_analysis_done.txt"
+        secondary_analysis_done = "secondary_analysis_done.txt",
     output:
-        cluster_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cluster_profile_files.txt"
+        cluster_plots_list = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix ) + "__cluster_profile_files.txt"
     shell:
-        "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cluster_profile_..?\.png' > {params.analysis_prefix}__cluster_profile_files.txt"
+        "cd {params.analysis_path}/inferred_cnvs; ls | egrep '{params.analysis_prefix}__cluster_profile_..?\.png' > {params.analysis_prefix}__cluster_profile_files.txt"
 
 rule create_heatmap_plots_list:
     params:
@@ -341,9 +342,9 @@ rule create_heatmap_plots_list:
     input:
         secondary_analysis_done = "secondary_analysis_done.txt"
     output:
-        heatmap_plots_list = os.path.join(analysis_path, "clustering", analysis_prefix ) + "__cn_genes_clusters_files.txt"
+        heatmap_plots_list = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix ) + "__cn_genes_clusters_files.txt"
     shell:
-        "cd {params.analysis_path}/clustering; ls | egrep '{params.analysis_prefix}__cn_genes_clusters_chr..?_heatmap\.png' > {params.analysis_prefix}__cn_genes_clusters_files.txt"
+        "cd {params.analysis_path}/inferred_cnvs; ls | egrep '{params.analysis_prefix}__cn_genes_clusters_chr..?_heatmap\.png' > {params.analysis_prefix}__cn_genes_clusters_files.txt"
 
 rule create_raw_symlinks:
     params:
@@ -367,6 +368,78 @@ rule create_raw_symlinks:
             ln -s {params.old_file_name}{wildcards.lane_no}_R2_001.fastq.gz {output.r2_fastqs};\
                 ln -s {params.old_file_name}{wildcards.lane_no}_I1_001.fastq.gz {output.i1_fastqs};"
 
+rule symlink_best_tree:
+    input:
+        clustering_score_diploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_final_diploid.txt",
+        cluster_tree_json_diploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_diploid.json",
+        cluster_tree_diploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_diploid.txt",
+        cluster_tree_sorted_normalised_counts_bins_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins_diploid.png",
+        cluster_tree_sorted_cnvs_bins_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins_diploid.png",
+        unique_cnv_profiles_diploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_final_diploid.csv",
+        inferred_cnvs_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs_final_diploid.csv",
+        cluster_tree_genes_png_diploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes_diploid.png",
+        overlapping_cluster_plot_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping_diploid.png",
+        gene_cn_df_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df_diploid.csv",
+        gene_cn_df_roche_gene_list_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df_diploid_roche_gene_list.csv",
+        heatmap_cnvs_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs_diploid.png",
+        clone_lib_sizes_diploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clone_lib_sizes_diploid.png",
+        clustering_score_tetraploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_final_tetraploid.txt",
+        cluster_tree_json_tetraploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_tetraploid.json",
+        cluster_tree_tetraploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_tetraploid.txt",
+        cluster_tree_sorted_normalised_counts_bins_tetraploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins_tetraploid.png",
+        cluster_tree_sorted_cnvs_bins_tetraploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins_tetraploid.png",
+        unique_cnv_profiles_tetraploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_final_tetraploid.csv",
+        inferred_cnvs_tetraploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs_final_tetraploid.csv",
+        cluster_tree_genes_png_tetraploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes_tetraploid.png",
+        overlapping_cluster_plot_tetraploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping_tetraploid.png",
+        gene_cn_df_tetraploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df_tetraploid.csv",
+        gene_cn_df_roche_gene_list_tetraploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df_tetraploid_roche_gene_list.csv",
+        heatmap_cnvs_tetraploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs_tetraploid.png",
+        clone_lib_sizes_tetraploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clone_lib_sizes_tetraploid.png",
+    output:
+        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_final.txt",
+        cluster_tree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.json",
+        cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt",
+        cluster_tree_sorted_normalised_counts_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",
+        cluster_tree_sorted_cnvs_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins.png",
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_final.csv",
+        inferred_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__inferred_cnvs_final.csv",
+        cluster_tree_genes_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
+        overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
+        gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
+        gene_cn_df_roche_gene_list = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df_roche_gene_list.csv",
+        heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png",
+        clone_lib_sizes = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clone_lib_sizes.png",
+        best_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + '_best_tree.txt',
+    run:
+        def create_symlink(source, dest):
+            if not os.path.isfile(dest):
+                os.symlink(source, dest)
+            else:
+                os.utime(dest, None)  # Set access/modified times to now
+
+        with open(input.cluster_tree_diploid, 'r') as f:
+            diploid = f.readlines()
+        diploid_score = float(diploid[5].split(' ')[-1].split('\n')[0])
+        with open(input.cluster_tree_tetraploid, 'r') as f:
+            tetraploid = f.readlines()
+        tetraploid_score = float(tetraploid[5].split(' ')[-1].split('\n')[0])
+        print("Tree scores:")
+        print(f"- diploid:\t{diploid_score}")
+        print(f"- tetraploid:\t{tetraploid_score}")
+        with open(output.best_tree, 'w') as f:
+            if diploid_score > tetraploid_score:
+                f.write('diploid')
+                print(f"Best: diploid")
+                init = 0
+            else:
+                f.write('tetraploid')
+                print(f"Best: tetraploid")
+                init = len(output)-1
+
+        for i in range(len(output)-1):
+            create_symlink(input[init+i], output[i])
+
 rule create_derived_symlinks:
     params:
         cellranger_path = cellranger_path,
@@ -377,16 +450,14 @@ rule create_derived_symlinks:
         bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
         excluded_bins = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
-        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions_final.txt",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_final.txt",
-        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_counts_final.csv",
+        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_regions.txt",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_region_sizes.txt",
+        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_counts.csv",
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins_final.csv",
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions_final.csv",
         clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_final.txt",
         cluster_tree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.json",
-        cluster_tree_tetraploid_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_tetraploid.json",
         cluster_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt",
-        cluster_tree_tetraploid = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_tetraploid.txt",
         cluster_tree_sorted_normalised_counts_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_normalised_counts_bins.png",
         cluster_tree_sorted_cnvs_bins = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_tree_sorted_cnvs_bins.png",
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_final.csv",
@@ -398,7 +469,8 @@ rule create_derived_symlinks:
         heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png",
         clone_lib_sizes = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clone_lib_sizes.png",
         drugs_responsive_genes = os.path.join(config['drugs_path'], "drugs_responsive_genes.txt"),
-        drugs_resistant_genes = os.path.join(config['drugs_path'], "drugs_resistant_genes.txt")
+        drugs_resistant_genes = os.path.join(config['drugs_path'], "drugs_resistant_genes.txt"),
+        best_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + '_best_tree.txt',
     output:
         derived_symlinks = [os.path.join(sym_derived_path, f"{analysis_prefix}__{filename}") for filename in derived_file_names]
     run:
@@ -441,23 +513,27 @@ rule create_derived_symlinks:
         create_symlink(input.inferred_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__inferred_cnvs.csv"))
         create_symlink(input.cluster_tree_genes_png, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_genes.png"))
 
-        create_symlink(input.cluster_tree_tetraploid_json, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_tetraploid.json"))
-        create_symlink(input.cluster_tree_tetraploid, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_tree_tetraploid.txt"))
-
         create_symlink(input.overlapping_cluster_plot, os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_overlapping.png"))
         create_symlink(input.clone_lib_sizes, os.path.join(sym_derived_path, f"{analysis_prefix}__clone_lib_sizes.png"))
 
-        cluster_profile_plots = glob.glob(os.path.join(analysis_path, "inferred_cnvs", f"{analysis_prefix}__cluster_profile_[0-9]*.png"))
+        create_symlink(input.gene_cn_df, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df.csv"))
+        create_symlink(input.gene_cn_df_roche_gene_list, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df_roche_gene_list.csv"))
+        create_symlink(input.heatmap_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__heatmap_cnvs.png"))
+
+        tree_is_diploid = True
+        ploidy = 'diploid'
+        with open(input.best_tree, 'r') as f:
+            lines = f.read()
+            tree_is_diploid = (lines.split('\n')[0] == 'diploid')
+        if not tree_is_diploid:
+            ploidy = 'tetraploid'
+        cluster_profile_plots = glob.glob(os.path.join(analysis_path, "inferred_cnvs", f"{analysis_prefix}__cluster_profile_[0-9]*_{ploidy}.png"))
         print(cluster_profile_plots)
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_files.txt"), "w") as file:
             for cluster_profile_plot in cluster_profile_plots:
                 f_name = cluster_profile_plot.split("/")[-1]
                 create_symlink(cluster_profile_plot, os.path.join(sym_derived_path, f"{f_name}"))
                 file.write(f"{f_name}\n")
-
-        create_symlink(input.gene_cn_df, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df.csv"))
-        create_symlink(input.gene_cn_df_roche_gene_list, os.path.join(sym_derived_path, f"{analysis_prefix}__cn_gene_df_roche_gene_list.csv"))
-        create_symlink(input.heatmap_cnvs, os.path.join(sym_derived_path, f"{analysis_prefix}__heatmap_cnvs.png"))
 
         # write the summary txt
         cn_gene_df = pd.read_csv(input.gene_cn_df, index_col=0)
@@ -476,6 +552,7 @@ rule create_derived_symlinks:
         deleted_genes_str = ', '.join(deleted_genes)
 
         open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w").close()
+
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w") as summary_file:
             warning_str = ""
             if n_cells  > 2 and n_cells < 20:
@@ -504,37 +581,37 @@ rule create_derived_symlinks:
                 summary_file.write(f"There {verb} {n_clusters} {clones} detected with {amp_str}"
                 f" and {del_str} among the pre-selected genes.\n\n")
 
-            all_genes = set()
-            all_genes.update(set(amplified_genes))
-            all_genes.update(set(deleted_genes))
+                all_genes = set()
+                all_genes.update(set(amplified_genes))
+                all_genes.update(set(deleted_genes))
 
-            # Gene - drug associations.
-            df = pd.read_csv(input.drugs_responsive_genes, header=None)
-            drug_map = zip(df[0], df[1])
-            drugs_responsive_genes = set()
-            for item in drug_map:
-                drug = item[0]
-                gene = item[1]
-                if gene in all_genes:
-                    drugs_responsive_genes.add(drug)
-            drugs_responsive_genes = list(drugs_responsive_genes)
-            drugs_responsive_genes.sort()
+                # Gene - drug associations.
+                df = pd.read_csv(input.drugs_responsive_genes, header=None)
+                drug_map = zip(df[0], df[1])
+                drugs_responsive_genes = set()
+                for item in drug_map:
+                    drug = item[0]
+                    gene = item[1]
+                    if gene in all_genes:
+                        drugs_responsive_genes.add(drug)
+                drugs_responsive_genes = list(drugs_responsive_genes)
+                drugs_responsive_genes.sort()
 
-            df = pd.read_csv(input.drugs_resistant_genes, header=None)
-            drug_map = zip(df[0], df[1])
-            drugs_resistant_genes = set()
-            for item in drug_map:
-                drug = item[0]
-                gene = item[1]
-                if gene in all_genes:
-                    drugs_resistant_genes.add(drug)
-            drugs_resistant_genes = list(drugs_resistant_genes)
-            drugs_resistant_genes.sort()
+                df = pd.read_csv(input.drugs_resistant_genes, header=None)
+                drug_map = zip(df[0], df[1])
+                drugs_resistant_genes = set()
+                for item in drug_map:
+                    drug = item[0]
+                    gene = item[1]
+                    if gene in all_genes:
+                        drugs_resistant_genes.add(drug)
+                drugs_resistant_genes = list(drugs_resistant_genes)
+                drugs_resistant_genes.sort()
 
-            summary_file.write(f"Drugs the affected genes are responsive to: "
-            f"{', '.join(drugs_responsive_genes) if len(drugs_responsive_genes) else 'no associated drugs were found'}.\n\n")
-            summary_file.write(f"Drugs the affected genes are resistant to: "
-            f"{', '.join(drugs_resistant_genes) if len(drugs_resistant_genes) else 'no associated drugs were found'}.\n")
+                summary_file.write(f"Drugs the affected genes are responsive to: "
+                f"{', '.join(drugs_responsive_genes) if len(drugs_responsive_genes) else 'no associated drugs were found'}.\n\n")
+                summary_file.write(f"Drugs the affected genes are resistant to: "
+                f"{', '.join(drugs_resistant_genes) if len(drugs_resistant_genes) else 'no associated drugs were found'}.\n")
 
 rule create_derived_checksum:
     params:

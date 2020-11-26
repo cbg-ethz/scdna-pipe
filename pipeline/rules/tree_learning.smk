@@ -17,10 +17,9 @@ rule learn_candidate_cluster_tree:
         scicone_path = scicone_path,
         output_temp_path = output_temp_path,
     input:
-        segmented_counts = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_counts_candidate.csv",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_candidate.txt",
-        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_candidate.txt"
+        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_candidate_counts.csv",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_candidate_region_sizes.txt",
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_candidate_neutral_states.txt"
     output:
         clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_candidate.txt",
         ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_candidate.txt",
@@ -75,19 +74,18 @@ rule learn_final_cluster_tree:
         scicone_path = scicone_path,
         output_temp_path = output_temp_path,
     input:
-        segmented_counts = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_counts_final.csv",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_final.txt",
-        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_final.txt",
+        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_counts.csv",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_region_sizes.txt",
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_final_neutral_states.txt",
         is_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "_is_diploid_candidate.txt",
     output:
-        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_final.txt",
-        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt",
-        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_final.csv",
-        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_final.tsv",
-        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_final.txt",
-        ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.json",
-        ctree_cell_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cell_labels_final.csv",
+        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_final_diploid.txt",
+        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_diploid.txt",
+        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_final_diploid.csv",
+        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_final_diploid.tsv",
+        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_final_diploid.txt",
+        ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_diploid.json",
+        ctree_cell_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cell_labels_final_diploid.csv",
     threads: 10
     run:
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
@@ -144,33 +142,6 @@ rule learn_final_cluster_tree:
             copyfile(ctree_json, output.ctree_json)
             copyfile(ctree_cell_labels, output.ctree_cell_labels)
 
-rule get_unique_cnvs:
-    input:
-        cluster_tree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_{stage}.json",
-    output:
-        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_{stage}.csv",
-    benchmark:
-        "benchmarks/get_unique_cnvs_{stage}.tsv"
-    run:
-        with open(input.cluster_tree_json) as json_file:
-            cluster_tree = json.load(json_file)
-
-        unique_cnvs = []
-        node_labels = []
-        for node in cluster_tree:
-            if cluster_tree[node]['size'] > 0:
-                node_labels.append(int(cluster_tree[node]['label']))
-                unique_cnvs.append(np.array(cluster_tree[node]['cnv']))
-        order = np.argsort(np.array(node_labels))
-        unique_cnvs = np.array(unique_cnvs)[order]
-
-        print("saving the unique cnv profiles...")
-        np.savetxt(
-            output.unique_cnv_profiles,
-            unique_cnvs,
-            delimiter=",",
-            fmt='%d'
-        )
 
 rule learn_tetraploid_cluster_tree:
     params:
@@ -183,18 +154,18 @@ rule learn_tetraploid_cluster_tree:
         scicone_path = scicone_path,
         output_temp_path = output_temp_path
     input:
-        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt", # to avoid conflicts
-        segmented_counts = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_counts_final.csv",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_final.txt",
-        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_final.txt"
+        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_diploid.txt", # to avoid conflicts
+        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_counts.csv",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_region_sizes.txt",
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_final_neutral_states.txt",
     output:
-        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_tetraploid.txt",
-        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_tetraploid.txt",
-        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_tetraploid.csv",
-        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_tetraploid.tsv",
-        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_tetraploid.txt",
-        ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_tetraploid.json",
+        clustering_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clustering_score_final_tetraploid.txt",
+        ctree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_tetraploid.txt",
+        ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_final_tetraploid.csv",
+        ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_final_tetraploid.tsv",
+        ctree_robustness_score = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_robustness_final_tetraploid.txt",
+        ctree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_tetraploid.json",
+        ctree_cell_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cell_labels_final_tetraploid.csv",
     threads: 10
     run:
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
@@ -212,6 +183,12 @@ rule learn_tetraploid_cluster_tree:
         sci.learn_tree(segmented_counts, segmented_region_sizes, n_reps=params.n_reps, cluster=True, full=False, cluster_tree_n_iters=params.cluster_tree_n_iters,
                                 max_tries=params.cluster_tree_n_tries, robustness_thr=0.5, alpha=alpha, copy_number_limit=params.copy_number_limit,
                                 c_penalise=params.c_penalise, region_neutral_states=segmented_neutral_states)
+        sci.best_cluster_tree.read_tree_str(sci.best_cluster_tree.tree_str, num_labels=True)
+
+        # Adjust to diploid root
+        sci.best_cluster_tree.adjust_to_wgd(threshold=0.98)
+        sci.best_cluster_tree.node_dict['0']['label'] = '0'
+        sci.best_cluster_tree.update_tree_str()
 
         # Store best cluster tree
         with open(output.ctree, "w") as file:
@@ -228,3 +205,35 @@ rule learn_tetraploid_cluster_tree:
 
         with open(output.ctree_json, 'w') as file:
             json.dump(sci.best_cluster_tree.node_dict, file, cls=NumpyEncoder)
+
+        try:
+            np.savetxt(output.ctree_cell_labels, np.array(sci.best_cluster_tree.cell_node_labels).astype(int), delimiter='\t')
+        except ValueError:
+            labs = [ord(char.lower()) - 97 for char in sci.best_cluster_tree.cell_node_labels]
+            np.savetxt(output.ctree_cell_labels, np.array(labs).astype(int), delimiter='\t')
+
+rule get_unique_cnvs:
+    input:
+        cluster_tree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_{root}.json",
+    output:
+        unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_final_{root}.csv",
+    run:
+        with open(input.cluster_tree_json) as json_file:
+            cluster_tree = json.load(json_file)
+
+        unique_cnvs = []
+        node_labels = []
+        for node in cluster_tree:
+            if cluster_tree[node]['size'] > 0:
+                node_labels.append(cluster_tree[node]['label'])
+                unique_cnvs.append(np.array(cluster_tree[node]['cnv']))
+        order = np.argsort(np.array(node_labels))
+        unique_cnvs = np.array(unique_cnvs)[order]
+
+        print("saving the unique cnv profiles...")
+        np.savetxt(
+            output.unique_cnv_profiles,
+            unique_cnvs,
+            delimiter=",",
+            fmt='%d'
+        )

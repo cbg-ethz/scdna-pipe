@@ -47,10 +47,8 @@ rule detect_breakpoints:
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
     output:
-        segmented_regions = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_segmented_regions_candidate.txt",
-        segmented_region_sizes = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_candidate.txt"
+        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_candidate_regions.txt",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_candidate_region_sizes.txt"
     run:
         try:
             os.makedirs(params.bp_detection_path)
@@ -115,13 +113,11 @@ rule detect_malignant_breakpoints:
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt",
         is_diploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "_is_diploid_candidate.txt",
-        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions_candidate.txt",
-        segmented_region_sizes = os.path.join(analysis_path,  "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_candidate.txt"
+        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_candidate_regions.txt",
+        segmented_region_sizes = os.path.join(analysis_path,  "breakpoint_detection", analysis_prefix) + "_segmented_candidate_region_sizes.txt"
     output:
-        segmented_regions = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_segmented_regions_final.txt",
-        segmented_region_sizes = os.path.join(analysis_path,\
-             "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_final.txt"
+        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_regions.txt",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_region_sizes.txt"
     run:
         try:
             os.makedirs(params.bp_detection_path)
@@ -132,7 +128,7 @@ rule detect_malignant_breakpoints:
         (n_cells, n_bins) = data.shape
 
         is_diploid = np.loadtxt(input.is_diploid).astype(bool)
-        if np.count_nonzero(is_diploid) > n_cells * 2/3: # Only re-run if more than half of the cells are diploid
+        if np.count_nonzero(is_diploid) > n_cells * 2/3 and np.count_nonzero(is_diploid) != n_cells: # Only re-run if more than half of the cells are diploid, but not all
             data = data[~is_diploid,:]
 
             chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=0)
@@ -155,7 +151,7 @@ rule detect_malignant_breakpoints:
 
             sci = SCICoNE(params.scicone_path, params.output_temp_path, persistence=True, postfix=params.postfix)
             in_data = data
-            if params.subset_size > 0:
+            if params.subset_size > 0 and params.subset_size < data.shape[0]:
                 np.random.seed(params.seed)
                 cell_subset = np.random.choice(data.shape[0], size=params.subset_size, replace=False)
                 in_data = data[cell_subset]
@@ -174,20 +170,15 @@ rule detect_malignant_breakpoints:
 rule segment_regions:
     input:
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
-        segmented_regions = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_regions_{stage}.txt",
-        segmented_region_sizes = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_{stage}.txt",
+        segmented_regions = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_{stage}_regions.txt",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_{stage}_region_sizes.txt",
         chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         bin_chr_indicator_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bin_chr_indicator.txt"
     output:
-        segmented_counts = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_counts_{stage}.csv",
-        segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_counts_shape_{stage}.txt",
-        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_{stage}.txt"
-    benchmark:
-        "benchmarks/segment_regions_{stage}.tsv"
+        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_{stage}_counts.csv",
+        segmented_counts_shape = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_{stage}_counts_shape.txt",
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_{stage}_neutral_states.txt"
     run:
         print("loading the filtered counts...")
         filtered_counts = np.loadtxt(input.filtered_counts, delimiter=',')
@@ -258,14 +249,11 @@ rule normalise_counts:
     input:
         bin_filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__bin_filtered_counts.csv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix) + "__filtered_counts.csv",
-        segmented_counts = os.path.join(analysis_path,\
-                "breakpoint_detection", analysis_prefix) + "_segmented_counts_{stage}.csv"
+        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_{stage}_counts.csv"
     output:
         all_cells_normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__all_cells_normalised_bins_{stage}.csv",
         normalised_bins = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_bins_{stage}.csv",
         normalised_regions = os.path.join(analysis_path, "normalisation", analysis_prefix) + "__normalised_regions_{stage}.csv"
-    benchmark:
-        "benchmarks/normalise_counts_{stage}.tsv"
     run:
         from sklearn.preprocessing import normalize
 

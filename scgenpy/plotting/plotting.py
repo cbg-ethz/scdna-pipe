@@ -428,6 +428,7 @@ def tree_to_graphviz(
     max_genes_per_line=6,
     node_labels=None,
     output_path=None,
+    neutral_label="Diploid",
 ):
     """
         reads the file containing trees converts it to graphviz format
@@ -450,7 +451,6 @@ def tree_to_graphviz(
     graphviz_labels = []
     graphviz_links = []
 
-    neutral_label = "Diploid"
     if gender is not None:
         neutral_label = neutral_label + " " + gender
 
@@ -465,6 +465,12 @@ def tree_to_graphviz(
             node_id = comma_first[1]
             if line.startswith("node 0:"):
                 str_merged_labels = f"<font point-size='30'> {neutral_label} </font>"
+            elif line.startswith("node -100:"):
+                str_merged_labels = (
+                    f"<font point-size='30'> Whole-genome duplication </font>"
+                )
+                p_id = comma_first[4]
+                graphviz_links.append(f"{p_id} -> {node_id}")
             else:
                 p_id = comma_first[4]
                 comma_rest = comma_splits[1:]
@@ -618,8 +624,15 @@ def plot_heatmap(
     fig=None,
     final=False,
     max=20,
+    vmax=4,
+    vmid=2,
 ):
-    cmap = scicone.plotting.get_cnv_cmap(4)
+    if vmax is None or vmax < 4:
+        vmax = 4
+    vmid = min(vmid, vmax - 1)
+    vmax = int(vmax)
+    vmid = int(vmid)
+    cmap = scicone.plotting.get_cnv_cmap(vmax=vmax, vmid=vmid)
     cmap.set_bad(color="black")  # for NaN
     sns.set_style("ticks")
     if "is_imputed" in gene_cn_df.columns:
@@ -632,7 +645,9 @@ def plot_heatmap(
         annot = np.array(gene_cn_df.astype(int).astype(str))
     else:
         annot = np.array(gene_cn_df.astype(str))
-    annot[np.where(gene_cn_df == 4)] = ["4+"] * len(np.where(gene_cn_df == 4)[0])
+    annot[np.where(gene_cn_df >= vmax)] = [f"{vmax}+"] * len(
+        np.where(gene_cn_df >= vmax)[0]
+    )
     annot = annot.astype(str)
 
     if final:
@@ -659,10 +674,10 @@ def plot_heatmap(
         annot=annot,
         cmap=cmap,
         vmin=0,
-        vmax=4,
+        vmax=vmax,
         xticklabels=False,
         yticklabels=True,
-        cbar_kws={"ticks": [0, 1, 2, 3, 4]},
+        cbar_kws={"ticks": list(range(vmax))},
         fmt="",
         cbar=colorbar,
         ax=ax,
@@ -818,6 +833,7 @@ def plot_cluster_cnvs(
     ymax=None,
     ncol=None,
     output_path=None,
+    wildcard="",
 ):
     if len(cnvs_arr.shape) == 1:
         cnvs_arr = cnvs_arr.reshape(1, -1)
@@ -848,7 +864,7 @@ def plot_cluster_cnvs(
     # Plot each profile separately
     for c in range(n_subclones):
         cluster_path = (
-            output_path + "__cluster_profile_" + str(c) + ".png"
+            output_path + "__cluster_profile_" + str(c) + wildcard + ".png"
             if output_path is not None
             else None
         )
@@ -866,7 +882,7 @@ def plot_cluster_cnvs(
 
     # Plot all profiles overlapping
     overlapping_path = (
-        output_path + "__cluster_profile_overlapping.png"
+        output_path + "__cluster_profile_overlapping" + wildcard + ".png"
         if output_path is not None
         else None
     )

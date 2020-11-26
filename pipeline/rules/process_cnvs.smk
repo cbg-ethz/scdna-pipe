@@ -5,16 +5,14 @@ rule create_bin_gene_region_df:
         gene_coordinates_path = gene_coordinates_path,
         chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
-        region_stops_path = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_regions_final.txt",
-        inferred_cnvs_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs_final.csv",
+        region_stops_path = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_regions.txt",
+        inferred_cnvs_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs_final_{root}.csv",
         general_main_gene_list_path = general_main_gene_list_path,
         disease_genes_path = disease_genes_path
     params:
         bin_size = bin_size
     output:
-        bin_gene_region_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__bin_gene_region_df.csv"
-    benchmark:
-        "benchmarks/create_bin_gene_region_df.tsv"
+        bin_gene_region_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__bin_gene_region_df_{root}.csv"
     run:
         genes = pd.read_csv(input.gene_coordinates_path, sep="\t")
         chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=0)
@@ -45,9 +43,7 @@ rule create_cn_cluster_h5:
         bin_gene_region_df_path = rules.create_bin_gene_region_df.output.bin_gene_region_df,
         gene_coordinates_path = gene_coordinates_path
     output:
-        cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster.h5"
-    benchmark:
-        "benchmarks/create_cn_cluster_h5"
+        cn_cluster_h5 = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_cluster_{root}.h5"
     run:
         all_genes = pd.read_csv(input.gene_coordinates_path, sep="\t", index_col=0)
         all_genes_list = all_genes['gene_name'].values.tolist()
@@ -98,9 +94,9 @@ rule identify_diploid:
 rule assess_cell_fusions:
     input:
         input_tree = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final.txt",
-        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_counts_final.csv",
-        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_region_sizes_final.txt",
-        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_neutral_states_final.txt",
+        segmented_counts = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_counts.csv",
+        segmented_region_sizes = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_region_sizes.txt",
+        segmented_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_final_neutral_states.txt",
         ctree_inferred_cnvs = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_inferred_cnvs_final.csv",
         ctree_cell_node_assignments = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_cell_node_ids_final.tsv",
     params:
