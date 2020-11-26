@@ -32,7 +32,7 @@ parser.add_argument(
     "--lite",
     type=str,
     default="False",
-    help="lite: True to ignore CellRanger's web_summary.html, alarams_summary.txt and summary.csv for the derived checksum, False otherwise",
+    help="lite: True to ignore CellRanger's web_summary.html, alarms_summary.txt and summary.csv for the derived checksum, False otherwise",
 )
 parser.add_argument(
     "-n",
@@ -164,6 +164,11 @@ config["secondary_analysis"] = {
 config["plotting"] = {
     "profiles": {"offset_sizes": 0.1, "s": 5},
     "trees": {"max_genes_per_line": 6},
+}
+
+config["outlier_detection"] = {
+    "alpha": 0.05,
+    "bin_threshold": 3,
 }
 
 config["breakpoint_detection"] = {
