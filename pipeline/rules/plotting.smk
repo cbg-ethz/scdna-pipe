@@ -103,10 +103,12 @@ rule plot_cnv_matrix:
                             figsize=(24,8), output_path=output.sorted_normalised_counts_heatmap_final_bp, dpi=100)
 
         print("plotting the heatmap of inferred cnvs ordered by clone...")
+        vmid = 2
         vmax = 4
         if wildcards.root == 'tetraploid':
+            vmid = 4
             vmax = 6
-        scicone.plotting.plot_matrix(clustered_inferred_cnvs_full, mode='cnv', cbar_title='Copy number\nvalues', vmax=vmax,
+        scicone.plotting.plot_matrix(clustered_inferred_cnvs_full, mode='cnv', cbar_title='Copy number\nvalues', vmid=vmid, vmax=vmax,
                             chr_stops_dict=chr_stops_filtered_bins_dict,
                             labels=clustered_labels_full,
                             figsize=(24,8), output_path=output.sorted_inferred_cnvs_heatmap, dpi=100)
