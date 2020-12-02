@@ -537,8 +537,8 @@ rule create_derived_symlinks:
         cn_gene_df = pd.read_csv(input.gene_cn_df, index_col=0)
         if 'is_imputed' in cn_gene_df.columns:
             cn_gene_df = cn_gene_df.drop(columns=['is_imputed'])
-        neutral_states = np.array(cn_gene_df['neutral_states']).astype(int)
-        cn_gene_df = cn_gene_df.drop(columns=['neutral_states'])
+        neutral_states = np.array(cn_gene_df['neutral_state']).astype(int)
+        cn_gene_df = cn_gene_df.drop(columns=['neutral_state'])
         n_clusters = len(cn_gene_df.columns)
 
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
