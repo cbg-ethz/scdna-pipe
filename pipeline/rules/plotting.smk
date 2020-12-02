@@ -254,8 +254,9 @@ rule plot_heatmaps:
                genes_list.columns = ["gene"]
                genes_list = genes_list.gene.values.tolist()
 
-               gene_cn_df_imputed = get_gene_cn_df(genes_list, bin_gene_region_df, impute=True)
-               gene_cn_df = gene_cn_df_imputed.drop(['is_imputed'], axis=1)
+               gene_cn_df_full = get_gene_cn_df(genes_list, bin_gene_region_df, impute=True, neutral_state=True)
+               gene_cn_df = gene_cn_df_full.drop(['is_imputed'], axis=1)
+               gene_cn_df = gene_cn_df.drop(['neutral_state'], axis=1)
                n_genes = gene_cn_df.shape[0]
                n_cols = int(np.ceil(n_genes/max_genes))
 
@@ -271,7 +272,7 @@ rule plot_heatmaps:
                plt.savefig(output_png_file_name, bbox_inches = 'tight',)
 
                output_csv_file_name = os.path.splitext(output.gene_cn_df)[0] + '_' + gene_list_name + '.csv'
-               gene_cn_df_imputed.to_csv(
+               gene_cn_df_full.to_csv(
                    output_csv_file_name
                )
 
