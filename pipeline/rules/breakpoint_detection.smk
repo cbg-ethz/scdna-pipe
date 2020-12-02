@@ -129,7 +129,7 @@ rule detect_malignant_breakpoints:
         (n_cells, n_bins) = data.shape
 
         is_diploid = np.loadtxt(input.is_diploid).astype(bool)
-        if np.count_nonzero(is_diploid) > n_cells * diploid_maximum_frac and np.count_nonzero(is_diploid) != n_cells: # Only re-run if more than half of the cells are diploid, but not all
+        if np.count_nonzero(is_diploid) > n_cells * params.diploid_maximum_frac and np.count_nonzero(is_diploid) != n_cells: # Only re-run if more than half of the cells are diploid, but not all
             data = data[~is_diploid,:]
 
             chr_stops = pd.read_csv(input.chr_stops_path, sep="\t", index_col=0)

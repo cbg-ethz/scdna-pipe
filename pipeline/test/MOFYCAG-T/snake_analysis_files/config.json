@@ -1,0 +1,76 @@
+{
+  "lite": "True",
+  "sample_name": "MOFYCAG_S2",
+  "gender": "male",
+  "sequencing_prefix": "MOFYCAG-T_scD_250c-r1v1.0_r1v1.0-AHNY5VBGXC",
+  "analysis_prefix": "MOFYCAG-T_scD_Ar1v1.14",
+  "disease": "melanoma",
+  "ref_genome_version": "GRCh37",
+  "ref_genome_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/data/refdata-GRCh37-1.0.0_dna",
+  "fastqs_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MOFYCAG-T/singlecell_dna/openbis",
+  "analysis_path": "/Users/pedrof/projects/dna-pipeline/pipeline/test/MOFYCAG-T/analysis",
+  "scripts_dir": "/Users/pedrof/projects/dna-pipeline/scripts/",
+  "10x_artifacts": "/Users/pedrof/projects/dna-pipeline/required_files/10x_artifacts",
+  "bin_size": 20000,
+  "n_lanes": 4,
+  "tricking_fastqs": {
+    "insert_length": 58,
+    "mem": "1000",
+    "time": "1438"
+  },
+  "cellranger_dna": {
+    "local_cores": 48,
+    "local_mem": 192,
+    "mem_per_core": 4,
+    "mem": "4096",
+    "time": "1438"
+  },
+  "secondary_analysis": {
+    "h5_path": "/Users/pedrof/projects/dna-pipeline/pipeline/test/data/MOFYCAG_cnv_data.h5",
+    "bins_to_remove": "/Users/pedrof/projects/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv",
+    "genes_path": "/Users/pedrof/projects/dna-pipeline/required_files/genes_of_interest",
+    "general_main_gene_list": "dna_long_gene_list.txt",
+  },
+  "plotting": {
+    "profiles": {
+      "offset_sizes": 0.1,
+      "s": 5
+    },
+    "trees": {
+      "max_genes_per_line": 6
+    }
+  },
+  "outlier_detection": {
+    "alpha": 0.05,
+    "bin_threshold": 3,
+  },
+  "breakpoint_detection": {
+    "window_size": 100,
+    "verbosity": 1,
+    "threshold": 3,
+    "bp_limit": 300,
+    "subset_size": 10,
+    "seed":42,
+    "filter": "False",
+  },
+  "inference": {
+    "ploidy": 2,
+    "verbosity": 1,
+    "copy_number_limit": 2,
+    "robustness_thr": 0.5,
+    "c_penalise": 10,
+    "seed": 42,
+    "cluster_trees":
+    {
+      "n_iters": 1000,
+      "n_tries": 1,
+      "n_nodes": 0,
+      "move_probs":[0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.01],
+      "n_reps": 2,
+      "min_cluster_size": 1
+    }
+  },
+  "scicone_path": "/Users/pedrof/projects/sc-dna/build/",
+  "output_temp_path": "/Users/pedrof/projects/dna-pipeline/pipeline/test/MOFYCAG-T/snake_analysis_files/",
+  "drugs_path": "/Users/pedrof/projects/dna-pipeline/required_files/drugs_of_interest/"
+}
