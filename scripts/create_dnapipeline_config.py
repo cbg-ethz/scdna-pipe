@@ -177,6 +177,7 @@ config["breakpoint_detection"] = {
     "threshold": 3,
     "bp_limit": 300,
     "subset_size": 0,
+    "diploid_maximum_frac": 1.0 / 2.0,
     "seed": 42,
     "filter": "False",
 }
