@@ -256,7 +256,7 @@ rule plot_heatmaps:
                genes_list.columns = ["gene"]
                genes_list = genes_list.gene.values.tolist()
 
-               gene_cn_df_full = get_gene_cn_df(genes_list, bin_gene_region_df, impute=True, neutral_state=True)
+               gene_cn_df_full = get_gene_cn_df(genes_list, bin_gene_region_df, impute=True)
                gene_cn_df = gene_cn_df_full.drop(['is_imputed'], axis=1)
                gene_cn_df = gene_cn_df.drop(['neutral_state'], axis=1)
                n_genes = gene_cn_df.shape[0]
@@ -269,7 +269,7 @@ rule plot_heatmaps:
                outer = gridspec.GridSpec(1, n_cols, wspace=.5, hspace=0.2)
                for i in range(n_cols):
                    plot_heatmap(gene_cn_df.iloc[max_genes*i:max_genes*(i+1),:], title="", colorbar=False, outer=outer[i], fig=fig, max=max_genes,
-                                   final=(i==n_cols-1), vmax=vmax)
+                                   final=(i==n_cols-1), vmid=vmid, vmax=vmax)
                plt.suptitle("Copy number value of gene per subclone", fontsize=20)
                plt.savefig(output_png_file_name, bbox_inches = 'tight',)
 
@@ -285,6 +285,7 @@ rule plot_heatmaps:
 
         gene_cn_df_imputed = get_gene_cn_df(disease_genes_list, bin_gene_region_df, impute=True)
         gene_cn_df = gene_cn_df_imputed.drop(['is_imputed'], axis=1)
+        gene_cn_df = gene_cn_df_imputed.drop(['neutral_state'], axis=1)
         n_genes = gene_cn_df.shape[0]
         n_cols = int(np.ceil(n_genes/max_genes))
 

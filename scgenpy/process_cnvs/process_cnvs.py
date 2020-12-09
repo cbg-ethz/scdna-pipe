@@ -51,6 +51,7 @@ def get_bin_gene_region_df(
     gene_coordinates,
     chr_stops,
     region_stops,
+    region_neutral_states,
     bin_is_excluded,
     cnvs=None,
     priority_genes=None,
@@ -70,6 +71,7 @@ def get_bin_gene_region_df(
     bin_gene_region_df = pd.DataFrame(index=range(chr_stops.index[-1] + 1))
 
     bin_gene_region_df["region"] = None
+    bin_gene_region_df["neutral_state"] = None
     bin_gene_region_df["gene"] = [list() for _ in range(bin_gene_region_df.shape[0])]
     bin_gene_region_df["gene_id"] = [list() for _ in range(bin_gene_region_df.shape[0])]
     bin_gene_region_df["chr"] = [list() for _ in range(bin_gene_region_df.shape[0])]
@@ -94,9 +96,6 @@ def get_bin_gene_region_df(
             )
             start_bin = start_bin + chr_start
             stop_bin = stop_bin + chr_start
-        neutral_state = chr_stops.iloc[np.where(chr_stops["chr"] == chromosome)[0]][
-            "neutral_state"
-        ].values[0]
 
         gene = row["gene_name"]
         gene_id = row["gene_id"]
@@ -105,7 +104,6 @@ def get_bin_gene_region_df(
             bin_gene_region_df.loc[bin, "gene_id"].append(gene_id)
             bin_gene_region_df.loc[bin, "chr"].append(chromosome)
             bin_gene_region_df.loc[bin, "biotype"].append(biotype)
-            bin_gene_region_df.loc[bin, "neutral_state"].append(neutral_state)
 
         if priority_genes is not None:
             if gene in priority_genes:
@@ -156,6 +154,9 @@ def get_bin_gene_region_df(
         bin_gene_region_df.loc[
             original_start_bin : original_stop_bin + 1, "region"
         ] = index  # regions are 0 indexed
+        bin_gene_region_df.loc[
+            original_start_bin : original_stop_bin + 1, "neutral_state"
+        ] = region_neutral_states[index]
         start_bin = row.values[0]
 
     if cnvs is not None:
@@ -167,6 +168,7 @@ def get_bin_gene_region_df(
             bin_gene_region_df["cnv_{}".format(c_id)] = cnvs[c_id]
 
     # Make sure excluded bins have no info
+    bin_gene_region_df.loc[np.where(bin_is_excluded)[0], "region"] = None
     bin_gene_region_df.loc[np.where(bin_is_excluded)[0], "region"] = None
 
     return bin_gene_region_df
@@ -277,7 +279,7 @@ def get_surrounding_regions(gene, bin_gene_region_df):
     return (int(left_region), int(right_region))
 
 
-def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False, neutral_state=False):
+def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
     """
         Creates and returns the dataframe of copy numbers, genes by cluster ids
         :param gene_list: the input list of genes to be specified
@@ -307,9 +309,8 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False, neutral_state=Fa
         gene_cn_per_cluster = []
         is_imputed[i] = False
         gene_exists = True
-
+        neutral_state[i] = 2
         bins = df[df["gene"].apply(lambda x: gene in x)].index.values
-        neutral_state[i] = bin_gene_region_df["neutral_state"][bins].values[0]
         for c_id in cluster_ids:
             median_cn = np.nanmedian(
                 bin_gene_region_df["cnv_{}".format(c_id)][bins].values
@@ -333,9 +334,13 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False, neutral_state=Fa
                     median_cn = np.nanmedian([left_cn, right_cn])
 
                     is_imputed[i] = True
+                    neutral_state[i] = bin_gene_region_df["neutral_state"][bins].values[
+                        0
+                    ]
                 else:
                     gene_exists = False
                     is_imputed[i] = np.nan
+                    neutral_state[i] = np.nan
                     print(f"Gene {gene} not found.")
 
             if not np.isnan(median_cn):
@@ -351,10 +356,9 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False, neutral_state=Fa
 
     print("Transposing the dataframe...")
     gene_cn_df = gene_cn_df.T
+    gene_cn_df["neutral_state"] = neutral_state[~np.isnan(neutral_state)].tolist()
     if impute:
         gene_cn_df["is_imputed"] = is_imputed[~np.isnan(is_imputed)].tolist()
-    if neutral_state:
-        gene_cn_df["neutral_state"] = neutral_state
     # gene_cn_df = gene_cn_df.rename(columns = {'two':'new_name'})
     print("Sorting the genes...")
     gene_cn_df.sort_index(inplace=True)

@@ -6,6 +6,7 @@ rule create_bin_gene_region_df:
         chr_stops_path = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         excluded_bins_path = os.path.join(analysis_path, "filtering", analysis_prefix) + "__excluded_bins.csv",
         region_stops_path = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "_segmented_final_regions.txt",
+        region_neutral_states = os.path.join(analysis_path, "breakpoint_detection", analysis_prefix) + "__segmented_final_neutral_states.txt",
         inferred_cnvs_path = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__unique_cnvs_final_{root}.csv",
         general_main_gene_list_path = general_main_gene_list_path,
         disease_genes_path = disease_genes_path
@@ -19,6 +20,7 @@ rule create_bin_gene_region_df:
         excluded_bins = pd.read_csv(input.excluded_bins_path, header=None)
         region_stops = pd.read_csv(input.region_stops_path, header=None)
         region_stops.columns = ["bin"]
+        region_neutral_states = np.loadtxt(input.region_neutral_states, delimiter=',')
         inferred_cnvs = np.loadtxt(input.inferred_cnvs_path, delimiter=',')
 
         general_main_gene_list = pd.read_csv(input.general_main_gene_list_path, sep="\t", header=None)
@@ -35,7 +37,7 @@ rule create_bin_gene_region_df:
         except KeyError:
             pass
 
-        df = get_bin_gene_region_df(params.bin_size, genes, chr_stops, region_stops, excluded_bins, cnvs=inferred_cnvs, priority_genes=merged_lists)
+        df = get_bin_gene_region_df(params.bin_size, genes, chr_stops, region_stops, region_neutral_states, excluded_bins, cnvs=inferred_cnvs, priority_genes=merged_lists)
         df.to_csv(output.bin_gene_region_df)
 
 rule create_cn_cluster_h5:
