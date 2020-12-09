@@ -537,17 +537,24 @@ rule create_derived_symlinks:
         cn_gene_df = pd.read_csv(input.gene_cn_df, index_col=0)
         if 'is_imputed' in cn_gene_df.columns:
             cn_gene_df = cn_gene_df.drop(columns=['is_imputed'])
-        neutral_states = np.array(cn_gene_df['neutral_state']).astype(int)
+        root_states = np.array(cn_gene_df['neutral_state']).astype(int)
+        if not tree_is_diploid:
+            root_states = root_states*2
         cn_gene_df = cn_gene_df.drop(columns=['neutral_state'])
+
+        # Don't consider the root node cells (i.e. cells with copy number equal to root state across all assayed genes)
+        neutral_cluster = np.where((cn_gene_df.values.T == root_states).all(1))[0][0]
+        cn_gene_df = cn_gene_df.drop(columns=cn_gene_df.columns[neutral_cluster])
         n_clusters = len(cn_gene_df.columns)
 
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
         n_cells = segmented_counts.shape[0]
 
-        amplified_genes = cn_gene_df[(cn_gene_df > neutral_states).any(axis='columns')].index.values.tolist()
+        root_states = root_states.reshape(-1,1)
+        amplified_genes = cn_gene_df[(cn_gene_df > root_states).any(axis='columns')].index.values.tolist()
         n_amplified_genes = len(amplified_genes)
         amplified_genes_str = ', '.join(amplified_genes)
-        deleted_genes = cn_gene_df[(cn_gene_df < neutral_states).any(axis='columns')].index.values.tolist()
+        deleted_genes = cn_gene_df[(cn_gene_df < root_states).any(axis='columns')].index.values.tolist()
         n_deleted_genes = len(deleted_genes)
         deleted_genes_str = ', '.join(deleted_genes)
 
@@ -579,7 +586,7 @@ rule create_derived_symlinks:
                     del_str = f"no copy number deletions"
 
                 summary_file.write(f"There {verb} {n_clusters} {clones} detected with {amp_str}"
-                f" and {del_str} among the pre-selected genes.\n\n")
+                f" and {del_str} among the pre-selected genes, relative to the {ploidy} state.\n\n")
 
                 all_genes = set()
                 all_genes.update(set(amplified_genes))
