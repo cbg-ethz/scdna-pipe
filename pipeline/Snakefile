@@ -538,18 +538,23 @@ rule create_derived_symlinks:
         if 'is_imputed' in cn_gene_df.columns:
             cn_gene_df = cn_gene_df.drop(columns=['is_imputed'])
         root_states = np.array(cn_gene_df['neutral_state']).astype(int)
-        if not tree_is_diploid:
-            root_states = root_states*2
         cn_gene_df = cn_gene_df.drop(columns=['neutral_state'])
 
         # Don't consider the root node cells (i.e. cells with copy number equal to root state across all assayed genes)
-        neutral_cluster = np.where((cn_gene_df.values.T == root_states).all(1))[0][0]
-        cn_gene_df = cn_gene_df.drop(columns=cn_gene_df.columns[neutral_cluster])
+        try:
+            neutral_cluster = np.where((cn_gene_df.values.T == root_states).all(1))[0][0]
+            cn_gene_df = cn_gene_df.drop(columns=cn_gene_df.columns[neutral_cluster])
+        except Exception as e:
+            print(cn_gene_df)
+            print(root_states)
+            print(e)
         n_clusters = len(cn_gene_df.columns)
 
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
         n_cells = segmented_counts.shape[0]
 
+        if not tree_is_diploid:
+            root_states = root_states*2
         root_states = root_states.reshape(-1,1)
         amplified_genes = cn_gene_df[(cn_gene_df > root_states).any(axis='columns')].index.values.tolist()
         n_amplified_genes = len(amplified_genes)
