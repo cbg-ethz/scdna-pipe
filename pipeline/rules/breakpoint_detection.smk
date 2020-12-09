@@ -33,6 +33,7 @@ rule detect_breakpoints:
         verbosity = config["breakpoint_detection"]["verbosity"],
         threshold = config["breakpoint_detection"]["threshold"],
         bp_limit = config["breakpoint_detection"]["bp_limit"],
+        bp_min = config["breakpoint_detection"]["bp_min"],
         bp_detection_path = os.path.join(analysis_path, "breakpoint_detection"),
         subset_size = config["breakpoint_detection"]["subset_size"],
         seed = config["breakpoint_detection"]["seed"],
@@ -84,11 +85,11 @@ rule detect_breakpoints:
             gmn = np.exp(- ((freq+1/(2*params.window_size))/(2*df))**2)
             g = gpl + gmn
 
-            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, compute_sp=False, evaluate_peaks=False)
+            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, bp_min=params.bp_min, compute_sp=False, evaluate_peaks=False)
             filtered_lr = filter_lr(bps['lr_vec'].T, H=g)
-            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, lr=filtered_lr, input_breakpoints=chr_stop_bins_filtered)
+            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, bp_min=params.bp_min, lr=filtered_lr, input_breakpoints=chr_stop_bins_filtered)
         else:
-            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, input_breakpoints=chr_stop_bins_filtered)
+            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, bp_min=params.bp_min, input_breakpoints=chr_stop_bins_filtered)
         print(f'Detected {np.array(bps["segmented_regions"]).ravel().shape[0]} breakpoints.')
 
         os.rename(params.postfix+"bp_segmented_regions.txt", output.segmented_regions)
@@ -100,6 +101,7 @@ rule detect_malignant_breakpoints:
         verbosity = config["breakpoint_detection"]["verbosity"],
         threshold = config["breakpoint_detection"]["threshold"],
         bp_limit = config["breakpoint_detection"]["bp_limit"],
+        bp_min = config["breakpoint_detection"]["bp_min"],
         bp_detection_path = os.path.join(analysis_path, "breakpoint_detection"),
         subset_size = config["breakpoint_detection"]["subset_size"],
         diploid_maximum_frac = config["breakpoint_detection"]["diploid_maximum_frac"],
@@ -156,10 +158,10 @@ rule detect_malignant_breakpoints:
                 np.random.seed(params.seed)
                 cell_subset = np.random.choice(data.shape[0], size=params.subset_size, replace=False)
                 in_data = data[cell_subset]
-            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, compute_sp=False, evaluate_peaks=False)
+            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, bp_min=params.bp_min, compute_sp=False, evaluate_peaks=False)
 
             filtered_lr = filter_lr(bps['lr_vec'].T, H=g)
-            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, lr=filtered_lr, input_breakpoints=chr_stop_bins_filtered)
+            bps = sci.detect_breakpoints(in_data, window_size=params.window_size, threshold=params.threshold, bp_limit=params.bp_limit, bp_min=params.bp_min, lr=filtered_lr, input_breakpoints=chr_stop_bins_filtered)
 
             os.rename(params.postfix+"bp_segmented_regions.txt", output.segmented_regions)
             os.rename(params.postfix+"bp_segmented_region_sizes.txt", output.segmented_region_sizes)

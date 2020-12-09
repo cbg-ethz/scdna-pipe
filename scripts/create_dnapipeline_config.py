@@ -176,6 +176,7 @@ config["breakpoint_detection"] = {
     "verbosity": 1,
     "threshold": 3,
     "bp_limit": 300,
+    "bp_min": 100,
     "subset_size": 0,
     "diploid_maximum_frac": 1.0 / 2.0,
     "seed": 42,
