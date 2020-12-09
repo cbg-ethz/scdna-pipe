@@ -242,8 +242,10 @@ rule plot_heatmaps:
         heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs_{root}.png"
     run:
         bin_gene_region_df = pd.read_csv(input.bin_gene_region_df_path, index_col=0, low_memory=False)
+        vmid = 2
         vmax = 4
         if wildcards.root == 'tetraploid':
+            vmid = 4
             vmax = 6
         # General lists
         for dirpath,_,filenames in os.walk(input.general_gene_lists_path):
@@ -290,7 +292,7 @@ rule plot_heatmaps:
         outer = gridspec.GridSpec(1, n_cols, wspace=.5, hspace=0.2)
         for i in range(n_cols):
             plot_heatmap(gene_cn_df.iloc[max_genes*i:max_genes*(i+1),:], title="", colorbar=False, outer=outer[i], fig=fig, max=max_genes,
-                            final=(i==n_cols-1), vmax=vmax)
+                            final=(i==n_cols-1), vmid=vmid, vmax=vmax)
         plt.suptitle("Copy number value of gene per subclone", fontsize=20)
         plt.savefig(output.heatmap_cnvs, bbox_inches = 'tight',)
 
