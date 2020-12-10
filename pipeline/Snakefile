@@ -172,24 +172,6 @@ rule add_filtered_bins_back:
         sa.add_filtered_bins_back(input.cnv_profiles, input.excluded_bins, output.inferred_cnvs)
         sa.add_filtered_bins_back(input.unique_cnv_profiles, input.excluded_bins, output.unique_cnvs)
 
-
-# checksums
-# raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
-# cell_fusions_summary = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
-# output:
-#     done = "lite_done.txt"
-
-# if not run_lite:
-    # rule run:
-    #     input:
-    #         # checksums
-    #         raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
-    #         derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
-    #         cell_fusions_summary = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
-    #     run:
-    #         print("rule all")
-
-
 rule merge_files:
     params:
         fastqs_path = fastqs_path,
