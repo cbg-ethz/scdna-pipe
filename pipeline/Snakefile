@@ -59,7 +59,6 @@ except KeyError:
     tree_rep = 10
 
 derived_file_names =[
-    "cnv_data.h5",
     "chr_stops.tsv",
     "bins_genome.tsv",
     "filtered_counts.csv",
@@ -83,18 +82,14 @@ derived_file_names =[
     "cn_gene_df_roche_gene_list.csv",
     "heatmap_cnvs.png",
     "clone_lib_sizes.png",
-    "Summary.txt"
+    "Summary.txt",
+    "cnv_data.h5",
+    "possorted_bam.bam",
+    "possorted_bam.bam.bai"
 ]
-run_lite = (config['lite'] == "True")
-hotstart = (config['hotstart'] == "True")
-print(f"Lite: {run_lite}.")
-print(f"Hot start: {hotstart}.")
 
-if not run_lite:
-    derived_file_names.append("web_summary.html")
-    derived_file_names.append("summary.csv")
-    derived_file_names.append("alarms_summary.txt")
-    derived_file_names.append("possorted_bam.bam")
+hotstart = (config['hotstart'] == "True")
+print(f"Hot start: {hotstart}.")
 
 tree_outputs = ["cluster_tree"]
 
@@ -176,6 +171,24 @@ rule add_filtered_bins_back:
     run:
         sa.add_filtered_bins_back(input.cnv_profiles, input.excluded_bins, output.inferred_cnvs)
         sa.add_filtered_bins_back(input.unique_cnv_profiles, input.excluded_bins, output.unique_cnvs)
+
+
+# checksums
+# raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
+# cell_fusions_summary = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
+# output:
+#     done = "lite_done.txt"
+
+# if not run_lite:
+    # rule run:
+    #     input:
+    #         # checksums
+    #         raw_checksum_file = os.path.join(sym_raw_path, f"{seq_prefix}__raw_files.md5"),
+    #         derived_checksum_file = os.path.join(sym_derived_path, f"{analysis_prefix}__derived_files.md5"),
+    #         cell_fusions_summary = os.path.join(analysis_path, "cell_fusions", analysis_prefix) + "__cell_fusions_summary.txt"
+    #     run:
+    #         print("rule all")
+
 
 rule merge_files:
     params:
@@ -317,13 +330,15 @@ rule copy_cellranger_outputs:
         summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
         web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html",
         bam = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam",
+        bam_bai = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam.bai",
     shell:
         "cd {params.cellranger_path}; \
          ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/alarms_summary.txt' '{output.alarms_summary}';\
          ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/cnv_data.h5' '{output.cnv_data}';\
          ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/summary.csv' '{output.summary}';\
          ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/web_summary.html' '{output.web_summary}';\
-         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/possorted_bam.bam' '{output.bam}';"
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/possorted_bam.bam' '{output.bam}';\
+         ln -s '{params.cellranger_path}/run/{params.cr_sample_name}/outs/possorted_bam.bam.bai' '{output.bam_bai}';"
 
 rule create_cluster_plots_list:
     params:
@@ -447,6 +462,9 @@ rule create_derived_symlinks:
         analysis_prefix = analysis_prefix,
         ploidy = config["inference"]["ploidy"]
     input:
+        cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
+        bam = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam",
+        bam_bai = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam.bai",
         chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
@@ -481,14 +499,9 @@ rule create_derived_symlinks:
             else:
                 os.utime(dest, None)  # Set access/modified times to now
 
-        if not run_lite:
-            create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", os.path.join(sym_derived_path, f"{analysis_prefix}__cnv_data.h5"))
-            create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt", os.path.join(sym_derived_path, f"{analysis_prefix}__alarms_summary.txt"))
-            create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv", os.path.join(sym_derived_path, f"{analysis_prefix}__summary.csv"))
-            create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html", os.path.join(sym_derived_path, f"{analysis_prefix}__web_summary.html"))
-            create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam", os.path.join(sym_derived_path, f"{analysis_prefix}__possorted_bam.bam"))
-        else:
-            create_symlink(h5_path, os.path.join(sym_derived_path, f"{analysis_prefix}__cnv_data.h5"))
+        create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", os.path.join(sym_derived_path, f"{analysis_prefix}__cnv_data.h5"))
+        create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam", os.path.join(sym_derived_path, f"{analysis_prefix}__possorted_bam.bam"))
+        create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam.bai", os.path.join(sym_derived_path, f"{analysis_prefix}__possorted_bam.bam.bai"))
 
         create_symlink(input.chr_stops, os.path.join(sym_derived_path, f"{analysis_prefix}__chr_stops.tsv"))
         create_symlink(input.bins_genome, os.path.join(sym_derived_path, f"{analysis_prefix}__bins_genome.tsv"))

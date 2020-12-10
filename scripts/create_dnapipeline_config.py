@@ -28,13 +28,6 @@ parser.add_argument(
     "-g", "--gender", type=str, required=True, help="gender: male or female"
 )
 parser.add_argument(
-    "-l",
-    "--lite",
-    type=str,
-    default="False",
-    help="lite: True to ignore CellRanger's web_summary.html, alarms_summary.txt and summary.csv for the derived checksum, False otherwise",
-)
-parser.add_argument(
     "-h",
     "--hotstart",
     type=str,
