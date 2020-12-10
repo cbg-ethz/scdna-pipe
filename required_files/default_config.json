@@ -1,9 +1,10 @@
 {
   "lite": "False",
+  "hotstart": "False",
   "sample_name": "MADEGOD_S2",
   "gender": "female",
   "sequencing_prefix": "MADEGOD-T_scD_250c-r1v1.0_r1v1.0-AHNY5VBGXC",
-  "analysis_prefix": "MADEGOD-T_scD_Ar1v1.13",
+  "analysis_prefix": "MADEGOD-T_scD_Ar1v1.14",
   "disease": "melanoma",
   "ref_genome_version": "GRCh37",
   "ref_genome_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/data/refdata-GRCh37-1.0.0_dna",

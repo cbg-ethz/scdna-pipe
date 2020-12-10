@@ -35,6 +35,13 @@ parser.add_argument(
     help="lite: True to ignore CellRanger's web_summary.html, alarms_summary.txt and summary.csv for the derived checksum, False otherwise",
 )
 parser.add_argument(
+    "-h",
+    "--hotstart",
+    type=str,
+    default="False",
+    help="hotstart: True to ignore raw data processing and only obtain the derived files.",
+)
+parser.add_argument(
     "-n",
     "--is_novaseq",
     action="store_true",
@@ -110,6 +117,7 @@ scicone_path = os.path.join(dna_pipeline_path, "scicone/build")
 config = {}
 
 config["lite"] = args.lite
+config["lite"] = args.hotstart
 config["sample_name"] = pattern_1.group(1) + "_S" + sample_number
 config["sequencing_prefix"] = (
     sample_name + "-T_scD_250c-r1v1.0_r1v1.0-A" + sample_annotation
