@@ -528,6 +528,8 @@ rule create_derived_symlinks:
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_files.txt"), "w") as file:
             for cluster_profile_plot in cluster_profile_plots:
                 f_name = cluster_profile_plot.split("/")[-1]
+                f_name = '_'.join(f_name.split('_')[:-1])
+                f_name = f"{f_name}.png"
                 create_symlink(cluster_profile_plot, os.path.join(sym_derived_path, f"{f_name}"))
                 file.write(f"{f_name}\n")
 
