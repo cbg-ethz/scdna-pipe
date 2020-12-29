@@ -109,8 +109,7 @@ scicone_path = os.path.join(dna_pipeline_path, "scicone/build")
 # Build the json config
 config = {}
 
-config["lite"] = args.lite
-config["lite"] = args.hotstart
+config["hotstart"] = args.hotstart
 config["sample_name"] = pattern_1.group(1) + "_S" + sample_number
 config["sequencing_prefix"] = (
     sample_name + "-T_scD_250c-r1v1.0_r1v1.0-A" + sample_annotation

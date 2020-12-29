@@ -303,7 +303,7 @@ def convert_node_regions_to_genes(
     num_amplifications = 0
 
     str_dict = dict()
-    possible_events = ["+4", "+3", "+2", "+1", "-1", "-2", "-3", "+4"]
+    possible_events = ["+4", "+3", "+2", "+1", "-1", "-2", "-3", "-4"]
     for event in possible_events:
         str_dict[event] = []
 
