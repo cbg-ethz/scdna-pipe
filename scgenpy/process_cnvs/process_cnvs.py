@@ -334,9 +334,6 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
                     median_cn = np.nanmedian([left_cn, right_cn])
 
                     is_imputed[i] = True
-                    neutral_state[i] = bin_gene_region_df["neutral_state"][bins].values[
-                        0
-                    ]
                 else:
                     gene_exists = False
                     is_imputed[i] = np.nan
@@ -353,6 +350,7 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
 
         if gene_exists:
             gene_cn_df[gene] = gene_cn_per_cluster
+            neutral_state[i] = bin_gene_region_df["neutral_state"][bins].values[0]
 
     print("Transposing the dataframe...")
     gene_cn_df = gene_cn_df.T
