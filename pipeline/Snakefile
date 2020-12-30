@@ -555,8 +555,6 @@ rule create_derived_symlinks:
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
         n_cells = segmented_counts.shape[0]
 
-        if not tree_is_diploid:
-            root_states = root_states*2
         root_states = root_states.reshape(-1,1)
         amplified_genes = cn_gene_df[(cn_gene_df > root_states).any(axis='columns')].index.values.tolist()
         n_amplified_genes = len(amplified_genes)
@@ -592,7 +590,7 @@ rule create_derived_symlinks:
                     del_str = f"no copy number deletions"
 
                 summary_file.write(f"There {verb} {n_clusters} {clones} detected with {amp_str}"
-                f" and {del_str} among the pre-selected genes, relative to the {ploidy} state.\n\n")
+                f" and {del_str} among the pre-selected genes.\n\n")
 
                 all_genes = set()
                 all_genes.update(set(amplified_genes))
