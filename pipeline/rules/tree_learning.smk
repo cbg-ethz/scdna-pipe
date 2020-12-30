@@ -187,7 +187,7 @@ rule learn_tetraploid_cluster_tree:
 
         # Adjust to diploid root
         sci.best_cluster_tree.adjust_to_wgd(threshold=0.98)
-        sci.best_cluster_tree.node_dict['0']['label'] = '0'
+        # sci.best_cluster_tree.node_dict['0']['label'] = '0'
         sci.best_cluster_tree.update_tree_str()
 
         # Store best cluster tree
