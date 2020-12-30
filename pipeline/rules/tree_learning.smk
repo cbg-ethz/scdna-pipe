@@ -70,6 +70,7 @@ rule learn_final_cluster_tree:
         n_reps = config["inference"]["cluster_trees"]["n_reps"],
         c_penalise = config["inference"]["c_penalise"],
         copy_number_limit = config["inference"]["copy_number_limit"],
+        diploid_maximum_frac = config["breakpoint_detection"]["diploid_maximum_frac"],
         posfix = "",
         scicone_path = scicone_path,
         output_temp_path = output_temp_path,
@@ -96,7 +97,7 @@ rule learn_final_cluster_tree:
         n_cells = segmented_counts.shape[0]
 
         is_diploid = np.loadtxt(input.is_diploid).astype(bool)
-        run = False if np.count_nonzero(is_diploid) <= n_cells * 2./3 else True # Don't re-run if didn't re-run breakpoint_detection
+        run = False if np.count_nonzero(is_diploid) <= n_cells * params.diploid_maximum_frac else True # Don't re-run if didn't re-run breakpoint_detection
 
         if run:
             sci = SCICoNE(params.scicone_path, params.output_temp_path, persistence=False, postfix=params.posfix)
