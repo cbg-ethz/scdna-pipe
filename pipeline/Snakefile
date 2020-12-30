@@ -85,7 +85,9 @@ derived_file_names =[
     "Summary.txt",
     "cnv_data.h5",
     "possorted_bam.bam",
-    "possorted_bam.bam.bai"
+    "possorted_bam.bam.bai",
+    "web_summary.html",
+    "alarms_summary.txt"
 ]
 
 hotstart = (config['hotstart'] == "True")
@@ -450,6 +452,8 @@ rule create_derived_symlinks:
         cnv_data = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5",
         bam = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam",
         bam_bai = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam.bai",
+        web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html",
+        alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
         chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
@@ -484,9 +488,11 @@ rule create_derived_symlinks:
             else:
                 os.utime(dest, None)  # Set access/modified times to now
 
-        create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__cnv_data.h5", os.path.join(sym_derived_path, f"{analysis_prefix}__cnv_data.h5"))
-        create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam", os.path.join(sym_derived_path, f"{analysis_prefix}__possorted_bam.bam"))
-        create_symlink(os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam.bai", os.path.join(sym_derived_path, f"{analysis_prefix}__possorted_bam.bam.bai"))
+        create_symlink(input.cnv_data, os.path.join(sym_derived_path, f"{analysis_prefix}__cnv_data.h5"))
+        create_symlink(input.bam, os.path.join(sym_derived_path, f"{analysis_prefix}__possorted_bam.bam"))
+        create_symlink(input.bam_bai, os.path.join(sym_derived_path, f"{analysis_prefix}__possorted_bam.bam.bai"))
+        create_symlink(input.web_summary, os.path.join(sym_derived_path, f"{analysis_prefix}__web_summary.html"))
+        create_symlink(input.alarms_summary, os.path.join(sym_derived_path, f"{analysis_prefix}__alarms_summary.txt"))
 
         create_symlink(input.chr_stops, os.path.join(sym_derived_path, f"{analysis_prefix}__chr_stops.tsv"))
         create_symlink(input.bins_genome, os.path.join(sym_derived_path, f"{analysis_prefix}__bins_genome.tsv"))
