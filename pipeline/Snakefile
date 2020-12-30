@@ -473,6 +473,7 @@ rule create_derived_symlinks:
         cluster_tree_genes_png = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_genes.png",
         overlapping_cluster_plot = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cluster_profile_overlapping.png",
         gene_cn_df = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df.csv",
+        gene_cn_df_tetraploid = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df_tetraploid.csv",
         gene_cn_df_roche_gene_list = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__cn_gene_df_roche_gene_list.csv",
         heatmap_cnvs = os.path.join(analysis_path, "inferred_cnvs", analysis_prefix) + "__heatmap_cnvs.png",
         clone_lib_sizes = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__clone_lib_sizes.png",
@@ -563,7 +564,6 @@ rule create_derived_symlinks:
         deleted_genes = cn_gene_df[(cn_gene_df < root_states).any(axis='columns')].index.values.tolist()
         n_deleted_genes = len(deleted_genes)
         deleted_genes_str = ', '.join(deleted_genes)
-
         open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w").close()
 
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__Summary.txt"), "w") as summary_file:
@@ -626,6 +626,34 @@ rule create_derived_symlinks:
                 summary_file.write(f"Drugs the affected genes are resistant to: "
                 f"{', '.join(drugs_resistant_genes) if len(drugs_resistant_genes) else 'no associated drugs were found'}.\n")
 
+                # Parse the list of genes for the tertaploid case.
+                cn_gene_df_tetraploid = pd.read_csv(input.gene_cn_df_tetraploid, index_col=0)
+                if 'is_imputed' in cn_gene_df_tetraploid.columns:
+                  cn_gene_df_tetraploid = cn_gene_df_tetraploid.drop(columns=['is_imputed'])
+                root_states_tetraploid = np.array(cn_gene_df_tetraploid['neutral_state']).astype(int)
+                root_states_tetraploid = root_states_tetraploid*2
+                root_states_tetraploid = root_states_tetraploid.reshape(-1,1)
+                cn_gene_df_tetraploid = cn_gene_df_tetraploid.drop(columns=['neutral_state'])
+                amplified_genes_tetraploid = cn_gene_df_tetraploid[(cn_gene_df_tetraploid > root_states_tetraploid).any(axis='columns')].index.values.tolist()
+                deleted_genes_tetraploid = cn_gene_df_tetraploid[(cn_gene_df_tetraploid < root_states_tetraploid).any(axis='columns')].index.values.tolist()
+               
+                new_amplified_genes = list(set(amplified_genes_tetraploid) - set(amplified_genes))
+                new_amplified_genes.sort()
+                new_deleted_genes = list(set(deleted_genes_tetraploid) - set(deleted_genes))
+                new_deleted_genes.sort()
+
+                if (not tree_is_diploid) and (new_amplified_genes or new_deleted_genes):
+                  summary_file.write("\n")
+                  summary_file.write("There is evidence for whole genome duplication. ")
+                  if new_amplified_genes:
+                    summary_file.write("Additional potentially amplified genes: "
+                     +  ', '.join(new_amplified_genes) + ". ") 
+                  
+                  if new_deleted_genes:
+                    summary_file.write("Additional potentially deleted genes: "
+                      + ', '.join(new_deleted_genes) + ". ")
+                  summary_file.write("\n")
+                  
 rule create_derived_checksum:
     params:
         sym_derived_path = sym_derived_path,

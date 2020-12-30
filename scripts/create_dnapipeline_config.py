@@ -28,11 +28,10 @@ parser.add_argument(
     "-g", "--gender", type=str, required=True, help="gender: male or female"
 )
 parser.add_argument(
-    "-h",
+    "-i",
     "--hotstart",
-    type=str,
-    default="False",
-    help="hotstart: True to ignore raw data processing and only obtain the derived files.",
+    action="store_true",
+    help="True to ignore raw data processing and only obtain the derived files.",
 )
 parser.add_argument(
     "-n",
@@ -103,13 +102,15 @@ singlecell_dna_path = os.path.join(
 )
 analysis_path = os.path.join(singlecell_dna_path, "analysis")
 dna_pipeline_path = os.path.join(args.project_path, "code/dna-pipeline/")
-dna_pipeline_code_path = os.path.join(dna_pipeline_path, "scdna-pipe")
-scicone_path = os.path.join(dna_pipeline_path, "scicone/build")
+dna_pipeline_code_path = os.path.join(dna_pipeline_path, "scdna-pipe-v1.14-monica")
+scicone_path = os.path.join(dna_pipeline_path, "scicone-v1.14/build")
 
 # Build the json config
 config = {}
 
-config["hotstart"] = args.hotstart
+config["hotstart"] = "True"
+if args.hotstart:
+    config["hotstart"] = "True"
 config["sample_name"] = pattern_1.group(1) + "_S" + sample_number
 config["sequencing_prefix"] = (
     sample_name + "-T_scD_250c-r1v1.0_r1v1.0-A" + sample_annotation
@@ -163,7 +164,10 @@ config["secondary_analysis"] = {
 
 config["plotting"] = {
     "profiles": {"offset_sizes": 0.1, "s": 5},
-    "trees": {"max_genes_per_line": 6},
+    "trees": {
+        "highlight_color": "chocolate",
+        "max_genes_per_line": 6
+    },
 }
 
 config["outlier_detection"] = {
@@ -180,7 +184,7 @@ config["breakpoint_detection"] = {
     "subset_size": 0,
     "diploid_maximum_frac": 1.0 / 2.0,
     "seed": 42,
-    "filter": "False",
+    "filter": "True",
 }
 
 config["inference"] = {
