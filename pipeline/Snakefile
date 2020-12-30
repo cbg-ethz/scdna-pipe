@@ -540,14 +540,6 @@ rule create_derived_symlinks:
         root_states = np.array(cn_gene_df['neutral_state']).astype(int)
         cn_gene_df = cn_gene_df.drop(columns=['neutral_state'])
 
-        # Don't consider the root node cells (i.e. cells with copy number equal to root state across all assayed genes)
-        try:
-            neutral_cluster = np.where((cn_gene_df.values.T == root_states).all(1))[0][0]
-            cn_gene_df = cn_gene_df.drop(columns=cn_gene_df.columns[neutral_cluster])
-        except Exception as e:
-            print(cn_gene_df)
-            print(root_states)
-            print(e)
         n_clusters = len(cn_gene_df.columns)
 
         segmented_counts = np.loadtxt(input.segmented_counts, delimiter=',')
