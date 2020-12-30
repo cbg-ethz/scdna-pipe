@@ -435,6 +435,9 @@ rule symlink_best_tree:
                 print(f"Best: tetraploid")
                 init = len(output)-1
 
+        # Upload diploid regardless of which one has higher score
+        print('Using diploid root results as final.')
+        init = 0
         for i in range(len(output)-1):
             create_symlink(input[init+i], output[i])
 
