@@ -87,7 +87,8 @@ derived_file_names =[
     "possorted_bam.bam",
     "possorted_bam.bam.bai",
     "web_summary.html",
-    "alarms_summary.txt"
+    "alarms_summary.txt",
+    "summary.csv"
 ]
 
 hotstart = (config['hotstart'] == "True")
@@ -454,6 +455,7 @@ rule create_derived_symlinks:
         bam_bai = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__possorted_bam.bam.bai",
         web_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__web_summary.html",
         alarms_summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__alarms_summary.txt",
+        summary = os.path.join(cellranger_path, "renamed", analysis_prefix) + "__summary.csv",
         chr_stops = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__chr_stops.tsv",
         bins_genome = os.path.join(analysis_path, "genomic_coordinates", analysis_prefix) + "__bins_genome.tsv",
         filtered_counts = os.path.join(analysis_path, "filtering", analysis_prefix ) + "__filtered_counts.csv",
@@ -494,6 +496,7 @@ rule create_derived_symlinks:
         create_symlink(input.bam_bai, os.path.join(sym_derived_path, f"{analysis_prefix}__possorted_bam.bam.bai"))
         create_symlink(input.web_summary, os.path.join(sym_derived_path, f"{analysis_prefix}__web_summary.html"))
         create_symlink(input.alarms_summary, os.path.join(sym_derived_path, f"{analysis_prefix}__alarms_summary.txt"))
+        create_symlink(input.summary, os.path.join(sym_derived_path, f"{analysis_prefix}__summary.csv"))
 
         create_symlink(input.chr_stops, os.path.join(sym_derived_path, f"{analysis_prefix}__chr_stops.tsv"))
         create_symlink(input.bins_genome, os.path.join(sym_derived_path, f"{analysis_prefix}__bins_genome.tsv"))
@@ -634,7 +637,7 @@ rule create_derived_symlinks:
                 cn_gene_df_tetraploid = cn_gene_df_tetraploid.drop(columns=['neutral_state'])
                 amplified_genes_tetraploid = cn_gene_df_tetraploid[(cn_gene_df_tetraploid > root_states_tetraploid).any(axis='columns')].index.values.tolist()
                 deleted_genes_tetraploid = cn_gene_df_tetraploid[(cn_gene_df_tetraploid < root_states_tetraploid).any(axis='columns')].index.values.tolist()
-               
+
                 new_amplified_genes = list(set(amplified_genes_tetraploid) - set(amplified_genes))
                 new_amplified_genes.sort()
                 new_deleted_genes = list(set(deleted_genes_tetraploid) - set(deleted_genes))
@@ -645,13 +648,13 @@ rule create_derived_symlinks:
                   summary_file.write("There is evidence for whole genome duplication. ")
                   if new_amplified_genes:
                     summary_file.write("Additional potentially amplified genes: "
-                     +  ', '.join(new_amplified_genes) + ". ") 
-                  
+                     +  ', '.join(new_amplified_genes) + ". ")
+
                   if new_deleted_genes:
                     summary_file.write("Additional potentially deleted genes: "
                       + ', '.join(new_deleted_genes) + ". ")
                   summary_file.write("\n")
-                  
+
 rule create_derived_checksum:
     params:
         sym_derived_path = sym_derived_path,
