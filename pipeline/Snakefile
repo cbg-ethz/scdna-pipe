@@ -88,7 +88,7 @@ derived_file_names =[
     "possorted_bam.bam.bai",
     "web_summary.html",
     "alarms_summary.txt",
-    #"summary.csv"
+    "summary.csv"
 ]
 
 hotstart = (config['hotstart'] == "True")
