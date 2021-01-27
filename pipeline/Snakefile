@@ -36,6 +36,7 @@ analysis_path = config['analysis_path']
 
 analysis_prefix = config['analysis_prefix']
 seq_prefix = config["sequencing_prefix"]
+disease = config["disease"]
 
 to_upload_path = os.path.join(analysis_path, '..', 'to_upload', analysis_prefix)
 sym_raw_path = os.path.join(to_upload_path, "raw")
@@ -534,8 +535,8 @@ rule create_derived_symlinks:
         with open(input.best_tree, 'r') as f:
             lines = f.read()
             tree_is_diploid = (lines.split('\n')[0] == 'diploid')
-        if not tree_is_diploid:
-            ploidy = 'tetraploid'
+        #if not tree_is_diploid:
+        #    ploidy = 'tetraploid'
         cluster_profile_plots = glob.glob(os.path.join(analysis_path, "inferred_cnvs", f"{analysis_prefix}__cluster_profile_[0-9]*_{ploidy}.png"))
         print(cluster_profile_plots)
         with open(os.path.join(sym_derived_path, f"{analysis_prefix}__cluster_profile_files.txt"), "w") as file:
@@ -621,11 +622,12 @@ rule create_derived_symlinks:
                         drugs_resistant_genes.add(drug)
                 drugs_resistant_genes = list(drugs_resistant_genes)
                 drugs_resistant_genes.sort()
-
-                summary_file.write(f"Drugs the affected genes are responsive to: "
-                f"{', '.join(drugs_responsive_genes) if len(drugs_responsive_genes) else 'no associated drugs were found'}.\n\n")
-                summary_file.write(f"Drugs the affected genes are resistant to: "
-                f"{', '.join(drugs_resistant_genes) if len(drugs_resistant_genes) else 'no associated drugs were found'}.\n")
+         
+                if disease != "aml":
+                    summary_file.write(f"Drugs the affected genes are responsive to: "
+                    f"{', '.join(drugs_responsive_genes) if len(drugs_responsive_genes) else 'no associated drugs were found'}.\n\n")
+                    summary_file.write(f"Drugs the affected genes are resistant to: "
+                    f"{', '.join(drugs_resistant_genes) if len(drugs_resistant_genes) else 'no associated drugs were found'}.\n")
 
                 # Parse the list of genes for the tertaploid case.
                 cn_gene_df_tetraploid = pd.read_csv(input.gene_cn_df_tetraploid, index_col=0)
@@ -643,17 +645,18 @@ rule create_derived_symlinks:
                 new_deleted_genes = list(set(deleted_genes_tetraploid) - set(deleted_genes))
                 new_deleted_genes.sort()
 
-                if (not tree_is_diploid) and (new_amplified_genes or new_deleted_genes):
-                  summary_file.write("\n")
-                  summary_file.write("There is evidence for whole genome duplication. ")
-                  if new_amplified_genes:
-                    summary_file.write("Additional potentially amplified genes: "
-                     +  ', '.join(new_amplified_genes) + ". ") 
+                if disease != "aml":
+                    if (not tree_is_diploid) and (new_amplified_genes or new_deleted_genes):
+                      summary_file.write("\n")
+                      summary_file.write("There is evidence for whole genome duplication. ")
+                      if new_amplified_genes:
+                        summary_file.write("Additional potentially amplified genes: "
+                         +  ', '.join(new_amplified_genes) + ". ") 
                   
-                  if new_deleted_genes:
-                    summary_file.write("Additional potentially deleted genes: "
-                      + ', '.join(new_deleted_genes) + ". ")
-                  summary_file.write("\n")
+                      if new_deleted_genes:
+                        summary_file.write("Additional potentially deleted genes: "
+                          + ', '.join(new_deleted_genes) + ". ")
+                      summary_file.write("\n")
                   
 rule create_derived_checksum:
     params:
