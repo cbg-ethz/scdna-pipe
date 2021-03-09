@@ -6,11 +6,11 @@
   "analysis_prefix": "MADEGOD-T_scD_Ar1v1.14",
   "disease": "melanoma",
   "ref_genome_version": "GRCh37",
-  "ref_genome_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/data/refdata-GRCh37-1.0.0_dna",
-  "fastqs_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MADEGOD-T/singlecell_dna/openbis",
-  "analysis_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MADEGOD-T/singlecell_dna/analysis",
-  "scripts_dir": "/cluster/work/bewi/members/pedrof/dna-pipeline/scripts/",
-  "10x_artifacts": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts",
+  "ref_genome_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/data/refdata-GRCh38-1.0.0_dna",
+  "fastqs_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/analysis/MADEGOD-T/openbis",
+  "analysis_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/analysis/MADEGOD-T/analysis",
+  "scripts_dir": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/scdna-pipe/scripts/",
+  "10x_artifacts": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/scdna-pipe/required_files/10x_artifacts",
   "bin_size": 20000,
   "n_lanes": 4,
   "tricking_fastqs": {
@@ -26,9 +26,9 @@
     "time": "1438"
   },
   "secondary_analysis": {
-    "h5_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/analysis/trial_melanoma/MADEGOD-T/singlecell_dna/analysis/cellranger/MADEGOD/outs/cnv_data.h5",
-    "bins_to_remove": "/cluster/work/bewi/members/pedrof/dna-pipeline/required_files/10x_artifacts/GRCh37_10x_artifacts_mask_whole_genome.tsv",
-    "genes_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/required_files/genes_of_interest",
+    "h5_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/analysis/MADEGOD-T/analysis/cellranger/MADEGOD/outs/cnv_data.h5",
+    "bins_to_remove": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/scdna-pipe/required_files/10x_artifacts/GRCh38_10x_artifacts_mask_whole_genome.tsv",
+    "genes_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/scdna-pipe/required_files/genes_of_interest",
     "general_main_gene_list": "dna_long_gene_list.txt",
   },
   "plotting": {
@@ -72,7 +72,7 @@
       "min_cluster_size": 1
     }
   },
-  "scicone_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scicone/build/",
-  "output_temp_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/temp/",
-  "drugs_path": "/cluster/work/bewi/ngs/projects/tumorProfiler/code/dna-pipeline/scdna-pipe/required_files/drugs_of_interest/"
+  "scicone_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/SCICoNE/build/",
+  "output_temp_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/scdna-pipe/temp/",
+  "drugs_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/scdna-pipe/required_files/drugs_of_interest/"
 }

@@ -50,14 +50,14 @@ parser.add_argument(
     "-a",
     "--analysis_path",
     type=str,
-    default="/cluster/work/bewi/ngs/projects/tumorProfiler/analysis",
+    default="/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/analysis",
     help="Path to the analisys directory, where the results and intermediate files will be stored.",
 )
 parser.add_argument(
     "-p",
     "--project_path",
     type=str,
-    default="/cluster/work/bewi/ngs/projects/tumorProfiler/",
+    default="/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code",
     help="Project path, where all the code and tools are set up.",
 )
 parser.add_argument(
@@ -94,21 +94,15 @@ sample_name = pattern_1.group(1).replace("_", "-")
 sample_annotation = pattern_2.group(1)
 sample_number = pattern_3.group(1)
 
-singlecell_dna_path = os.path.join(
-    args.analysis_path,
-    "trial_" + args.cancer_type,
-    sample_name + "-T",
-    "singlecell_dna/",
-)
+singlecell_dna_path = os.path.join(args.analysis_path, sample_name + "-T")
 analysis_path = os.path.join(singlecell_dna_path, "analysis")
-dna_pipeline_path = os.path.join(args.project_path, "code/dna-pipeline/")
-dna_pipeline_code_path = os.path.join(dna_pipeline_path, "scdna-pipe-v1.14-monica")
-scicone_path = os.path.join(dna_pipeline_path, "scicone-v1.14/build")
+dna_pipeline_code_path = os.path.join(args.project_path, "scdna-pipe")
+scicone_path = os.path.join(args.project_path, "SCICoNE/build")
 
 # Build the json config
 config = {}
 
-config["hotstart"] = "True"
+config["hotstart"] = "False"
 if args.hotstart:
     config["hotstart"] = "True"
 config["sample_name"] = pattern_1.group(1) + "_S" + sample_number
@@ -118,10 +112,8 @@ config["sequencing_prefix"] = (
 config["analysis_prefix"] = sample_name + "-T" + "_scD_Ar1" + args.pipeline_version
 config["disease"] = args.cancer_type
 config["gender"] = args.gender
-config["ref_genome_version"] = "GRCh37"
-config["ref_genome_path"] = os.path.join(
-    args.project_path, "data/refdata-GRCh37-1.0.0_dna"
-)
+config["ref_genome_version"] = "GRCh38"
+config["ref_genome_path"] = os.path.join(args.project_path, "data/refdata-GRCh38-1.0.0")
 config["fastqs_path"] = os.path.join(singlecell_dna_path, "openbis")
 config["analysis_path"] = os.path.join(analysis_path)
 config["scripts_dir"] = os.path.join(dna_pipeline_code_path, "scripts/")
@@ -164,10 +156,7 @@ config["secondary_analysis"] = {
 
 config["plotting"] = {
     "profiles": {"offset_sizes": 0.1, "s": 5},
-    "trees": {
-        "highlight_color": "chocolate",
-        "max_genes_per_line": 6
-    },
+    "trees": {"highlight_color": "chocolate", "max_genes_per_line": 6},
 }
 
 config["outlier_detection"] = {
