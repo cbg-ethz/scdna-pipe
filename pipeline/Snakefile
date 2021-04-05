@@ -609,8 +609,6 @@ rule create_derived_symlinks:
                     gene = item[1]
                     if gene in all_genes:
                         drugs_responsive_genes.add(drug)
-                drugs_responsive_genes = list(drugs_responsive_genes)
-                drugs_responsive_genes.sort()
 
                 df = pd.read_csv(input.drugs_resistant_genes, header=None)
                 drug_map = zip(df[0], df[1])
@@ -620,6 +618,14 @@ rule create_derived_symlinks:
                     gene = item[1]
                     if gene in all_genes:
                         drugs_resistant_genes.add(drug)
+
+                # Remove overlapping drugs.
+                intersection = drugs_responsive_genes.intersection(drugs_resistant_genes)
+                drugs_responsive_genes = drugs_responsive_genes - intersection
+                drugs_resistant_genes = drugs_resistant_genes - intersection
+
+                drugs_responsive_genes = list(drugs_responsive_genes)
+                drugs_responsive_genes.sort()
                 drugs_resistant_genes = list(drugs_resistant_genes)
                 drugs_resistant_genes.sort()
 
