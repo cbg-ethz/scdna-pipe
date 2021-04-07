@@ -218,23 +218,45 @@ rule get_unique_cnvs:
         cluster_tree_json = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_final_{root}.json",
     output:
         unique_cnv_profiles = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__unique_cluster_tree_cnvs_final_{root}.csv",
+        node_labels = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_node_labels_final_{root}.csv",
+        node_sizes = os.path.join(analysis_path, "tree_learning", analysis_prefix) + "__cluster_tree_node_sizes_final_{root}.csv",
     run:
         with open(input.cluster_tree_json) as json_file:
             cluster_tree = json.load(json_file)
 
         unique_cnvs = []
         node_labels = []
+        node_sizes = []
         for node in cluster_tree:
             if cluster_tree[node]['size'] > 0:
                 node_labels.append(cluster_tree[node]['label'])
                 unique_cnvs.append(np.array(cluster_tree[node]['cnv']))
+                node_sizes.append(cluster_tree[node]['size'])
         order = np.argsort(np.array(node_labels))
         unique_cnvs = np.array(unique_cnvs)[order]
+        node_labels = np.array(node_labels)[order]
+        node_sizes = np.array(node_sizes)[order]
 
         print("saving the unique cnv profiles...")
         np.savetxt(
             output.unique_cnv_profiles,
             unique_cnvs,
+            delimiter=",",
+            fmt='%d'
+        )
+
+        print("saving the node labels...")
+        np.savetxt(
+            output.node_labels,
+            node_labels,
+            delimiter=",",
+            fmt='%d'
+        )
+
+        print("saving the node sizes...")
+        np.savetxt(
+            output.node_sizes,
+            node_sizes,
             delimiter=",",
             fmt='%d'
         )
