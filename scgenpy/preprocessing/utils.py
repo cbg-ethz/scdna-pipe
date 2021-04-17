@@ -11,40 +11,33 @@ def sort_chromosomes(chromosome_list):
     """
     # Replace X and Y with 23 and 24
     sorted_chromosome_list = np.array(chromosome_list)
-    sorted_chromosome_list[np.where(sorted_chromosome_list == "X")[0]] = 23
-    sorted_chromosome_list[np.where(sorted_chromosome_list == "Y")[0]] = 24
-
-    # Convert everything to integer
-    sorted_chromosome_list = sorted_chromosome_list.astype(int)
+    sorted_chromosome_list[np.where(sorted_chromosome_list == "X")[0]] = '23'
+    sorted_chromosome_list[np.where(sorted_chromosome_list == "Y")[0]] = '24'
 
     # Sort
-    sorted_chromosome_list = np.sort(sorted_chromosome_list)
+    sorted_chromosome_list = sorted([int(x) for x in sorted_chromosome_list])
+    sorted_chromosome_list = [str(x) for x in sorted_chromosome_list]
 
     # Convert back to string
-    sorted_chromosome_list = sorted_chromosome_list.astype(str)
-    sorted_chromosome_list[np.where(sorted_chromosome_list == "23")[0]] = "X"
-    sorted_chromosome_list[np.where(sorted_chromosome_list == "24")[0]] = "Y"
+    sorted_chromosome_list[sorted_chromosome_list.index("23")] = "X"
+    sorted_chromosome_list[sorted_chromosome_list.index("24")] = "Y"
 
     return sorted_chromosome_list
 
 
-def merge_chromosomes(h5, key="normalized_counts", sort=True):
+def merge_chromosomes(h5, key="normalized_counts"):
 
     n_cells = h5["cell_barcodes"][:].shape[0]
     all_chromosomes = list(h5[key].keys())
 
-    all_chromosomes = sort_chromosomes(all_chromosomes)
-    #
-    # if sort:
-    #     number_chromosomes = sorted([int(x) for x in sorted(all_chromosomes)[:-2]])
-    #     ordered_chromosomes = [str(x) for x in number_chromosomes] + sorted(all_chromosomes)[-2:]
-    #     all_chromosomes = ordered_chromosomes
+    number_chromosomes = sorted([re.findall('[0-9XY]+', x)[0] for x in all_chromosomes])
+    all_chromosomes = sort_chromosomes(number_chromosomes)
 
     # list of all cnv arrays
     cnv_matrices = []
     for chr in all_chromosomes:
         cnv_matrices.append(
-            h5[key][chr][:][0:n_cells, :]
+            h5[key]["chr" + chr][:][0:n_cells, :]
         )  # select only the cells, not cell groups
 
     cell_all_chrs = np.concatenate(cnv_matrices, axis=1)

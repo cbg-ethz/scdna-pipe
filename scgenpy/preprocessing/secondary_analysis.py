@@ -9,7 +9,9 @@ from sklearn.preprocessing import normalize
 import os
 import matplotlib
 import scipy
+import re
 from scicone.utils import gini, filter_bins
+from scgenpy.preprocessing.utils import *
 
 if os.environ.get("DISPLAY", "") == "":
     # print("no display found. Using non-interactive Agg backend")
@@ -29,7 +31,6 @@ class SecondaryAnalysis:
 
     def __init__(self, h5_path, sample_name, output_path):
         """
-
         :param h5_path: Path to the HDF5 file created by cellranger-dna (10x Genomics)
         :param sample_name: Name of the sample, to be added to the output names
         :param output_path: Desired path for the output files
@@ -49,15 +50,12 @@ class SecondaryAnalysis:
 
         n_cells = h5f["cell_barcodes"].value.shape[0]
         all_chromosomes = list(h5f["normalized_counts"].keys())
-
-        number_chromosomes = sorted([int(x) for x in sorted(all_chromosomes)[:-2]])
-        ordered_chromosomes = [str(x) for x in number_chromosomes] + sorted(
-            all_chromosomes
-        )[-2:]
+        number_chromosomes = sorted([re.findall('[0-9XY]+', x)[0] for x in all_chromosomes])
+        ordered_chromosomes = sort_chromosomes(number_chromosomes)
 
         chr_lengths = []
         for ch in ordered_chromosomes:
-            chr_lengths.append(h5f["normalized_counts"][ch][0:n_cells, :].shape[1])
+            chr_lengths.append(h5f["normalized_counts"]["chr" + ch][0:n_cells, :].shape[1])
 
         chr_ends = np.cumsum(chr_lengths)
 
@@ -71,9 +69,10 @@ class SecondaryAnalysis:
         for idx, chr in enumerate(ordered_chromosomes):
             bin_chr_indicator.append([chr] * chr_lengths[idx])
         bin_chr_indicator = [item for sublist in bin_chr_indicator for item in sublist]
+        print("bin_chr_indicator:", bin_chr_indicator)
 
         bin_size = h5f["constants"]["bin_size"][()]
-        normalized_counts = merge_chromosomes(h5f, sort=True)
+        normalized_counts = merge_chromosomes(h5f)
         n_bins = normalized_counts.shape[1]
         bin_ids = [x for x in range(0, n_bins)]
         bin_df = pd.DataFrame(bin_ids, columns=["bin_ids"])
@@ -131,16 +130,13 @@ class SecondaryAnalysis:
         """
         h5f = h5py.File(self.h5_path, "r")
 
-        n_cells = h5f["cell_barcodes"].value.shape[0]
+        n_cells = h5f["cell_barcodes"][()].shape[0]
         all_chromosomes = list(h5f["normalized_counts"].keys())
 
-        number_chromosomes = sorted([int(x) for x in sorted(all_chromosomes)[:-2]])
-        ordered_chromosomes = [str(x) for x in number_chromosomes] + sorted(
-            all_chromosomes
-        )[-2:]
-        all_chromosomes = ordered_chromosomes
+        number_chromosomes = sorted([re.findall('[0-9XY]+', x)[0] for x in all_chromosomes])
+        all_chromosomes = sort_chromosomes(number_chromosomes)
 
-        normalized_counts = merge_chromosomes(h5f, sort=True)
+        normalized_counts = merge_chromosomes(h5f)
 
         bin_size = h5f["constants"]["bin_size"][()]
         n_bins = normalized_counts.shape[1]
@@ -155,7 +151,7 @@ class SecondaryAnalysis:
         is_mappable = []
         for chr in all_chromosomes:
             is_mappable = np.concatenate(
-                [is_mappable, h5f["genome_tracks"]["is_mappable"][chr][:]]
+                [is_mappable, h5f["genome_tracks"]["is_mappable"]["chr" + chr][:]]
             )
 
         unmappable = ~np.array(is_mappable, dtype=bool)
