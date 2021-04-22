@@ -240,7 +240,7 @@ rule get_unique_cnvs:
         print("saving the unique cnv profiles...")
         np.savetxt(
             output.unique_cnv_profiles,
-            unique_cnvs,
+            unique_cnvs.astype('int'),
             delimiter=",",
             fmt='%d'
         )
@@ -248,15 +248,15 @@ rule get_unique_cnvs:
         print("saving the node labels...")
         np.savetxt(
             output.node_labels,
-            node_labels,
-            delimiter=",",
+            node_labels.astype('int'),
+            delimiter=" ",
             fmt='%d'
         )
 
         print("saving the node sizes...")
         np.savetxt(
             output.node_sizes,
-            node_sizes,
+            node_sizes.astype('int'),
             delimiter=",",
             fmt='%d'
         )
