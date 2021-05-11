@@ -46,6 +46,11 @@ scripts_dir = config['scripts_dir']+'/'
 raw_fastqs = glob.glob(fastqs_path + "*.fastq.gz")
 n_lanes = config['n_lanes']
 fastq_lanes = [f"L00{i}" for i in range(1, n_lanes+1)]
+try:
+    lanes_list = np.array(config['lanes_list']).astype(int)
+    fastq_lanes = [f"L00{i}" for i in lanes_list]
+except KeyError:
+    pass    
 sample_name = config['sample_name']
 cr_sample_name = sample_name.split('_')[0] # e.g. MHELAVELA_S2 becomes MHELAVELA
 h5_path = config['secondary_analysis']['h5_path']
