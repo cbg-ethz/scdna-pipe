@@ -350,11 +350,11 @@ def get_gene_cn_df(gene_list, bin_gene_region_df, impute=False):
 
         if gene_exists:
             gene_cn_df[gene] = gene_cn_per_cluster
-            # neutral_state[i] = bin_gene_region_df["neutral_state"][bins].values[0]
+            neutral_state[i] = bin_gene_region_df["neutral_state"][bins].values[0]
 
     print("Transposing the dataframe...")
     gene_cn_df = gene_cn_df.T
-    # gene_cn_df["neutral_state"] = neutral_state[~np.isnan(neutral_state)].tolist()
+    gene_cn_df["neutral_state"] = neutral_state[~np.isnan(neutral_state)].tolist()
     if impute:
         gene_cn_df["is_imputed"] = is_imputed[~np.isnan(is_imputed)].tolist()
     # gene_cn_df = gene_cn_df.rename(columns = {'two':'new_name'})
