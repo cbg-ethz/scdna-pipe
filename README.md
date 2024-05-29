@@ -31,11 +31,6 @@ The pipeline makes use of `scgenpy`, a package that exposes functions for prepro
 You are very welcome to contribute! You can start with the existing issues or create new issues.
 Make sure to follow the CI checks. Use the [pre-commit hook](https://github.com/cbg-ethz/scdna-pipe/blob/master/.pre-commit-config.yaml) defined in the project to meet the code style. If you are adding new functionality, add the corresponding test as well in order to keep the code coverage high.
 
-## Authors
-
-* **Mustafa Anıl Tuncel**  [:octocat:](https://github.com/anilbey)
-* **Pedro Ferreira** [:octocat:](https://github.com/pedrofale)
-
 ## License
 
 This project is licensed under the Apache License - see the [LICENSE](LICENSE) file for details
