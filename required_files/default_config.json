@@ -1,14 +1,14 @@
 {
   "hotstart": "False",
-  "sample_name": "MADEGOD_S2",
+  "sample_name": "SAMPLE_S2",
   "gender": "female",
-  "sequencing_prefix": "MADEGOD-T_scD_250c-r1v1.0_r1v1.0-AHNY5VBGXC",
-  "analysis_prefix": "MADEGOD-T_scD_Ar1v1.14",
+  "sequencing_prefix": "SAMPLE-T_scD_250c-r1v1.0_r1v1.0-AHNY5VBGXC",
+  "analysis_prefix": "SAMPLE-T_scD_Ar1v1.14",
   "disease": "melanoma",
   "ref_genome_version": "GRCh37",
   "ref_genome_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/data/refdata-GRCh38-1.0.0_dna",
-  "fastqs_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/analysis/MADEGOD-T/openbis",
-  "analysis_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/analysis/MADEGOD-T/analysis",
+  "fastqs_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/analysis/SAMPLE-T/openbis",
+  "analysis_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/analysis/SAMPLE-T/analysis",
   "scripts_dir": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/scdna-pipe/scripts/",
   "10x_artifacts": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/scdna-pipe/required_files/10x_artifacts",
   "bin_size": 20000,
@@ -26,7 +26,7 @@
     "time": "1438"
   },
   "secondary_analysis": {
-    "h5_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/analysis/MADEGOD-T/analysis/cellranger/MADEGOD/outs/cnv_data.h5",
+    "h5_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/analysis/SAMPLE-T/analysis/cellranger/SAMPLE/outs/cnv_data.h5",
     "bins_to_remove": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/scdna-pipe/required_files/10x_artifacts/GRCh38_10x_artifacts_mask_whole_genome.tsv",
     "genes_path": "/cluster/work/tumorp/analysis/beerenwinkellab/analysis/scDNA/code/scdna-pipe/required_files/genes_of_interest",
     "general_main_gene_list": "dna_long_gene_list.txt",
